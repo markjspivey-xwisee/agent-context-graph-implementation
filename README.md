@@ -25,6 +25,10 @@ npm install
 npm run build
 npm run dashboard
 
+## CI note (foundations spec)
+
+CI clones the foundations repo and sets `ACG_SPEC_DIR` so tests and schema validation can locate the spec files when this repo is checked out alone.
+
 ## Examples and validation
 
 npm run cli validate-all
