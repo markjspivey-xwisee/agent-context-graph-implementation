@@ -36,7 +36,7 @@ export class RateLimiterService extends EventEmitter {
   private buckets: Map<string, TokenBucket> = new Map();
   private configs: Map<string, RateLimitConfig> = new Map();
   private defaultConfig: RateLimitConfig;
-  private cleanupInterval: NodeJS.Timer | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(defaultConfig?: Partial<RateLimitConfig>) {
     super();

@@ -55,8 +55,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch foundations spec
+        run: |
+          git clone --depth 1 https://github.com/markjspivey-xwisee/agent-context-graph-foundations ../agent-context-graph-foundations
+
       - name: Run tests
         run: npm run test:run
+        env:
+          ACG_SPEC_DIR: ../agent-context-graph-foundations/spec
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
