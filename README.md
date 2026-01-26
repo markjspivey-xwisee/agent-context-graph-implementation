@@ -2,6 +2,8 @@
 
 Reference implementation, demos, tests, and examples for Agent Context Graph (ACG).
 
+This repo operationalizes the foundations layer and keeps executable code, examples, and tests in sync with the specs.
+
 ## Foundations dependency
 
 This repo expects the foundations repo for specs and ontologies.
@@ -19,6 +21,21 @@ Recommended layout:
 
 If your foundations repo lives elsewhere, set ACG_SPEC_DIR to its spec directory.
 
+## Start here
+
+- src/broker/context-broker.ts
+- src/agents/orchestrator.ts
+- src/dashboard/server.ts
+- examples/golden-path/
+- tests/integration/golden-path.test.ts
+
+## Repo map
+
+- src/        Core services, broker, orchestrator, and runtime
+- examples/   Golden-path examples and demos
+- tests/      Unit and integration tests
+- guides/     Build and usage guides
+
 ## Quick start
 
 npm install
@@ -34,6 +51,11 @@ CI clones the foundations repo and sets `ACG_SPEC_DIR` so tests and schema valid
 npm run cli validate-all
 
 Examples live in examples/golden-path/.
+
+## Related repositories
+
+- Foundations: https://github.com/markjspivey-xwisee/agent-context-graph-foundations
+- Implementation: https://github.com/markjspivey-xwisee/agent-context-graph-implementation
 
 ## Agent rules
 
