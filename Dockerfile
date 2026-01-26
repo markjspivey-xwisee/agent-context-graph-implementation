@@ -15,6 +15,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Bring in foundations spec for runtime (optional)
+ARG ACG_SPEC_DIR
+RUN if [ -n "$ACG_SPEC_DIR" ] && [ -d "$ACG_SPEC_DIR" ]; then cp -R "$ACG_SPEC_DIR" /app/spec; fi
+
 # Build TypeScript
 RUN npm run build
 
@@ -34,7 +38,6 @@ RUN npm ci --production
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/spec ./spec
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data

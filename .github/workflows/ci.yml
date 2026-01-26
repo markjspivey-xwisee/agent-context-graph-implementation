@@ -101,6 +101,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch foundations spec
+        run: |
+          git clone --depth 1 https://github.com/markjspivey-xwisee/agent-context-graph-foundations ../agent-context-graph-foundations
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -113,6 +116,8 @@ jobs:
           tags: agent-context-graph:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            ACG_SPEC_DIR=/app/spec
 
   security:
     runs-on: ubuntu-latest
