@@ -1,38 +1,54 @@
-# Project Overview
+# Project Overview (Implementation)
 
-Agent Context Graph (ACG) is split into two repos to separate foundations (principles/specs) from implementation (code/tests).
+This repo is the operational implementation of Agent Context Graph (ACG). It turns the foundations contract into running systems, demos, and tests. It is written for principal engineers and engineering managers who need to understand runtime responsibilities, extension points, and operational posture.
 
-## Navigation map
+## Executive summary
 
-  [Foundations]
-    principles/ -> concepts and invariants
-    architecture/ -> system structure and boundaries
-    protocol/ -> API-level semantics
-    spec/ -> JSON Schema, SHACL, Hydra, ontology
+ACG exposes a Context Graph to agents at runtime. The broker generates affordances based on credentials, policies, and current state, and emits PROV traces for every traversal. The implementation respects the foundations contract (schemas, SHACL, ontology, and protocol) and keeps examples and tests aligned with those specs.
 
-  [Implementation]
-    src/ -> broker, orchestrator, services
-    examples/ -> golden-path examples
-    tests/ -> validation and integration
-    guides/ -> build and usage
+## Runtime shape (mermaid)
 
-## How the pieces fit
+```mermaid
+flowchart LR
+  Agent -->|/context| Broker
+  Broker --> AAT[AAT Registry]
+  Broker --> Policy[Policy Engine]
+  Broker -->|Context Graph| Agent
+  Agent -->|/traverse| Broker
+  Broker --> Trace[Trace Store]
+  Broker --> Outcome[Execution Result]
+```
 
-  Foundations spec/  --->  Implementation runtime
-  (schemas, SHACL,         (validation, RDF/JSON-LD,
-   ontology, protocol)      broker behavior)
+## Request/trace flow (mermaid)
 
-The implementation repo loads specs from the foundations repo. When both repos are cloned side by side, no extra configuration is needed. Otherwise, set ACG_SPEC_DIR to point at the foundations spec directory.
+```mermaid
+sequenceDiagram
+  participant Agent
+  participant Broker
+  participant Policy
+  participant AAT
+  participant Trace
+  Agent->>Broker: POST /context (credentials)
+  Broker->>AAT: Check action space
+  Broker->>Policy: Evaluate constraints
+  Broker-->>Agent: Context Graph (affordances)
+  Agent->>Broker: POST /traverse (affordance)
+  Broker->>Trace: Emit PROV + usageEvent
+  Broker-->>Agent: Outcome
+```
 
-## Key entry points (Foundations)
+## How foundations are consumed
 
-- principles/README.md
-- architecture/ARCHITECTURE_INDEX.md
-- protocol/API.md
-- spec/context-graph.schema.json
-- spec/prov-trace.schema.json
-- spec/ontology/acg-core.ttl
-- spec/shacl/context.ttl
+The implementation loads schemas and shapes from the foundations repo. If both repos are cloned side by side, the resolver locates them automatically. Otherwise, set ACG_SPEC_DIR to the foundations spec directory.
+
+CI clones the foundations repo and sets ACG_SPEC_DIR so tests and schema validation can run in isolation.
+
+## Repo map
+
+- src/        Core services, broker, orchestrator, and runtime
+- examples/   Golden-path examples and demos
+- tests/      Unit and integration tests
+- guides/     Build and usage guides
 
 ## Key entry points (Implementation)
 
@@ -41,6 +57,21 @@ The implementation repo loads specs from the foundations repo. When both repos a
 - src/dashboard/server.ts
 - examples/golden-path/
 - tests/integration/golden-path.test.ts
+
+## Operational considerations
+
+- Validation: SHACL and JSON Schema enforce contract compliance.
+- Traceability: All traversals emit PROV traces.
+- Policy and credential gating: affordances are filtered by policy and VCs.
+- Concurrency: AAT rules restrict parallelism and conflict.
+- Security: external actions should be isolated and credential-gated.
+
+## Extension points
+
+- Add new AAT definitions in foundations spec/aat.
+- Add affordance types in foundations ontology and protocol docs.
+- Extend policy rules or AAT composition rules in code.
+- Add new demos/examples that conform to the specs.
 
 ## Repos
 
