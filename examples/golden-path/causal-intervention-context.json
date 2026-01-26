@@ -1,0 +1,929 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "causalSemantics": "acg:hasCausalSemantics",
+      "interventionLabel": "acg:interventionLabel",
+      "outcomeVariables": {
+        "@id": "acg:outcomeVariables",
+        "@container": "@set"
+      },
+      "causalModelRef": {
+        "@id": "acg:causalModelRef",
+        "@type": "@id"
+      },
+      "outcomeConstraints": {
+        "@id": "acg:hasOutcomeConstraints",
+        "@container": "@set"
+      },
+      "variable": "acg:constraintVariable",
+      "operator": "acg:constraintOperator",
+      "threshold": {
+        "@id": "acg:constraintThreshold",
+        "@type": "xsd:decimal"
+      },
+      "unit": "acg:constraintUnit",
+      "baselineObservations": {
+        "@id": "acg:hasBaselineObservations",
+        "@container": "@set"
+      },
+      "observedValue": {
+        "@id": "acg:observedValue",
+        "@type": "xsd:decimal"
+      },
+      "observedAt": {
+        "@id": "acg:observedAt",
+        "@type": "xsd:dateTime"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-causal-intervention-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkpCausalExecutor789",
+  "agentType": "aat:ExecutorAgentType",
+  "timestamp": "2026-01-24T21:00:00Z",
+  "expiresAt": "2026-01-24T22:00:00Z",
+  "nonce": "causal-intervention-session-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "performance-optimization",
+    "resources": [
+      "urn:resource:cache-layer",
+      "urn:resource:database-pool",
+      "urn:resource:load-balancer"
+    ],
+    "actions": [
+      "Act",
+      "Observe",
+      "ReportOutcome",
+      "RollbackAction"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ExecutorCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-executor-causal-001",
+      "issuer": "did:web:ops-authority.example.com",
+      "validUntil": "2026-01-24T23:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpCausalExecutor789",
+        "capability": "ExecutorCapability",
+        "scope": [
+          "performance-optimization"
+        ]
+      }
+    },
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:CausalInterventionCredential"
+      ],
+      "id": "urn:uuid:cred-causal-001",
+      "issuer": "did:web:causal-authority.example.com",
+      "validUntil": "2026-01-24T23:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpCausalExecutor789",
+        "capability": "CausalIntervention",
+        "authorizedModels": [
+          "urn:causal-model:cache-performance-v1",
+          "urn:causal-model:db-pool-sizing-v1"
+        ]
+      },
+      "_note": "Authorizes agent to perform causal interventions with specific models"
+    }
+  ],
+  "baselineObservations": [
+    {
+      "type": "acg:BaselineObservation",
+      "variable": "response_time_p99",
+      "observedValue": 450,
+      "unit": "ms",
+      "observedAt": "2026-01-24T20:55:00Z"
+    },
+    {
+      "type": "acg:BaselineObservation",
+      "variable": "cache_hit_rate",
+      "observedValue": 0.72,
+      "unit": "ratio",
+      "observedAt": "2026-01-24T20:55:00Z"
+    },
+    {
+      "type": "acg:BaselineObservation",
+      "variable": "error_rate",
+      "observedValue": 0.02,
+      "unit": "ratio",
+      "observedAt": "2026-01-24T20:55:00Z"
+    }
+  ],
+  "outcomeConstraints": [
+    {
+      "type": "acg:OutcomeConstraint",
+      "variable": "response_time_p99",
+      "operator": "<=",
+      "threshold": 300,
+      "unit": "ms",
+      "enforcementLevel": "strict",
+      "_note": "P99 response time must not exceed 300ms after intervention"
+    },
+    {
+      "type": "acg:OutcomeConstraint",
+      "variable": "error_rate",
+      "operator": "<=",
+      "threshold": 0.01,
+      "unit": "ratio",
+      "enforcementLevel": "strict",
+      "_note": "Error rate must remain below 1%"
+    },
+    {
+      "type": "acg:OutcomeConstraint",
+      "variable": "cache_hit_rate",
+      "operator": ">=",
+      "threshold": 0.85,
+      "unit": "ratio",
+      "enforcementLevel": "advisory",
+      "_note": "Cache hit rate should improve to at least 85%"
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent MUST observe baseline before performing intervention",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent MUST report outcomes after intervention completes",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent MUST rollback if outcome constraints are violated",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:OutcomeConstraint",
+      "rule": "response_time_p99 must be less than 300ms",
+      "enforcementLevel": "strict"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-increase-cache-size",
+      "rel": "execute-intervention",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Act",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://infrastructure.example.com/api/v1/cache/resize",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ActParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        },
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "CausalIntervention"
+        }
+      ],
+      "causalSemantics": {
+        "type": "acg:CausalSemantics",
+        "interventionLabel": "do(cache_size := 2 * cache_size)",
+        "outcomeVariables": [
+          "response_time_p99",
+          "cache_hit_rate",
+          "memory_usage"
+        ],
+        "causalModelRef": "urn:causal-model:cache-performance-v1"
+      },
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Doubles cache size, expected to improve hit rate and response time",
+          "reversible": true
+        }
+      ],
+      "enabled": true,
+      "_note": "Causal intervention with do-calculus label for audit",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T21:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-increase-db-pool",
+      "rel": "execute-intervention",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Act",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://infrastructure.example.com/api/v1/database/pool/resize",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ActParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        },
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "CausalIntervention"
+        }
+      ],
+      "causalSemantics": {
+        "type": "acg:CausalSemantics",
+        "interventionLabel": "do(db_pool_size := db_pool_size + 10)",
+        "outcomeVariables": [
+          "response_time_p99",
+          "db_connection_wait_time",
+          "query_throughput"
+        ],
+        "causalModelRef": "urn:causal-model:db-pool-sizing-v1"
+      },
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Increases DB connection pool by 10 connections",
+          "reversible": true
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T21:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-observe-metrics",
+      "rel": "observe-outcomes",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Observe",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://monitoring.example.com/api/v1/metrics/current",
+        "method": "GET"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ObserveParamsShape"
+      },
+      "effects": [],
+      "enabled": true,
+      "_note": "Observe current metrics for baseline and outcome measurement",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T21:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-report-outcomes",
+      "rel": "report-causal-outcome",
+      "relVersion": "1.0.0",
+      "actionType": "aat:ReportOutcome",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/outcomes",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ReportOutcomeParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates causal outcome report linked to intervention trace",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Reports observed outcomes for causal model validation",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T21:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-rollback-intervention",
+      "rel": "rollback-action",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RollbackAction",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/actions/rollback",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RollbackActionParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Reverses the causal intervention using PROV trace",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Use when outcome constraints are violated",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T21:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpCausalExecutor789"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Agent MUST observe baseline before performing intervention"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Agent MUST report outcomes after intervention completes"
+      },
+      {
+        "id": "hn-constraint-3",
+        "kind": "Constraint",
+        "ref": "Agent MUST rollback if outcome constraints are violated"
+      },
+      {
+        "id": "hn-constraint-4",
+        "kind": "Constraint",
+        "ref": "response_time_p99 must be less than 300ms"
+      },
+      {
+        "id": "hn-aff-aff-increase-cache-size",
+        "kind": "Affordance",
+        "ref": "aff-increase-cache-size"
+      },
+      {
+        "id": "hn-target-aff-increase-cache-size",
+        "kind": "Target",
+        "ref": "https://infrastructure.example.com/api/v1/cache/resize"
+      },
+      {
+        "id": "hn-cred-aff-increase-cache-size-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      },
+      {
+        "id": "hn-cred-aff-increase-cache-size-2",
+        "kind": "Credential",
+        "ref": "CausalIntervention"
+      },
+      {
+        "id": "hn-aff-aff-increase-db-pool",
+        "kind": "Affordance",
+        "ref": "aff-increase-db-pool"
+      },
+      {
+        "id": "hn-target-aff-increase-db-pool",
+        "kind": "Target",
+        "ref": "https://infrastructure.example.com/api/v1/database/pool/resize"
+      },
+      {
+        "id": "hn-cred-aff-increase-db-pool-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      },
+      {
+        "id": "hn-cred-aff-increase-db-pool-2",
+        "kind": "Credential",
+        "ref": "CausalIntervention"
+      },
+      {
+        "id": "hn-aff-aff-observe-metrics",
+        "kind": "Affordance",
+        "ref": "aff-observe-metrics"
+      },
+      {
+        "id": "hn-target-aff-observe-metrics",
+        "kind": "Target",
+        "ref": "https://monitoring.example.com/api/v1/metrics/current"
+      },
+      {
+        "id": "hn-aff-aff-report-outcomes",
+        "kind": "Affordance",
+        "ref": "aff-report-outcomes"
+      },
+      {
+        "id": "hn-target-aff-report-outcomes",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/outcomes"
+      },
+      {
+        "id": "hn-aff-aff-rollback-intervention",
+        "kind": "Affordance",
+        "ref": "aff-rollback-intervention"
+      },
+      {
+        "id": "hn-target-aff-rollback-intervention",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/actions/rollback"
+      },
+      {
+        "id": "hn-cred-aff-rollback-intervention-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-increase-cache-size",
+        "relation": "affordance",
+        "affordanceRef": "aff-increase-cache-size",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-increase-cache-size",
+          "hn-target-aff-increase-cache-size",
+          "hn-cred-aff-increase-cache-size-1",
+          "hn-cred-aff-increase-cache-size-2",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-increase-cache-size",
+          "target": "hn-target-aff-increase-cache-size",
+          "credential": [
+            "hn-cred-aff-increase-cache-size-1",
+            "hn-cred-aff-increase-cache-size-2"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-increase-db-pool",
+        "relation": "affordance",
+        "affordanceRef": "aff-increase-db-pool",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-increase-db-pool",
+          "hn-target-aff-increase-db-pool",
+          "hn-cred-aff-increase-db-pool-1",
+          "hn-cred-aff-increase-db-pool-2",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-increase-db-pool",
+          "target": "hn-target-aff-increase-db-pool",
+          "credential": [
+            "hn-cred-aff-increase-db-pool-1",
+            "hn-cred-aff-increase-db-pool-2"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-observe-metrics",
+        "relation": "affordance",
+        "affordanceRef": "aff-observe-metrics",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-observe-metrics",
+          "hn-target-aff-observe-metrics",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-observe-metrics",
+          "target": "hn-target-aff-observe-metrics",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-report-outcomes",
+        "relation": "affordance",
+        "affordanceRef": "aff-report-outcomes",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-report-outcomes",
+          "hn-target-aff-report-outcomes",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-report-outcomes",
+          "target": "hn-target-aff-report-outcomes",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-rollback-intervention",
+        "relation": "affordance",
+        "affordanceRef": "aff-rollback-intervention",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-rollback-intervention",
+          "hn-target-aff-rollback-intervention",
+          "hn-cred-aff-rollback-intervention-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-rollback-intervention",
+          "target": "hn-target-aff-rollback-intervention",
+          "credential": [
+            "hn-cred-aff-rollback-intervention-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "performance-optimization"
+      },
+      {
+        "id": "obj-target-aff-increase-cache-size",
+        "ref": "https://infrastructure.example.com/api/v1/cache/resize"
+      },
+      {
+        "id": "obj-target-aff-increase-db-pool",
+        "ref": "https://infrastructure.example.com/api/v1/database/pool/resize"
+      },
+      {
+        "id": "obj-target-aff-observe-metrics",
+        "ref": "https://monitoring.example.com/api/v1/metrics/current"
+      },
+      {
+        "id": "obj-target-aff-report-outcomes",
+        "ref": "https://broker.example.com/acg/v1/outcomes"
+      },
+      {
+        "id": "obj-target-aff-rollback-intervention",
+        "ref": "https://broker.example.com/acg/v1/actions/rollback"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-increase-cache-size",
+        "name": "aat:Act",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-increase-cache-size"
+        ],
+        "affordanceRef": "aff-increase-cache-size",
+        "hyperedgeRef": "he-aff-increase-cache-size"
+      },
+      {
+        "id": "m-aff-increase-db-pool",
+        "name": "aat:Act",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-increase-db-pool"
+        ],
+        "affordanceRef": "aff-increase-db-pool",
+        "hyperedgeRef": "he-aff-increase-db-pool"
+      },
+      {
+        "id": "m-aff-observe-metrics",
+        "name": "aat:Observe",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-observe-metrics"
+        ],
+        "affordanceRef": "aff-observe-metrics",
+        "hyperedgeRef": "he-aff-observe-metrics"
+      },
+      {
+        "id": "m-aff-report-outcomes",
+        "name": "aat:ReportOutcome",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-report-outcomes"
+        ],
+        "affordanceRef": "aff-report-outcomes",
+        "hyperedgeRef": "he-aff-report-outcomes"
+      },
+      {
+        "id": "m-aff-rollback-intervention",
+        "name": "aat:RollbackAction",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-rollback-intervention"
+        ],
+        "affordanceRef": "aff-rollback-intervention",
+        "hyperedgeRef": "he-aff-rollback-intervention"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P2Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true,
+    "_note": "Extended retention for causal model training data"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Causal intervention with outcome constraints and rollback capability",
+    "demonstrates": [
+      "Causal semantics with do-calculus intervention labels",
+      "Outcome variables linked to causal model reference",
+      "Baseline observations for before/after comparison",
+      "Outcome constraints (strict and advisory enforcement)",
+      "CausalInterventionCredential for authorized models",
+      "ReportOutcome action for causal model validation",
+      "RollbackAction when constraints are violated",
+      "PROV trace linking intervention to outcomes",
+      "Counterfactual reasoning support via causalModelRef"
+    ]
+  }
+}

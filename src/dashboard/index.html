@@ -1,0 +1,4595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Context Graph - Dashboard</title>
+  <!-- D3.js for graph visualization -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-blue: #60a5fa;
+      --accent-purple: #a78bfa;
+      --accent-green: #22c55e;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-cyan: #22d3ee;
+      --border: #334155;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .protocol-version {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-red);
+    }
+    .status-dot.connected { background: var(--accent-green); }
+
+    /* Federation Indicator */
+    .federation-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.7rem;
+      color: var(--accent-cyan);
+      background: rgba(34, 211, 238, 0.1);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+    }
+
+    /* Notification System */
+    .notification-container {
+      position: fixed;
+      top: 60px;
+      right: 1rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 320px;
+    }
+
+    .notification {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: slideIn 0.3s ease;
+    }
+
+    .notification-exit {
+      animation: slideOut 0.3s ease forwards;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+
+    .notification-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .notification-success .notification-icon { color: var(--accent-green); }
+    .notification-error .notification-icon { color: var(--accent-red); }
+    .notification-warning .notification-icon { color: var(--accent-yellow); }
+    .notification-info .notification-icon { color: var(--accent-blue); }
+    .notification-federation .notification-icon { color: var(--accent-cyan); }
+    .notification-agent .notification-icon { color: var(--accent-purple); }
+
+    .notification-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notification-message {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      word-wrap: break-word;
+    }
+
+    .notification-time {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .notification-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    .notification-close:hover { color: var(--text-primary); }
+
+    .info-toggle {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+    .info-toggle:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+
+    /* Example Selector */
+    .example-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .example-selector label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .example-selector select {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      min-width: 180px;
+    }
+    .example-selector select:hover { border-color: var(--accent-blue); }
+    .example-selector select:focus { outline: none; border-color: var(--accent-purple); }
+
+    .example-selector select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .example-selector select optgroup {
+      background: var(--bg-tertiary);
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    /* Protocol Info Banner */
+    .protocol-banner {
+      background: linear-gradient(135deg, #1e1b4b 0%, #172554 100%);
+      border-bottom: 1px solid var(--border);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .protocol-banner.expanded { max-height: 500px; }
+
+    .protocol-content {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .protocol-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .protocol-card {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .protocol-card h3 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .protocol-card p {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .protocol-card code {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.65rem;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.125rem 0.25rem;
+      border-radius: 3px;
+      color: var(--accent-purple);
+    }
+
+    .protocol-card .example {
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-family: 'Monaco', 'Consolas', monospace;
+      color: var(--text-muted);
+      overflow-x: auto;
+    }
+
+    /* Main Layout */
+    .main {
+      display: grid;
+      grid-template-columns: 320px 1fr 400px;
+      gap: 1rem;
+      padding: 1rem;
+      height: calc(100vh - 52px);
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .panel-header .badge {
+      background: var(--bg-tertiary);
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    .panel-content {
+      padding: 1rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Goal Input */
+    .goal-section {
+      margin-bottom: 1rem;
+    }
+
+    .goal-templates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .template-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.25rem 0.625rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .template-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--accent-blue);
+    }
+
+    .goal-input textarea {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.875rem;
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .goal-input textarea:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .goal-input textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .goal-options {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .goal-options select {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.375rem 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .goal-input button {
+      flex: 1;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.625rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .goal-input button:hover { opacity: 0.9; }
+    .goal-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Stats Cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+
+    .stat-card label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Workflow List */
+    .workflow-card {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.875rem;
+      margin-bottom: 0.625rem;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .workflow-card:hover { border-color: var(--accent-blue); }
+    .workflow-card.selected { border-color: var(--accent-purple); background: #1e1b4b; }
+
+    .workflow-card .goal {
+      font-weight: 500;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .workflow-card .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.planning { background: #fef3c7; color: #92400e; }
+    .status-badge.executing { background: #dbeafe; color: #1e40af; }
+    .status-badge.completed { background: #dcfce7; color: #166534; }
+    .status-badge.failed { background: #fee2e2; color: #991b1b; }
+    .status-badge.awaiting-approval { background: #fae8ff; color: #86198f; }
+
+    /* Center Panel - Task Pipeline */
+    .workflow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .workflow-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+    }
+
+    .workflow-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .workflow-timing {
+      text-align: right;
+    }
+
+    .workflow-timing .duration {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent-blue);
+    }
+
+    /* AAT Pipeline Visualization */
+    .aat-pipeline {
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.5) 0%, rgba(23, 37, 84, 0.5) 100%);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .aat-pipeline-header {
+      font-size: 0.7rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .aat-flow {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .aat-step {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .aat-step.planner { background: rgba(254, 243, 199, 0.2); color: #fcd34d; border-color: rgba(254, 243, 199, 0.3); }
+    .aat-step.arbiter { background: rgba(243, 232, 255, 0.2); color: #c4b5fd; border-color: rgba(243, 232, 255, 0.3); }
+    .aat-step.executor { background: rgba(219, 234, 254, 0.2); color: #93c5fd; border-color: rgba(219, 234, 254, 0.3); }
+    .aat-step.observer { background: rgba(220, 252, 231, 0.2); color: #86efac; border-color: rgba(220, 252, 231, 0.3); }
+    .aat-step.archivist { background: rgba(241, 245, 249, 0.2); color: #cbd5e1; border-color: rgba(241, 245, 249, 0.3); }
+
+    .aat-step.active { box-shadow: 0 0 8px currentColor; animation: pulse 1s infinite; }
+    .aat-step.completed { opacity: 0.6; }
+
+    .aat-arrow {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    /* Task Timeline */
+    .task-timeline {
+      position: relative;
+    }
+
+    .task-item {
+      position: relative;
+      padding-left: 2rem;
+      padding-bottom: 1rem;
+      border-left: 2px solid var(--border);
+      margin-left: 0.5rem;
+    }
+
+    .task-item:last-child {
+      border-left-color: transparent;
+      padding-bottom: 0;
+    }
+
+    .task-item::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border);
+    }
+
+    .task-item.completed::before { background: var(--accent-green); border-color: var(--accent-green); }
+    .task-item.running::before { background: var(--accent-blue); border-color: var(--accent-blue); animation: pulse 1s infinite; }
+    .task-item.failed::before { background: var(--accent-red); border-color: var(--accent-red); }
+    .task-item.queued::before { background: var(--accent-yellow); border-color: var(--accent-yellow); }
+    .task-item.assigned::before { background: var(--accent-cyan); border-color: var(--accent-cyan); }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(96, 165, 250, 0); }
+    }
+
+    .task-content {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .task-content:hover {
+      border-color: var(--accent-blue);
+    }
+
+    .task-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.375rem;
+    }
+
+    .task-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .task-type-badge.plan { background: #fef3c7; color: #92400e; }
+    .task-type-badge.approve { background: #f3e8ff; color: #6b21a8; }
+    .task-type-badge.execute { background: #dbeafe; color: #1e40af; }
+    .task-type-badge.observe { background: #dcfce7; color: #166534; }
+    .task-type-badge.archive { background: #f1f5f9; color: #475569; }
+
+    .task-aat-ref {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .task-desc {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      margin-bottom: 0.375rem;
+    }
+
+    .task-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .task-error {
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: #fca5a5;
+    }
+
+    /* Right Panel - Agents */
+    .agent-card {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .agent-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .agent-icon.planner { background: #fef3c7; }
+    .agent-icon.arbiter { background: #f3e8ff; }
+    .agent-icon.executor { background: #dbeafe; }
+    .agent-icon.observer { background: #dcfce7; }
+    .agent-icon.archivist { background: #f1f5f9; }
+
+    .agent-info { flex: 1; min-width: 0; }
+    .agent-info .type { font-weight: 500; font-size: 0.8rem; text-transform: capitalize; }
+    .agent-info .aat-type {
+      font-size: 0.6rem;
+      color: var(--accent-cyan);
+      font-family: monospace;
+    }
+
+    .agent-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      flex-shrink: 0;
+    }
+    .agent-status.busy { background: var(--accent-yellow); animation: pulse 1s infinite; }
+
+    .agent-details {
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .agent-detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .agent-detail-row:last-child { border-bottom: none; }
+
+    .agent-detail-row .label {
+      color: var(--text-muted);
+    }
+    .agent-detail-row .value {
+      color: var(--text-secondary);
+      font-family: monospace;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: right;
+    }
+
+    .agent-capabilities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.375rem;
+    }
+
+    .capability-badge {
+      font-size: 0.55rem;
+      padding: 0.125rem 0.375rem;
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--accent-cyan);
+      border-radius: 4px;
+      border: 1px solid rgba(34, 211, 238, 0.2);
+    }
+
+    /* Activity Log */
+    .activity-section {
+      margin-top: 1rem;
+    }
+
+    .log-entry {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry .time {
+      color: var(--text-muted);
+      font-family: monospace;
+      margin-right: 0.5rem;
+      font-size: 0.65rem;
+    }
+
+    .log-entry.error { color: #fca5a5; }
+    .log-entry.success { color: #86efac; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      width: 90%;
+      max-width: 750px;
+      max-height: 85vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-content {
+      padding: 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .detail-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .detail-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-section h4 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .detail-section h4 .protocol-ref {
+      font-size: 0.6rem;
+      color: var(--accent-cyan);
+      font-weight: normal;
+      font-family: monospace;
+    }
+
+    .detail-section pre {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.875rem;
+      font-size: 0.75rem;
+      font-family: 'Monaco', 'Consolas', monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text-secondary);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .detail-item {
+      background: var(--bg-primary);
+      border-radius: 6px;
+      padding: 0.625rem;
+    }
+
+    .detail-item label {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .detail-item .value {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+
+    .prov-trace-preview {
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.3) 0%, rgba(23, 37, 84, 0.3) 100%);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .prov-trace-preview h5 {
+      font-size: 0.7rem;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    /* Empty States */
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 2rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.5;
+    }
+
+    /* Tooltips */
+    .tooltip {
+      position: relative;
+    }
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 1000;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 250px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Tab Navigation */
+    .tab-nav {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .tab-btn.active {
+      background: var(--bg-secondary);
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* Federation Sub-tabs */
+    .fed-sub-tab {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .fed-sub-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .fed-sub-tab.active {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    .fed-tab-content {
+      display: none;
+    }
+
+    .fed-tab-content.active {
+      display: block;
+    }
+
+    /* Federation Cards */
+    .fed-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .fed-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .fed-card-title {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .fed-card-meta {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .fed-card-actions {
+      display: flex;
+      gap: 0.375rem;
+    }
+
+    .fed-action-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .fed-action-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .fed-action-btn.accept {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .fed-action-btn.reject {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
+
+    /* Presence indicators */
+    .presence-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      margin-bottom: 0.375rem;
+    }
+
+    .presence-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .presence-info {
+      flex: 1;
+    }
+
+    .presence-name {
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .presence-status {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .presence-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .presence-dot.active { background: var(--accent-green); }
+    .presence-dot.idle { background: var(--accent-yellow); }
+    .presence-dot.away { background: var(--accent-red); }
+    .presence-dot.offline { background: var(--text-muted); }
+
+    .tab-content {
+      display: none;
+      height: 100%;
+    }
+
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Graph Container */
+    .graph-container {
+      flex: 1;
+      position: relative;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 300px;
+    }
+
+    .graph-container svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .graph-controls {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      display: flex;
+      gap: 0.25rem;
+      z-index: 10;
+    }
+
+    .graph-control-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .graph-control-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    /* Graph Node Styles */
+    .node {
+      cursor: pointer;
+    }
+
+    .node circle {
+      stroke-width: 2;
+      transition: all 0.15s;
+    }
+
+    .node:hover circle {
+      filter: brightness(1.2);
+    }
+
+    .node text {
+      font-size: 10px;
+      fill: var(--text-primary);
+      pointer-events: none;
+    }
+
+    .link {
+      stroke: var(--border);
+      stroke-opacity: 0.6;
+    }
+
+    .link.active {
+      stroke: var(--accent-cyan);
+      stroke-width: 2;
+    }
+
+    /* Context Graph Legend */
+    .graph-legend {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 0.5rem;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem;
+      font-size: 0.65rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .legend-item:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Source Toggle Button */
+    .graph-control-btn.source-toggle {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+
+    .graph-control-btn.source-toggle.active {
+      background: var(--accent-purple);
+      color: white;
+      border-color: var(--accent-purple);
+    }
+
+    /* Context Source View */
+    .context-source-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-primary);
+      overflow: auto;
+      z-index: 5;
+    }
+
+    .context-source-view pre {
+      margin: 0;
+      padding: 1rem;
+      font-family: 'Monaco', 'Consolas', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* JSON-LD syntax highlighting */
+    .context-source-view .json-key {
+      color: var(--accent-cyan);
+    }
+
+    .context-source-view .json-string {
+      color: var(--accent-green);
+    }
+
+    .context-source-view .json-number {
+      color: var(--accent-yellow);
+    }
+
+    .context-source-view .json-boolean {
+      color: var(--accent-purple);
+    }
+
+    .context-source-view .json-null {
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Trace Timeline */
+    .trace-timeline {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .trace-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+
+    .trace-item::before {
+      content: '';
+      position: absolute;
+      left: -1rem;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      transform: translateY(-50%);
+    }
+
+    .trace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .trace-type {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--accent-purple);
+    }
+
+    .trace-time {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .trace-agent {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .trace-action {
+      font-size: 0.75rem;
+      color: var(--text-primary);
+      margin-top: 0.375rem;
+    }
+
+    /* Knowledge Graph Browser */
+    .kg-browser {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .kg-search {
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kg-search input {
+      width: 100%;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+    }
+
+    .kg-search input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .kg-results {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .triple-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.625rem;
+      margin-bottom: 0.375rem;
+      font-family: monospace;
+      font-size: 0.7rem;
+    }
+
+    .triple-subject {
+      color: var(--accent-blue);
+    }
+
+    .triple-predicate {
+      color: var(--accent-purple);
+      margin: 0 0.375rem;
+    }
+
+    .triple-object {
+      color: var(--accent-green);
+    }
+
+    /* Live Indicator */
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.65rem;
+      color: var(--accent-green);
+      padding: 0.25rem 0.5rem;
+      background: rgba(34, 197, 94, 0.1);
+      border-radius: 4px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse 1s infinite;
+    }
+
+    /* WebSocket Status */
+    .ws-status {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .ws-status.connected {
+      color: var(--accent-green);
+    }
+
+    /* Agent Selector */
+    .agent-selector {
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agent-selector select {
+      width: 100%;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+    }
+
+    /* Graph Info Panel */
+    .graph-info {
+      position: absolute;
+      top: 0.5rem;
+      left: 0.5rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      max-width: 250px;
+      font-size: 0.7rem;
+      z-index: 10;
+      display: none;
+    }
+
+    .graph-info.visible {
+      display: block;
+    }
+
+    .graph-info h5 {
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .graph-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .graph-info-row:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <h1>Agent Context Graph</h1>
+      <span class="protocol-version">Protocol v1.0</span>
+    </div>
+    <div class="header-right">
+      <div class="example-selector">
+        <label for="exampleSelect">Examples:</label>
+        <select id="exampleSelect">
+          <option value="">-- Load Example --</option>
+          <optgroup label="Agent Contexts">
+            <option value="observer-context">Observer Agent</option>
+            <option value="arbiter-context">Arbiter Agent</option>
+            <option value="archivist-context">Archivist Agent</option>
+            <option value="coordinator-context">Coordinator Agent</option>
+          </optgroup>
+          <optgroup label="Federation">
+            <option value="federated-context">Federated Context</option>
+            <option value="multi-hop-federation-context">Multi-Hop Federation</option>
+          </optgroup>
+          <optgroup label="Advanced Scenarios">
+            <option value="delegated-planning-context">Delegated Planning</option>
+            <option value="causal-intervention-context">Causal Intervention</option>
+            <option value="causal-affordance">Causal Affordance</option>
+            <option value="error-scenario-context">Error Scenario</option>
+          </optgroup>
+          <optgroup label="Infrastructure">
+            <option value="infrastructure-context">Infrastructure Context</option>
+            <option value="context-fragment">Context Fragment</option>
+            <option value="prov-trace">PROV Trace</option>
+            <option value="request-credential">Request Credential</option>
+          </optgroup>
+        </select>
+      </div>
+      <span class="federation-indicator" id="federationIndicator">
+        &#127760; 0 federated
+      </span>
+      <button class="info-toggle" id="toggleProtocol">
+        <span>&#9432;</span> Protocol Features
+      </button>
+      <div class="connection-status">
+        <span class="status-dot" id="connectionDot"></span>
+        <span id="connectionText">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Container (for real-time alerts) -->
+  <div class="notification-container" id="notificationContainer"></div>
+
+  <!-- Protocol Features Banner -->
+  <div class="protocol-banner" id="protocolBanner">
+    <div class="protocol-content">
+      <div class="protocol-grid">
+        <div class="protocol-card">
+          <h3>&#128279; Decentralized Identifiers (DIDs)</h3>
+          <p>Each agent has a unique <code>did:key</code> identifier enabling cryptographic verification and decentralized trust.</p>
+          <div class="example">did:key:z6MkplannerAgent4f8a...</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#129302; Abstract Agent Types (AAT)</h3>
+          <p>Agents implement AAT specifications defining their percept space, action space, and behavioral invariants.</p>
+          <div class="example">aat:PlannerAgentType<br>aat:ExecutorAgentType<br>aat:ArbiterAgentType</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#128200; Context Graph</h3>
+          <p>Runtime situational awareness with affordances, credentials, and policies. Agents receive scoped context for each decision.</p>
+          <div class="example">{<br>  "agentDID": "did:key:...",<br>  "affordances": [...],<br>  "usageSemantics": {...},<br>  "constraints": [...]<br>}</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#128220; PROV Traces</h3>
+          <p>Immutable provenance records for every agent action, enabling full auditability per W3C PROV standard.</p>
+          <div class="example">{<br>  "type": ["prov:Activity"],<br>  "wasAssociatedWith": {...},<br>  "usageEvent": {...},<br>  "generated": {...}<br>}</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#128218; OWL Ontology</h3>
+          <p>System-wide knowledge graph using OWL for class hierarchies, agent types, and action taxonomies. <code>/ontology</code></p>
+          <div class="example">acg:Agent rdfs:subClassOf prov:Agent<br>aat:PlannerAgentType a owl:Class</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#9989; SHACL Validation</h3>
+          <p>Runtime parameter validation using SHACL shapes. All affordance parameters validated against constraint shapes. <code>/shacl</code></p>
+          <div class="example">params:EmitPlanParamsShape<br>  sh:property [ sh:path params:goal ]</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#128640; Hydra API</h3>
+          <p>Hypermedia-driven API documentation. Self-describing endpoints with operations, status codes, and classes. <code>/hydra</code></p>
+          <div class="example">hydra:supportedOperation [<br>  hydra:method "POST" ;<br>  hydra:expects api:ContextRequest ]</div>
+        </div>
+        <div class="protocol-card">
+          <h3>&#127760; RDF / JSON-LD</h3>
+          <p>All specs in Turtle format with JSON-LD contexts. Content negotiation via <code>Accept: text/turtle</code>.</p>
+          <div class="example">@prefix acg: &lt;...ontology#&gt;<br>"@context": ["https://w3.org/ns/did/v1"]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="main">
+    <!-- Left Panel: Control & Workflows -->
+    <div class="panel">
+      <div class="panel-header">
+        Control Panel
+      </div>
+      <div class="panel-content">
+        <div class="goal-section">
+          <div class="goal-templates">
+            <button class="template-btn" data-template="Create a hello world function in TypeScript">Hello World</button>
+            <button class="template-btn" data-template="Analyze the codebase structure and summarize key components">Analyze Code</button>
+            <button class="template-btn" data-template="Write unit tests for the main module">Write Tests</button>
+            <button class="template-btn" data-template="Refactor the code to improve readability">Refactor</button>
+          </div>
+          <div class="goal-input">
+            <textarea id="goalInput" placeholder="Describe what you want the agents to accomplish..."></textarea>
+            <div class="goal-options">
+              <select id="prioritySelect">
+                <option value="normal">Normal Priority</option>
+                <option value="low">Low Priority</option>
+                <option value="high">High Priority</option>
+                <option value="critical">Critical</option>
+              </select>
+              <button id="submitGoal" disabled>Submit Goal</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="value" id="statWorkflows">0</div>
+            <label>Workflows</label>
+          </div>
+          <div class="stat-card">
+            <div class="value" id="statTasks">0</div>
+            <label>Tasks</label>
+          </div>
+          <div class="stat-card">
+            <div class="value" id="statAgents">0</div>
+            <label>Agents</label>
+          </div>
+        </div>
+
+        <div class="panel-header" style="padding: 0.5rem 0; border: none; border-bottom: 1px solid var(--border); margin-bottom: 0.75rem;">
+          <span>Workflows</span>
+          <span class="badge" id="workflowCount">0</span>
+        </div>
+        <div id="workflowList"></div>
+      </div>
+    </div>
+
+    <!-- Center Panel: Task Pipeline & Graph Views -->
+    <div class="panel">
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="tasks">
+          <span>&#128203;</span> Tasks <span class="badge" id="taskCount">0</span>
+        </button>
+        <button class="tab-btn" data-tab="context-graph">
+          <span>&#127760;</span> Context Graph
+        </button>
+        <button class="tab-btn" data-tab="traces">
+          <span>&#128220;</span> Traces
+        </button>
+        <button class="tab-btn" data-tab="knowledge">
+          <span>&#128218;</span> Knowledge
+        </button>
+        <button class="tab-btn" data-tab="credentials">
+          <span>&#128274;</span> Credentials
+        </button>
+        <button class="tab-btn" data-tab="workflow-dag">
+          <span>&#128200;</span> Workflow DAG
+        </button>
+        <button class="tab-btn" data-tab="logs">
+          <span>&#128466;</span> Logs
+        </button>
+        <button class="tab-btn" data-tab="federation">
+          <span>&#127760;</span> Federation <span class="badge" id="federationCount">0</span>
+        </button>
+        <div style="flex: 1;"></div>
+        <div class="live-indicator" id="liveIndicator" style="display: none;">
+          <span class="live-dot"></span> LIVE
+        </div>
+      </div>
+
+      <!-- Tasks Tab -->
+      <div class="tab-content active" id="tab-tasks">
+        <div class="panel-content" id="taskPanel">
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128203;</div>
+            <div>Select a workflow to view its tasks</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              Tasks follow the AAT pipeline: Planner &#8594; Arbiter &#8594; Executor &#8594; Observer &#8594; Archivist
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Context Graph Tab -->
+      <div class="tab-content" id="tab-context-graph">
+        <div class="agent-selector">
+          <select id="contextAgentSelect">
+            <option value="">Select an agent to view its context graph...</option>
+          </select>
+        </div>
+        <div class="panel-content" style="padding: 0.5rem;">
+          <div class="graph-container" id="contextGraphContainer">
+            <div class="graph-controls">
+              <button class="graph-control-btn" onclick="zoomContextGraph(1.2)" title="Zoom In">+</button>
+              <button class="graph-control-btn" onclick="zoomContextGraph(0.8)" title="Zoom Out">-</button>
+              <button class="graph-control-btn" onclick="resetContextGraph()" title="Reset">&#8635;</button>
+              <button class="graph-control-btn source-toggle" id="sourceToggleBtn" onclick="toggleContextSource()" title="View JSON-LD Source">{}</button>
+            </div>
+            <div class="graph-info" id="nodeInfo"></div>
+            <svg id="contextGraphSvg"></svg>
+            <div class="context-source-view" id="contextSourceView" style="display: none;">
+              <pre id="contextSourceCode"></pre>
+            </div>
+            <div class="graph-legend">
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #60a5fa;"></span>
+                <span>Agent</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #22c55e;"></span>
+                <span>Affordance (enabled)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #ef4444;"></span>
+                <span>Affordance (disabled)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #a78bfa;"></span>
+                <span>Credential</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #f59e0b;"></span>
+                <span>Constraint</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Traces Tab -->
+      <div class="tab-content" id="tab-traces">
+        <div class="panel-content" style="padding: 0;">
+          <div style="padding: 0.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">PROV Trace Timeline</span>
+            <button class="graph-control-btn" onclick="refreshTraces()" title="Refresh" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#8635; Refresh</button>
+          </div>
+          <div class="trace-timeline" id="traceTimeline">
+            <div class="empty-state">
+              <div class="empty-state-icon">&#128220;</div>
+              <div>No traces yet</div>
+              <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                PROV traces are generated for every affordance traversal
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Knowledge Graph Tab -->
+      <div class="tab-content" id="tab-knowledge">
+        <div class="kg-browser">
+          <div class="kg-search">
+            <input type="text" id="kgSearchInput" placeholder="Search triples (subject, predicate, or object)..." />
+          </div>
+          <div style="padding: 0.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border);">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="template-btn" onclick="loadOntology('aat')">AAT Types</button>
+              <button class="template-btn" onclick="loadOntology('core')">Core Ontology</button>
+              <button class="template-btn" onclick="loadOntology('shacl')">SHACL Shapes</button>
+              <button class="template-btn" onclick="loadTraceTriples()">PROV Traces</button>
+            </div>
+          </div>
+          <div class="kg-results" id="kgResults">
+            <div class="empty-state">
+              <div class="empty-state-icon">&#128218;</div>
+              <div>Knowledge Graph Browser</div>
+              <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                Explore RDF triples from ontology, AAT specs, and SHACL shapes
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Credentials Tab -->
+      <div class="tab-content" id="tab-credentials">
+        <div class="panel-content">
+          <div style="padding: 0.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Verifiable Credentials</span>
+            <button class="graph-control-btn" onclick="refreshCredentials()" title="Refresh" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#8635; Refresh</button>
+          </div>
+          <div id="credentialsList" style="padding: 0.5rem;">
+            <div class="empty-state">
+              <div class="empty-state-icon">&#128274;</div>
+              <div>No credentials loaded</div>
+              <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                View agent credentials, trusted issuers, and verification status
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow DAG Tab -->
+      <div class="tab-content" id="tab-workflow-dag">
+        <div class="panel-content" style="padding: 0.5rem;">
+          <div style="padding: 0.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Task Dependency Graph</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <select id="workflowDagSelect" style="background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">
+                <option value="">Select workflow...</option>
+              </select>
+              <button class="graph-control-btn" onclick="refreshWorkflowDag()" title="Refresh" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#8635;</button>
+            </div>
+          </div>
+          <div class="graph-container" id="workflowDagContainer" style="height: 350px;">
+            <div class="graph-controls">
+              <button class="graph-control-btn" onclick="zoomWorkflowDag(1.2)" title="Zoom In">+</button>
+              <button class="graph-control-btn" onclick="zoomWorkflowDag(0.8)" title="Zoom Out">-</button>
+              <button class="graph-control-btn" onclick="resetWorkflowDag()" title="Reset">&#8635;</button>
+            </div>
+            <svg id="workflowDagSvg" width="100%" height="100%"></svg>
+            <div class="graph-legend" style="bottom: 0.5rem;">
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #94a3b8;"></span>
+                <span>Pending</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #60a5fa;"></span>
+                <span>Running</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #22c55e;"></span>
+                <span>Completed</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #ef4444;"></span>
+                <span>Failed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs Tab -->
+      <div class="tab-content" id="tab-logs">
+        <div class="panel-content" style="padding: 0;">
+          <div style="padding: 0.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">System Logs</span>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <label style="font-size: 0.7rem; color: var(--text-muted);">Level:</label>
+              <select id="logLevelFilter" style="background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">
+                <option value="all">All</option>
+                <option value="error">Error</option>
+                <option value="warn">Warn</option>
+                <option value="info">Info</option>
+                <option value="debug">Debug</option>
+              </select>
+              <button class="graph-control-btn" onclick="clearLogs()" title="Clear" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#128465;</button>
+              <button class="graph-control-btn" onclick="refreshLogs()" title="Refresh" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#8635;</button>
+            </div>
+          </div>
+          <div id="logsContainer" style="font-family: 'Monaco', 'Menlo', monospace; font-size: 0.7rem; padding: 0.5rem; max-height: 400px; overflow-y: auto; background: var(--bg-primary);">
+            <div class="empty-state">
+              <div class="empty-state-icon">&#128466;</div>
+              <div>No logs yet</div>
+              <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                System logs will appear here in real-time
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Federation Tab -->
+      <div class="tab-content" id="tab-federation">
+        <div class="panel-content" style="padding: 0;">
+          <!-- Federation Header -->
+          <div style="padding: 0.75rem; background: var(--bg-primary); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">Social Federation</span>
+              <div id="wsStatus" style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--bg-tertiary);">
+                <span class="status-dot" id="wsStatusDot"></span>
+                <span id="wsStatusText">Disconnected</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="graph-control-btn" onclick="connectWebSocket()" title="Connect WebSocket" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#128279; Connect</button>
+              <button class="graph-control-btn" onclick="refreshFederationData()" title="Refresh" style="width: auto; padding: 0 0.5rem; font-size: 0.7rem;">&#8635; Refresh</button>
+            </div>
+          </div>
+
+          <!-- Federation Sub-tabs -->
+          <div style="display: flex; border-bottom: 1px solid var(--border); background: var(--bg-secondary);">
+            <button class="fed-sub-tab active" data-fedtab="connections" onclick="switchFedTab('connections')">
+              Connections <span class="badge" id="connectionCount">0</span>
+            </button>
+            <button class="fed-sub-tab" data-fedtab="shared-contexts" onclick="switchFedTab('shared-contexts')">
+              Shared Contexts <span class="badge" id="sharedContextCount">0</span>
+            </button>
+            <button class="fed-sub-tab" data-fedtab="groups" onclick="switchFedTab('groups')">
+              Groups <span class="badge" id="groupCount">0</span>
+            </button>
+            <button class="fed-sub-tab" data-fedtab="presence" onclick="switchFedTab('presence')">
+              Presence
+            </button>
+          </div>
+
+          <!-- Connections Sub-tab -->
+          <div class="fed-tab-content active" id="fedtab-connections" style="padding: 0.75rem; max-height: 400px; overflow-y: auto;">
+            <div style="margin-bottom: 0.75rem;">
+              <input type="text" id="inviteCode" placeholder="Paste invite code or broker DID..." style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <button onclick="sendConnectionRequest()" style="flex: 1; background: var(--accent-blue); color: white; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Send Request</button>
+                <button onclick="generateInviteLink()" style="flex: 1; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Generate Invite</button>
+              </div>
+            </div>
+
+            <div id="pendingRequests" style="margin-bottom: 0.75rem;"></div>
+
+            <div id="connectionsList">
+              <div class="empty-state" style="padding: 1.5rem;">
+                <div class="empty-state-icon">&#129309;</div>
+                <div>No connections yet</div>
+                <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+                  Connect with other brokers to share contexts and collaborate
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shared Contexts Sub-tab -->
+          <div class="fed-tab-content" id="fedtab-shared-contexts" style="padding: 0.75rem; max-height: 400px; overflow-y: auto;">
+            <div style="margin-bottom: 0.75rem; display: flex; gap: 0.5rem;">
+              <input type="text" id="newContextName" placeholder="New shared context name..." style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+              <button onclick="createSharedContext()" style="background: var(--accent-green); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Create</button>
+            </div>
+
+            <div id="sharedContextsList">
+              <div class="empty-state" style="padding: 1.5rem;">
+                <div class="empty-state-icon">&#128194;</div>
+                <div>No shared contexts</div>
+                <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+                  Create a shared context to collaborate in real-time with CRDT sync
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Groups Sub-tab -->
+          <div class="fed-tab-content" id="fedtab-groups" style="padding: 0.75rem; max-height: 400px; overflow-y: auto;">
+            <div style="margin-bottom: 0.75rem; display: flex; gap: 0.5rem;">
+              <input type="text" id="newGroupName" placeholder="New group name..." style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); padding: 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+              <button onclick="createGroup()" style="background: var(--accent-purple); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">Create Group</button>
+            </div>
+
+            <div id="groupsList">
+              <div class="empty-state" style="padding: 1.5rem;">
+                <div class="empty-state-icon">&#128101;</div>
+                <div>No groups</div>
+                <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+                  Create groups to organize shared contexts and team collaboration
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Presence Sub-tab -->
+          <div class="fed-tab-content" id="fedtab-presence" style="padding: 0.75rem; max-height: 400px; overflow-y: auto;">
+            <div id="presenceList">
+              <div class="empty-state" style="padding: 1.5rem;">
+                <div class="empty-state-icon">&#128994;</div>
+                <div>No active presence</div>
+                <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+                  Connect to see who's online in your federation network
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Agents & Activity -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>Active Agents</span>
+        <span class="badge" id="agentCount">0</span>
+      </div>
+      <div class="panel-content">
+        <div id="agentList">
+          <div class="empty-state">
+            <div class="empty-state-icon">&#129302;</div>
+            <div>No agents spawned yet</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              Agents are spawned on-demand and implement Abstract Agent Types (AAT)
+            </p>
+          </div>
+        </div>
+
+        <div class="activity-section">
+          <div class="panel-header" style="padding: 0.5rem 0; border: none; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem;">
+            <span>Activity Log</span>
+          </div>
+          <div id="activityLog"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Task Detail Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Task Details</h3>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-content" id="modalContent">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    let connected = false;
+    let selectedWorkflowId = null;
+    let workflows = [];
+    let agents = [];
+    let stats = null;
+    let currentWorkflowDetail = null;
+
+    // AAT Descriptions - from spec/aat/*.json
+    const AAT_INFO = {
+      planner: {
+        aat: 'aat:PlannerAgentType',
+        capability: 'PlannerCapability',
+        desc: 'Creates plans but cannot execute. Forbidden from direct actuation.',
+        invariants: ['no-actuation', 'plan-validity', 'monotonic-info'],
+        perceptSpace: ['Goal', 'WorldModel', 'Constraints', 'Feedback'],
+        actionSpace: ['EmitPlan', 'RequestInfo', 'RevisePlan', 'ValidatePlan'],
+        forbidden: ['Actuate', 'WriteExternal', 'ModifyCredentials']
+      },
+      arbiter: {
+        aat: 'aat:ArbiterAgentType',
+        capability: 'ArbiterCapability',
+        desc: 'Gates actions with policy enforcement. Evaluates safety constraints.',
+        invariants: ['policy-compliance', 'decision-trace', 'no-execution'],
+        perceptSpace: ['ProposedAction', 'Policies', 'Context'],
+        actionSpace: ['Approve', 'Reject', 'Escalate', 'RequestClarification'],
+        forbidden: ['Execute', 'ModifyPolicies']
+      },
+      executor: {
+        aat: 'aat:ExecutorAgentType',
+        capability: 'ExecutorCapability',
+        desc: 'Performs actions in the environment. Requires authorization for every action.',
+        invariants: ['authorized-only', 'plan-adherence', 'trace-required', 'idempotency-or-compensation'],
+        perceptSpace: ['Plan', 'Authorization', 'EnvironmentState', 'ExecutionFeedback'],
+        actionSpace: ['Act', 'ReportOutcome', 'RequestAuthorization', 'RollbackAction'],
+        forbidden: ['EmitPlan', 'BypassAuthorization', 'SilentAction']
+      },
+      observer: {
+        aat: 'aat:ObserverAgentType',
+        capability: 'ObserverCapability',
+        desc: 'Monitors execution outcomes. Validates results match expectations.',
+        invariants: ['passive-observation', 'report-accuracy', 'no-modification'],
+        perceptSpace: ['ExecutionResult', 'ExpectedOutcome', 'EnvironmentState'],
+        actionSpace: ['Report', 'Alert', 'RecordObservation'],
+        forbidden: ['Modify', 'Execute']
+      },
+      archivist: {
+        aat: 'aat:ArchivistAgentType',
+        capability: 'ArchivistCapability',
+        desc: 'Records workflow provenance. Creates immutable audit trail.',
+        invariants: ['append-only', 'completeness', 'integrity'],
+        perceptSpace: ['WorkflowHistory', 'TaskResults', 'AgentActions'],
+        actionSpace: ['Archive', 'Index', 'GenerateSummary'],
+        forbidden: ['Modify', 'Delete']
+      },
+      coordinator: {
+        aat: 'aat:CoordinatorAgentType',
+        capability: 'CoordinatorCapability',
+        desc: 'Orchestrates multiple agents and manages workflows. Delegates but does not execute.',
+        invariants: ['no-direct-execution', 'delegation-tracking', 'workflow-completion'],
+        perceptSpace: ['AgentStatus', 'TaskQueue', 'WorkflowState', 'ResourceAvailability', 'DelegationResults'],
+        actionSpace: ['Delegate', 'Aggregate', 'StartWorkflow', 'CompleteWorkflow', 'Checkpoint'],
+        forbidden: ['Actuate', 'EmitPlan', 'ModifyState']
+      },
+      analyst: {
+        aat: 'aat:AnalystAgentType',
+        capability: 'AnalystCapability',
+        desc: 'Performs analysis, detects patterns, and generates insights. Read-only with no side effects.',
+        invariants: ['no-side-effects', 'grounded-insights', 'confidence-required'],
+        perceptSpace: ['DataSources', 'HistoricalRecords', 'Metrics', 'Patterns', 'ProvTraces'],
+        actionSpace: ['Analyze', 'EmitInsight', 'DetectAnomaly', 'GenerateReport', 'QueryData'],
+        forbidden: ['Actuate', 'ModifyState', 'EmitPlan', 'FabricateData']
+      }
+    };
+
+    const TASK_TYPE_INFO = {
+      plan: {
+        aat: 'aat:PlannerAgentType',
+        desc: 'Planner agent creates a structured plan to achieve the goal',
+        icon: '&#128203;',
+        contextGraph: 'Receives goal, constraints, and world model as affordances'
+      },
+      approve: {
+        aat: 'aat:ArbiterAgentType',
+        desc: 'Arbiter agent validates action safety against policies',
+        icon: '&#9989;',
+        contextGraph: 'Evaluates proposed action against policy constraints'
+      },
+      execute: {
+        aat: 'aat:ExecutorAgentType',
+        desc: 'Executor agent performs the authorized action',
+        icon: '&#9889;',
+        contextGraph: 'Receives authorized plan step with required credentials'
+      },
+      observe: {
+        aat: 'aat:ObserverAgentType',
+        desc: 'Observer agent verifies execution outcome',
+        icon: '&#128065;',
+        contextGraph: 'Compares actual outcome against expected outcome'
+      },
+      archive: {
+        aat: 'aat:ArchivistAgentType',
+        desc: 'Archivist agent records workflow provenance',
+        icon: '&#128230;',
+        contextGraph: 'Receives complete workflow history for permanent record'
+      }
+    };
+
+    // State tracking for activity log
+    let previousWorkflowStates = {};  // workflowId -> status
+    let previousTaskStates = {};      // taskId -> status
+    let seenAgents = new Set();       // agent IDs we've already logged
+
+    // DOM elements
+    const connectionDot = document.getElementById('connectionDot');
+    const connectionText = document.getElementById('connectionText');
+    const goalInput = document.getElementById('goalInput');
+    const submitBtn = document.getElementById('submitGoal');
+    const prioritySelect = document.getElementById('prioritySelect');
+    const workflowList = document.getElementById('workflowList');
+    const taskPanel = document.getElementById('taskPanel');
+    const agentList = document.getElementById('agentList');
+    const activityLog = document.getElementById('activityLog');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalContent = document.getElementById('modalContent');
+    const modalTitle = document.getElementById('modalTitle');
+    const protocolBanner = document.getElementById('protocolBanner');
+
+    // Toggle protocol info
+    document.getElementById('toggleProtocol').addEventListener('click', () => {
+      protocolBanner.classList.toggle('expanded');
+    });
+
+    // Update connection status
+    function setConnected(isConnected) {
+      connected = isConnected;
+      connectionDot.className = `status-dot ${isConnected ? 'connected' : ''}`;
+      connectionText.textContent = isConnected ? 'Connected' : 'Disconnected';
+      submitBtn.disabled = !isConnected || !goalInput.value.trim();
+    }
+
+    // Activity log
+    function log(message, type = '') {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `<span class="time">${time}</span>${message}`;
+      activityLog.insertBefore(entry, activityLog.firstChild);
+      while (activityLog.children.length > 30) {
+        activityLog.removeChild(activityLog.lastChild);
+      }
+    }
+
+    // Format duration
+    function formatDuration(ms) {
+      if (ms === null) return '-';
+      if (ms < 1000) return `${ms}ms`;
+      if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+      return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+    }
+
+    // Format time
+    function formatTime(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleTimeString();
+    }
+
+    // Fetch stats
+    async function fetchStats() {
+      try {
+        const res = await fetch(`${API_BASE}/stats`);
+        if (!res.ok) throw new Error('Failed to fetch stats');
+        stats = await res.json();
+
+        document.getElementById('statWorkflows').textContent = stats.workflows.total;
+        document.getElementById('statTasks').textContent = stats.tasks.total;
+        document.getElementById('statAgents').textContent = stats.agents.total;
+
+        setConnected(true);
+      } catch (err) {
+        setConnected(false);
+      }
+    }
+
+    // Fetch agents
+    async function fetchAgents() {
+      try {
+        const res = await fetch(`${API_BASE}/agents`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const newAgents = data.agents || [];
+
+        // Log new agents being spawned
+        const icons = { planner: '📋', executor: '⚡', observer: '👁', arbiter: '✅', archivist: '📦' };
+        for (const a of newAgents) {
+          if (!seenAgents.has(a.id)) {
+            seenAgents.add(a.id);
+            const icon = icons[a.type] || '🤖';
+            log(`${icon} Agent spawned: ${a.type} (${a.id.slice(0, 8)}...)`);
+          }
+        }
+
+        agents = newAgents;
+        renderAgents();
+      } catch (err) {
+        console.error('Error fetching agents:', err);
+      }
+    }
+
+    // Render agents with full protocol info
+    function renderAgents() {
+      document.getElementById('agentCount').textContent = agents.length;
+
+      if (agents.length === 0) {
+        agentList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#129302;</div>
+            <div>No agents spawned yet</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              Agents are spawned on-demand and implement Abstract Agent Types (AAT)
+            </p>
+          </div>`;
+        return;
+      }
+
+      const icons = { planner: '&#128203;', executor: '&#9889;', observer: '&#128065;', arbiter: '&#9989;', archivist: '&#128230;' };
+
+      agentList.innerHTML = agents.map(a => {
+        const info = AAT_INFO[a.type] || {};
+        return `
+          <div class="agent-card">
+            <div class="agent-header">
+              <div class="agent-icon ${a.type}">${icons[a.type] || '&#129302;'}</div>
+              <div class="agent-info">
+                <div class="type">${a.type}</div>
+                <div class="aat-type">${info.aat || 'Unknown AAT'}</div>
+              </div>
+              <div class="agent-status ${a.busy ? 'busy' : ''}"></div>
+            </div>
+            <div class="agent-details">
+              <div class="agent-detail-row">
+                <span class="label">DID</span>
+                <span class="value" title="${a.did}">${a.did}</span>
+              </div>
+              <div class="agent-detail-row">
+                <span class="label">Status</span>
+                <span class="value">${a.busy ? 'Processing task' : 'Idle'}</span>
+              </div>
+              <div class="agent-detail-row">
+                <span class="label">Role</span>
+                <span class="value" style="font-family: inherit; font-size: 0.6rem;">${info.desc || '-'}</span>
+              </div>
+            </div>
+            <div class="agent-capabilities">
+              <span class="capability-badge">${info.capability || 'Capability'}</span>
+              ${(info.invariants || []).slice(0, 3).map(inv => `<span class="capability-badge" style="background: rgba(167, 139, 250, 0.1); color: var(--accent-purple); border-color: rgba(167, 139, 250, 0.2);">${inv}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Fetch workflows
+    async function fetchWorkflows() {
+      try {
+        const res = await fetch(`${API_BASE}/workflows`);
+        if (!res.ok) throw new Error('Failed to fetch workflows');
+        const data = await res.json();
+        const newWorkflows = data.workflows || [];
+
+        // Detect workflow status changes for activity log
+        for (const w of newWorkflows) {
+          const prevStatus = previousWorkflowStates[w.id];
+          if (prevStatus && prevStatus !== w.status) {
+            const goalPreview = w.goal.slice(0, 30) + (w.goal.length > 30 ? '...' : '');
+            if (w.status === 'completed') {
+              log(`✓ Workflow completed: "${goalPreview}"`, 'success');
+            } else if (w.status === 'failed') {
+              log(`✗ Workflow failed: "${goalPreview}"`, 'error');
+            } else if (w.status === 'executing') {
+              log(`⚡ Workflow executing: "${goalPreview}"`);
+            } else if (w.status === 'planning') {
+              log(`📋 Workflow planning: "${goalPreview}"`);
+            }
+          }
+          previousWorkflowStates[w.id] = w.status;
+        }
+
+        workflows = newWorkflows;
+        document.getElementById('workflowCount').textContent = workflows.length;
+        renderWorkflows();
+      } catch (err) {
+        console.error('Error fetching workflows:', err);
+      }
+    }
+
+    // Render workflows
+    function renderWorkflows() {
+      if (workflows.length === 0) {
+        workflowList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128196;</div>
+            <div>No workflows yet</div>
+          </div>`;
+        return;
+      }
+
+      workflowList.innerHTML = workflows.map(w => `
+        <div class="workflow-card ${w.id === selectedWorkflowId ? 'selected' : ''}"
+             onclick="selectWorkflow('${w.id}')">
+          <div class="goal">${escapeHtml(w.goal)}</div>
+          <div class="meta">
+            <span class="status-badge ${w.status}">${w.status}</span>
+            <span>${w.tasks.length} tasks</span>
+          </div>
+        </div>
+      `).join('');
+
+      // Update workflow DAG selector
+      if (typeof updateWorkflowDagSelector === 'function') {
+        updateWorkflowDagSelector();
+      }
+    }
+
+    // Select workflow
+    async function selectWorkflow(id) {
+      selectedWorkflowId = id;
+      renderWorkflows();
+
+      try {
+        const res = await fetch(`${API_BASE}/workflows/${id}/detail`);
+        if (!res.ok) throw new Error('Failed to fetch workflow detail');
+        currentWorkflowDetail = await res.json();
+        renderTaskPanel();
+      } catch (err) {
+        console.error('Error fetching workflow detail:', err);
+        taskPanel.innerHTML = `<div class="empty-state">Error loading workflow</div>`;
+      }
+    }
+
+    // Get active AAT steps from tasks
+    function getAATSteps(tasks) {
+      const steps = {
+        planner: { status: 'pending', count: 0 },
+        arbiter: { status: 'pending', count: 0 },
+        executor: { status: 'pending', count: 0 },
+        observer: { status: 'pending', count: 0 },
+        archivist: { status: 'pending', count: 0 }
+      };
+
+      const typeToAAT = { plan: 'planner', approve: 'arbiter', execute: 'executor', observe: 'observer', archive: 'archivist' };
+
+      for (const task of tasks) {
+        const aat = typeToAAT[task.type];
+        if (!aat) continue;
+        steps[aat].count++;
+        if (task.status === 'running' || task.status === 'assigned') {
+          steps[aat].status = 'active';
+        } else if (task.status === 'completed' && steps[aat].status !== 'active') {
+          steps[aat].status = 'completed';
+        }
+      }
+
+      return steps;
+    }
+
+    // Render task panel with AAT pipeline
+    function renderTaskPanel() {
+      if (!currentWorkflowDetail) {
+        taskPanel.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128203;</div>
+            <div>Select a workflow to view its tasks</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              Tasks follow the AAT pipeline: Planner &#8594; Arbiter &#8594; Executor &#8594; Observer &#8594; Archivist
+            </p>
+          </div>`;
+        return;
+      }
+
+      const w = currentWorkflowDetail;
+      const tasks = w.taskDetails || [];
+      const aatSteps = getAATSteps(tasks);
+
+      document.getElementById('taskCount').textContent = `${tasks.length} tasks`;
+
+      let html = `
+        <div class="workflow-header">
+          <div>
+            <div class="workflow-title">${escapeHtml(w.goal)}</div>
+            <div class="workflow-meta">
+              <span>Status: <strong>${w.status}</strong></span>
+              <span>Started: ${formatTime(w.timing.startTime)}</span>
+            </div>
+          </div>
+          <div class="workflow-timing">
+            <div class="duration">${formatDuration(w.timing.durationMs)}</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">Duration</div>
+          </div>
+        </div>
+
+        <div class="aat-pipeline">
+          <div class="aat-pipeline-header">
+            <span>&#128279;</span> AAT Workflow Pipeline (Abstract Agent Type Composition)
+          </div>
+          <div class="aat-flow">
+            <div class="aat-step planner ${aatSteps.planner.status}">
+              <span>&#128203;</span> Planner
+              ${aatSteps.planner.count > 0 ? `<span style="opacity:0.7">(${aatSteps.planner.count})</span>` : ''}
+            </div>
+            <span class="aat-arrow">&#8594;</span>
+            <div class="aat-step arbiter ${aatSteps.arbiter.status}">
+              <span>&#9989;</span> Arbiter
+              ${aatSteps.arbiter.count > 0 ? `<span style="opacity:0.7">(${aatSteps.arbiter.count})</span>` : ''}
+            </div>
+            <span class="aat-arrow">&#8594;</span>
+            <div class="aat-step executor ${aatSteps.executor.status}">
+              <span>&#9889;</span> Executor
+              ${aatSteps.executor.count > 0 ? `<span style="opacity:0.7">(${aatSteps.executor.count})</span>` : ''}
+            </div>
+            <span class="aat-arrow">&#8594;</span>
+            <div class="aat-step observer ${aatSteps.observer.status}">
+              <span>&#128065;</span> Observer
+              ${aatSteps.observer.count > 0 ? `<span style="opacity:0.7">(${aatSteps.observer.count})</span>` : ''}
+            </div>
+            <span class="aat-arrow">&#8594;</span>
+            <div class="aat-step archivist ${aatSteps.archivist.status}">
+              <span>&#128230;</span> Archivist
+              ${aatSteps.archivist.count > 0 ? `<span style="opacity:0.7">(${aatSteps.archivist.count})</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (tasks.length === 0) {
+        html += `<div class="empty-state">No tasks created yet</div>`;
+      } else {
+        html += '<div class="task-timeline">';
+        html += tasks.map(t => {
+          const info = TASK_TYPE_INFO[t.type] || {};
+          return `
+            <div class="task-item ${t.status}">
+              <div class="task-content" onclick="showTaskDetail('${t.id}')">
+                <div class="task-header">
+                  <div class="task-type-badge ${t.type}">${info.icon || ''} ${t.type}</div>
+                  <span class="task-aat-ref">${info.aat || ''}</span>
+                </div>
+                <div class="task-desc">${escapeHtml(t.description)}</div>
+                <div class="task-meta">
+                  <span>${t.status}${t.assignedAgent ? ` - ${t.assignedAgent.slice(0, 16)}...` : ''}</span>
+                  <span>${t.startedAt ? formatTime(t.startedAt) : 'Pending'}</span>
+                </div>
+                ${t.error ? `<div class="task-error">${escapeHtml(t.error)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        html += '</div>';
+      }
+
+      taskPanel.innerHTML = html;
+    }
+
+    // Show task detail modal with protocol info
+    function showTaskDetail(taskId) {
+      const task = currentWorkflowDetail?.taskDetails?.find(t => t.id === taskId);
+      if (!task) return;
+
+      const info = TASK_TYPE_INFO[task.type] || {};
+      const agentType = task.type === 'plan' ? 'planner' : task.type === 'approve' ? 'arbiter' : task.type === 'execute' ? 'executor' : task.type === 'observe' ? 'observer' : 'archivist';
+      const aatInfo = AAT_INFO[agentType] || {};
+
+      modalTitle.innerHTML = `${info.icon || ''} ${task.type.charAt(0).toUpperCase() + task.type.slice(1)} Task`;
+
+      modalContent.innerHTML = `
+        <div class="detail-section">
+          <h4>Description</h4>
+          <div style="font-size: 0.9rem; margin-bottom: 0.5rem;">${escapeHtml(task.description)}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">${info.desc || ''}</div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Protocol Reference <span class="protocol-ref">${info.aat || ''}</span></h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Task Type</label>
+              <div class="value"><span class="task-type-badge ${task.type}">${task.type}</span></div>
+            </div>
+            <div class="detail-item">
+              <label>AAT Reference</label>
+              <div class="value" style="font-family: monospace; font-size: 0.7rem; color: var(--accent-cyan);">${info.aat || 'N/A'}</div>
+            </div>
+            <div class="detail-item">
+              <label>Status</label>
+              <div class="value"><span class="status-badge ${task.status}">${task.status}</span></div>
+            </div>
+            <div class="detail-item">
+              <label>Required Capability</label>
+              <div class="value" style="font-size: 0.7rem;">${aatInfo.capability || 'None'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>AAT Specification <span class="protocol-ref">Percept & Action Space</span></h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Percept Space</label>
+              <div class="value" style="font-size: 0.65rem;">${(aatInfo.perceptSpace || []).join(', ')}</div>
+            </div>
+            <div class="detail-item">
+              <label>Action Space</label>
+              <div class="value" style="font-size: 0.65rem;">${(aatInfo.actionSpace || []).join(', ')}</div>
+            </div>
+            <div class="detail-item">
+              <label>Forbidden Actions</label>
+              <div class="value" style="font-size: 0.65rem; color: #fca5a5;">${(aatInfo.forbidden || []).join(', ')}</div>
+            </div>
+            <div class="detail-item">
+              <label>Context Graph</label>
+              <div class="value" style="font-size: 0.65rem;">${info.contextGraph || 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Agent Assignment</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Agent DID</label>
+              <div class="value" style="font-family: monospace; font-size: 0.65rem;">${task.assignedAgent || 'Not assigned'}</div>
+            </div>
+            <div class="detail-item">
+              <label>Timing</label>
+              <div class="value" style="font-size: 0.75rem;">
+                ${task.startedAt ? `Started: ${new Date(task.startedAt).toLocaleString()}` : 'Not started'}
+                ${task.completedAt ? `<br>Completed: ${new Date(task.completedAt).toLocaleString()}` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${task.error ? `
+        <div class="detail-section">
+          <h4>Error</h4>
+          <pre style="color: #fca5a5;">${escapeHtml(task.error)}</pre>
+        </div>
+        ` : ''}
+
+        ${task.input && Object.keys(task.input).length > 0 ? `
+        <div class="detail-section">
+          <h4>Input <span class="protocol-ref">Context Graph Input</span></h4>
+          <pre>${escapeHtml(JSON.stringify(task.input, null, 2))}</pre>
+        </div>
+        ` : ''}
+
+        ${task.output ? `
+        <div class="detail-section">
+          <h4>Output / Agent Reasoning <span class="protocol-ref">PROV Trace Generated</span></h4>
+          <pre>${escapeHtml(typeof task.output === 'string' ? task.output : JSON.stringify(task.output, null, 2))}</pre>
+        </div>
+
+        <div class="detail-section">
+          <div class="prov-trace-preview">
+            <h5>&#128220; PROV Trace Record (Provenance)</h5>
+            <pre style="font-size: 0.65rem; max-height: 150px;">${escapeHtml(JSON.stringify({
+              "@context": ["https://www.w3.org/ns/prov#", "https://agentcontextgraph.dev/context/v1"],
+              "type": ["prov:Activity", "aat:Decision"],
+              "wasAssociatedWith": {
+                "agentDID": task.assignedAgent || "pending",
+                "agentType": info.aat || "unknown"
+              },
+              "used": {
+                "affordance": { "actionType": task.type },
+                "parameters": task.input
+              },
+              "generated": {
+                "outcome": { "status": task.status === 'completed' ? 'success' : task.status }
+              },
+              "startedAtTime": task.startedAt,
+              "endedAtTime": task.completedAt
+            }, null, 2))}</pre>
+          </div>
+        </div>
+        ` : ''}
+
+        <div class="detail-section">
+          <h4>Behavioral Invariants <span class="protocol-ref">AAT Spec</span></h4>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.375rem;">
+            ${(aatInfo.invariants || ['none-defined']).map(inv => `
+              <span style="font-size: 0.65rem; padding: 0.25rem 0.5rem; background: rgba(167, 139, 250, 0.1); color: var(--accent-purple); border-radius: 4px; border: 1px solid rgba(167, 139, 250, 0.2);">${inv}</span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      modalOverlay.classList.add('active');
+    }
+
+    // Close modal
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Submit goal
+    async function submitGoal() {
+      const goal = goalInput.value.trim();
+      if (!goal) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch(`${API_BASE}/goals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            goal,
+            priority: prioritySelect.value
+          })
+        });
+
+        if (!res.ok) throw new Error('Failed to submit goal');
+
+        const data = await res.json();
+        log(`Goal submitted: ${data.workflowId.slice(0, 8)}...`, 'success');
+        goalInput.value = '';
+
+        await fetchWorkflows();
+        selectWorkflow(data.workflowId);
+
+      } catch (err) {
+        log(`Error: ${err.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Goal';
+      }
+    }
+
+    // Event listeners
+    submitBtn.addEventListener('click', submitGoal);
+    goalInput.addEventListener('input', () => {
+      submitBtn.disabled = !connected || !goalInput.value.trim();
+    });
+    goalInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) submitGoal();
+    });
+
+    document.querySelectorAll('.template-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        goalInput.value = btn.dataset.template;
+        goalInput.focus();
+        submitBtn.disabled = !connected;
+      });
+    });
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Polling
+    async function poll() {
+      await fetchStats();
+      await fetchWorkflows();
+      await fetchAgents();
+
+      // Fetch all tasks and log status changes
+      try {
+        const res = await fetch(`${API_BASE}/tasks`);
+        if (res.ok) {
+          const data = await res.json();
+          const tasks = data.tasks || [];
+          const typeIcons = { plan: '📋', approve: '✅', execute: '⚡', observe: '👁', archive: '📦' };
+
+          for (const task of tasks) {
+            const prevStatus = previousTaskStates[task.id];
+            if (prevStatus && prevStatus !== task.status) {
+              const icon = typeIcons[task.type] || '📝';
+              const shortDesc = task.description.slice(0, 40) + (task.description.length > 40 ? '...' : '');
+
+              if (task.status === 'running') {
+                log(`${icon} Task started: ${shortDesc}`);
+              } else if (task.status === 'completed') {
+                log(`${icon} Task completed: ${shortDesc}`, 'success');
+              } else if (task.status === 'failed') {
+                log(`${icon} Task failed: ${shortDesc}`, 'error');
+              }
+            }
+            previousTaskStates[task.id] = task.status;
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+
+      if (selectedWorkflowId) {
+        const workflow = workflows.find(w => w.id === selectedWorkflowId);
+        if (workflow) {
+          try {
+            const res = await fetch(`${API_BASE}/workflows/${selectedWorkflowId}/detail`);
+            if (res.ok) {
+              currentWorkflowDetail = await res.json();
+              renderTaskPanel();
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // Tab Navigation
+    // =========================================================================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        if (!tabId) return;
+
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+        btn.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+
+        // Load content when switching tabs
+        if (tabId === 'context-graph') {
+          updateAgentSelector();
+        } else if (tabId === 'traces') {
+          refreshTraces();
+        }
+      });
+    });
+
+    // =========================================================================
+    // Context Graph Visualization (D3.js Force-Directed Graph)
+    // =========================================================================
+    let contextGraphSim = null;
+    let contextGraphZoom = null;
+    let currentContextGraph = null;
+
+    function updateAgentSelector() {
+      const select = document.getElementById('contextAgentSelect');
+      const currentValue = select.value;
+
+      select.innerHTML = '<option value="">Select an agent to view its context graph...</option>';
+      agents.forEach(a => {
+        const option = document.createElement('option');
+        option.value = a.did;
+        option.textContent = `${a.type} (${a.did.slice(0, 24)}...)`;
+        select.appendChild(option);
+      });
+
+      if (currentValue && agents.some(a => a.did === currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    document.getElementById('contextAgentSelect').addEventListener('change', async (e) => {
+      const agentDID = e.target.value;
+      if (!agentDID) {
+        clearContextGraph();
+        return;
+      }
+      // Find the agent to get its type
+      const agent = agents.find(a => a.did === agentDID);
+      await loadContextGraph(agentDID, agent?.type);
+    });
+
+    // Example selector - load golden path examples
+    document.getElementById('exampleSelect').addEventListener('change', async (e) => {
+      const exampleId = e.target.value;
+      if (!exampleId) {
+        return;
+      }
+
+      try {
+        log(`Loading example: ${exampleId}`, 'info');
+
+        const res = await fetch(`/examples/${exampleId}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/ld+json' }
+        });
+
+        if (!res.ok) {
+          throw new Error(`Example not found: ${exampleId}`);
+        }
+
+        currentContextGraph = await res.json();
+        renderContextGraph(currentContextGraph);
+
+        // Show notification
+        showNotification(`Loaded example: ${e.target.options[e.target.selectedIndex].text}`, 'success');
+
+        // Mark as example (not live)
+        document.getElementById('liveIndicator').style.display = 'none';
+
+        // Switch to Context Graph tab
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        const cgTab = document.querySelector('[data-tab="contextGraph"]');
+        if (cgTab) {
+          cgTab.classList.add('active');
+          document.getElementById('contextGraphTab').classList.add('active');
+        }
+
+      } catch (err) {
+        console.error('Error loading example:', err);
+        log(`Error loading example: ${err.message}`, 'error');
+        showNotification(`Failed to load example: ${err.message}`, 'error');
+      }
+    });
+
+    async function loadContextGraph(agentDID, agentType) {
+      try {
+        // Build credential based on agent type to get proper context graph
+        const capabilityMap = {
+          'planner': 'PlannerCapability',
+          'executor': 'ExecutorCapability',
+          'observer': 'ObserverCapability',
+          'arbiter': 'ArbiterCapability',
+          'archivist': 'ArchivistCapability'
+        };
+
+        const capability = capabilityMap[agentType] || null;
+        const credentials = capability ? [{
+          '@context': ['https://www.w3.org/2018/credentials/v1'],
+          type: ['VerifiableCredential', capability],
+          issuer: 'did:web:authority.example.com',
+          credentialSubject: {
+            id: agentDID,
+            capability: capability
+          }
+        }] : [];
+
+        // Request context graph from API server
+        const res = await fetch(`${API_BASE}/context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentDID,
+            agentType: agentType ? `aat:${agentType.charAt(0).toUpperCase() + agentType.slice(1)}AgentType` : 'aat:ExecutorAgentType',
+            credentials,
+            requestedScope: ['tools', 'data', 'peers']
+          })
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch context');
+
+        currentContextGraph = await res.json();
+        renderContextGraph(currentContextGraph);
+        document.getElementById('liveIndicator').style.display = 'flex';
+      } catch (err) {
+        console.error('Error loading context graph:', err);
+        log(`Error loading context graph: ${err.message}`, 'error');
+      }
+    }
+
+    function renderContextGraph(context) {
+      const container = document.getElementById('contextGraphContainer');
+      const svg = d3.select('#contextGraphSvg');
+      svg.selectAll('*').remove();
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      svg.attr('viewBox', [0, 0, width, height]);
+
+      // Build nodes and links from context graph
+      const nodes = [];
+      const links = [];
+
+      // Agent node (center)
+      nodes.push({
+        id: context.agentDID,
+        type: 'agent',
+        label: context.agentType.split(':')[1] || context.agentType,
+        data: { did: context.agentDID, type: context.agentType }
+      });
+
+      // Affordance nodes
+      (context.affordances || []).forEach(aff => {
+        nodes.push({
+          id: aff.id,
+          type: aff.enabled ? 'affordance' : 'affordance-disabled',
+          label: aff.actionType,
+          data: aff
+        });
+        links.push({
+          source: context.agentDID,
+          target: aff.id,
+          type: 'has-affordance'
+        });
+      });
+
+      // Credential nodes
+      (context.verifiedCredentials || []).forEach(vc => {
+        nodes.push({
+          id: vc.id,
+          type: 'credential',
+          label: vc.type[0] || 'Credential',
+          data: vc
+        });
+        links.push({
+          source: context.agentDID,
+          target: vc.id,
+          type: 'has-credential'
+        });
+      });
+
+      // Constraint nodes
+      (context.constraints || []).forEach((c, i) => {
+        const id = `constraint-${i}`;
+        nodes.push({
+          id,
+          type: 'constraint',
+          label: c.type,
+          data: c
+        });
+        links.push({
+          source: context.agentDID,
+          target: id,
+          type: 'has-constraint'
+        });
+      });
+
+      // Color scale
+      const colorScale = {
+        'agent': '#60a5fa',
+        'affordance': '#22c55e',
+        'affordance-disabled': '#ef4444',
+        'credential': '#a78bfa',
+        'constraint': '#f59e0b'
+      };
+
+      // Size scale
+      const sizeScale = {
+        'agent': 25,
+        'affordance': 15,
+        'affordance-disabled': 15,
+        'credential': 12,
+        'constraint': 12
+      };
+
+      // Create simulation
+      contextGraphSim = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(d => sizeScale[d.type] + 10));
+
+      // Create zoom behavior
+      contextGraphZoom = d3.zoom()
+        .scaleExtent([0.2, 4])
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
+
+      svg.call(contextGraphZoom);
+
+      const g = svg.append('g');
+
+      // Draw links
+      const link = g.append('g')
+        .selectAll('line')
+        .data(links)
+        .join('line')
+        .attr('class', 'link')
+        .attr('stroke', '#334155')
+        .attr('stroke-width', 1.5);
+
+      // Draw nodes
+      const node = g.append('g')
+        .selectAll('g')
+        .data(nodes)
+        .join('g')
+        .attr('class', 'node')
+        .call(d3.drag()
+          .on('start', dragstarted)
+          .on('drag', dragged)
+          .on('end', dragended));
+
+      node.append('circle')
+        .attr('r', d => sizeScale[d.type])
+        .attr('fill', d => colorScale[d.type])
+        .attr('stroke', d => d3.color(colorScale[d.type]).darker(0.5))
+        .attr('stroke-width', 2);
+
+      node.append('text')
+        .attr('dy', d => sizeScale[d.type] + 12)
+        .attr('text-anchor', 'middle')
+        .text(d => d.label)
+        .attr('fill', '#e2e8f0')
+        .attr('font-size', '10px');
+
+      // Node click handler
+      node.on('click', (event, d) => {
+        showNodeInfo(d);
+      });
+
+      // Update positions on tick
+      contextGraphSim.on('tick', () => {
+        link
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+
+      function dragstarted(event, d) {
+        if (!event.active) contextGraphSim.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dragended(event, d) {
+        if (!event.active) contextGraphSim.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+    }
+
+    function showNodeInfo(node) {
+      const info = document.getElementById('nodeInfo');
+      let html = `<h5>${node.label}</h5>`;
+
+      if (node.type === 'agent') {
+        html += `
+          <div class="graph-info-row"><span>DID</span><span style="font-size:0.6rem">${node.data.did.slice(0,20)}...</span></div>
+          <div class="graph-info-row"><span>Type</span><span>${node.data.type}</span></div>
+        `;
+      } else if (node.type === 'affordance' || node.type === 'affordance-disabled') {
+        html += `
+          <div class="graph-info-row"><span>Action</span><span>${node.data.actionType}</span></div>
+          <div class="graph-info-row"><span>Target</span><span>${node.data.target?.type || 'N/A'}</span></div>
+          <div class="graph-info-row"><span>Enabled</span><span>${node.data.enabled ? 'Yes' : 'No'}</span></div>
+          ${node.data.requiresCredential ? `<div class="graph-info-row"><span>Requires</span><span>${node.data.requiresCredential.map(c=>c.schema).join(', ')}</span></div>` : ''}
+        `;
+      } else if (node.type === 'credential') {
+        html += `
+          <div class="graph-info-row"><span>Type</span><span>${node.data.type.join(', ')}</span></div>
+          <div class="graph-info-row"><span>Issuer</span><span style="font-size:0.6rem">${node.data.issuer?.slice(0,15) || 'Unknown'}...</span></div>
+        `;
+      } else if (node.type === 'constraint') {
+        html += `
+          <div class="graph-info-row"><span>Type</span><span>${node.data.type}</span></div>
+          <div class="graph-info-row"><span>Level</span><span>${node.data.enforcementLevel}</span></div>
+        `;
+      }
+
+      info.innerHTML = html;
+      info.classList.add('visible');
+    }
+
+    function clearContextGraph() {
+      const svg = d3.select('#contextGraphSvg');
+      svg.selectAll('*').remove();
+      if (contextGraphSim) {
+        contextGraphSim.stop();
+        contextGraphSim = null;
+      }
+      document.getElementById('nodeInfo').classList.remove('visible');
+      document.getElementById('liveIndicator').style.display = 'none';
+
+      // Reset source view state
+      showingSource = false;
+      const btn = document.getElementById('sourceToggleBtn');
+      const sourceView = document.getElementById('contextSourceView');
+      const legend = document.querySelector('.graph-legend');
+      if (btn) btn.classList.remove('active');
+      if (sourceView) sourceView.style.display = 'none';
+      if (legend) legend.style.display = 'block';
+      document.getElementById('contextGraphSvg').style.display = 'block';
+    }
+
+    function zoomContextGraph(factor) {
+      const svg = d3.select('#contextGraphSvg');
+      if (contextGraphZoom) {
+        svg.transition().duration(300).call(contextGraphZoom.scaleBy, factor);
+      }
+    }
+
+    function resetContextGraph() {
+      const svg = d3.select('#contextGraphSvg');
+      const container = document.getElementById('contextGraphContainer');
+      if (contextGraphZoom) {
+        svg.transition().duration(500).call(
+          contextGraphZoom.transform,
+          d3.zoomIdentity.translate(container.clientWidth / 2, container.clientHeight / 2).scale(1)
+        );
+      }
+    }
+
+    // Toggle between graph visualization and JSON-LD source view
+    let showingSource = false;
+
+    function toggleContextSource() {
+      showingSource = !showingSource;
+      const btn = document.getElementById('sourceToggleBtn');
+      const svg = document.getElementById('contextGraphSvg');
+      const sourceView = document.getElementById('contextSourceView');
+      const sourceCode = document.getElementById('contextSourceCode');
+      const legend = document.querySelector('.graph-legend');
+
+      if (showingSource) {
+        btn.classList.add('active');
+        svg.style.display = 'none';
+        if (legend) legend.style.display = 'none';
+        sourceView.style.display = 'block';
+
+        // Render the JSON-LD with syntax highlighting
+        if (currentContextGraph) {
+          sourceCode.innerHTML = syntaxHighlightJSON(JSON.stringify(currentContextGraph, null, 2));
+        } else {
+          sourceCode.innerHTML = '<span class="json-null">No context graph loaded. Select an agent first.</span>';
+        }
+      } else {
+        btn.classList.remove('active');
+        svg.style.display = 'block';
+        if (legend) legend.style.display = 'block';
+        sourceView.style.display = 'none';
+      }
+    }
+
+    // Syntax highlight JSON for display
+    function syntaxHighlightJSON(json) {
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+            // Remove trailing colon for key
+            return '<span class="' + cls + '">' + match.slice(0, -1) + '</span>:';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    // =========================================================================
+    // Trace Timeline
+    // =========================================================================
+    let allTraces = [];
+
+    async function refreshTraces() {
+      try {
+        const res = await fetch(`${API_BASE}/traces`);
+        if (!res.ok) throw new Error('Failed to fetch traces');
+
+        const data = await res.json();
+        allTraces = data.traces || [];
+        renderTraceTimeline();
+      } catch (err) {
+        console.error('Error fetching traces:', err);
+      }
+    }
+
+    function renderTraceTimeline() {
+      const container = document.getElementById('traceTimeline');
+
+      if (allTraces.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128220;</div>
+            <div>No traces yet</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              PROV traces are generated for every affordance traversal
+            </p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = allTraces.slice(0, 50).map(trace => `
+        <div class="trace-item" onclick="showTraceDetail('${trace.id}')">
+          <div class="trace-header">
+            <span class="trace-type">${trace.type?.join(', ') || 'prov:Activity'}</span>
+            <span class="trace-time">${formatTime(trace.startedAtTime)}</span>
+          </div>
+          <div class="trace-agent">${trace.wasAssociatedWith?.agentDID?.slice(0, 30) || 'Unknown'}...</div>
+          <div class="trace-action">
+            <strong>${trace.used?.affordance?.actionType || 'Action'}</strong>
+            ${trace.generated?.outcome?.status === 'success' ? '<span style="color: #22c55e;"> ✓</span>' : '<span style="color: #ef4444;"> ✗</span>'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showTraceDetail(traceId) {
+      const trace = allTraces.find(t => t.id === traceId);
+      if (!trace) return;
+
+      modalTitle.textContent = 'PROV Trace Detail';
+      modalContent.innerHTML = `
+        <div class="detail-section">
+          <h4>Trace ID <span class="protocol-ref">prov:Activity</span></h4>
+          <pre style="font-size: 0.7rem;">${trace.id}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Agent (wasAssociatedWith)</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Agent DID</label>
+              <div class="value" style="font-size: 0.65rem; font-family: monospace;">${trace.wasAssociatedWith?.agentDID || 'N/A'}</div>
+            </div>
+            <div class="detail-item">
+              <label>Agent Type</label>
+              <div class="value">${trace.wasAssociatedWith?.agentType || 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Used (Input)</h4>
+          <pre>${escapeHtml(JSON.stringify(trace.used, null, 2))}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Generated (Output)</h4>
+          <pre>${escapeHtml(JSON.stringify(trace.generated, null, 2))}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Timing</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Started</label>
+              <div class="value">${trace.startedAtTime || 'N/A'}</div>
+            </div>
+            <div class="detail-item">
+              <label>Ended</label>
+              <div class="value">${trace.endedAtTime || 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Full JSON-LD</h4>
+          <pre style="max-height: 200px;">${escapeHtml(JSON.stringify(trace, null, 2))}</pre>
+        </div>
+      `;
+      modalOverlay.classList.add('active');
+    }
+
+    // =========================================================================
+    // Knowledge Graph Browser
+    // =========================================================================
+    let ontologyData = {};
+
+    document.getElementById('kgSearchInput').addEventListener('input', (e) => {
+      filterKnowledgeGraph(e.target.value);
+    });
+
+    async function loadOntology(type) {
+      const kgResults = document.getElementById('kgResults');
+      kgResults.innerHTML = '<div class="empty-state">Loading...</div>';
+
+      try {
+        let endpoint = 'http://localhost:3000/';
+        if (type === 'aat') {
+          endpoint += 'aat';
+        } else if (type === 'shacl') {
+          endpoint += 'shacl';
+        } else if (type === 'actions') {
+          endpoint += 'ontology';
+        } else {
+          endpoint += 'ontology';
+        }
+
+        // Try Turtle format first for ontology/shacl
+        if (type !== 'aat') {
+          try {
+            const turtleRes = await fetch(endpoint, {
+              headers: { 'Accept': 'text/turtle' }
+            });
+            if (turtleRes.ok) {
+              const turtle = await turtleRes.text();
+              if (turtle && !turtle.startsWith('{')) {
+                renderTurtleContent(turtle, type);
+                return;
+              }
+            }
+          } catch (e) {
+            // Fall through to JSON
+          }
+        }
+
+        // Fallback to JSON
+        const res = await fetch(endpoint, {
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch data');
+
+        const data = await res.json();
+        ontologyData = data;
+        renderKnowledgeGraph(data, type);
+      } catch (err) {
+        kgResults.innerHTML = `<div class="empty-state" style="color: #ef4444;">Error: ${err.message}</div>`;
+      }
+    }
+
+    function renderTurtleContent(turtle, type) {
+      const kgResults = document.getElementById('kgResults');
+      const lines = turtle.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+
+      // Display as formatted Turtle
+      let html = '<div style="font-family: monospace; font-size: 0.7rem;">';
+      for (const line of lines.slice(0, 80)) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('@prefix')) {
+          html += `<div style="color: var(--accent-purple);">${escapeHtml(trimmed)}</div>`;
+        } else if (trimmed.match(/^\w+:|^:/)) {
+          // Subject
+          html += `<div style="margin-top: 0.5rem;"><span class="triple-subject">${escapeHtml(trimmed)}</span></div>`;
+        } else {
+          // Predicate object
+          const parts = trimmed.split(/\s+/);
+          if (parts.length >= 2) {
+            html += `<div style="padding-left: 1rem;">`;
+            html += `<span class="triple-predicate">${escapeHtml(parts[0])}</span> `;
+            html += `<span class="triple-object">${escapeHtml(parts.slice(1).join(' '))}</span>`;
+            html += `</div>`;
+          } else {
+            html += `<div style="padding-left: 1rem; color: var(--text-secondary);">${escapeHtml(trimmed)}</div>`;
+          }
+        }
+      }
+      html += '</div>';
+
+      if (lines.length > 80) {
+        html += `<div style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.7rem;">... and ${lines.length - 80} more lines</div>`;
+      }
+
+      kgResults.innerHTML = html;
+    }
+
+    function renderKnowledgeGraph(data, type) {
+      const kgResults = document.getElementById('kgResults');
+      let triples = [];
+
+      if (type === 'aat') {
+        // AAT types - handle { aats: [...] } structure from API
+        const aatList = data.aats || data.types || [];
+        aatList.forEach(aat => {
+          const aatId = typeof aat === 'string' ? aat : aat.id;
+          triples.push({ s: aatId, p: 'rdf:type', o: 'owl:Class' });
+          triples.push({ s: aatId, p: 'rdfs:subClassOf', o: 'aat:AbstractAgentType' });
+        });
+
+        // Enrich with our static AAT_INFO definitions
+        Object.entries(AAT_INFO).forEach(([key, info]) => {
+          if (info.aat) {
+            triples.push({ s: info.aat, p: 'acg:capability', o: info.capability });
+            triples.push({ s: info.aat, p: 'rdfs:comment', o: `"${info.desc}"` });
+            (info.actionSpace || []).forEach(action => {
+              triples.push({ s: info.aat, p: 'aat:allowsAction', o: action });
+            });
+            (info.forbidden || []).slice(0, 2).forEach(action => {
+              triples.push({ s: info.aat, p: 'aat:forbidsAction', o: action });
+            });
+          }
+        });
+      } else if (Array.isArray(data)) {
+        data.forEach((item, i) => {
+          const subject = item.id || item['@id'] || `_:b${i}`;
+          Object.entries(item).forEach(([key, value]) => {
+            if (key !== 'id' && key !== '@id' && key !== '@context') {
+              const obj = typeof value === 'object' ? JSON.stringify(value).slice(0, 40) : String(value);
+              triples.push({ s: subject, p: key, o: obj });
+            }
+          });
+        });
+      } else if (typeof data === 'object') {
+        Object.entries(data).forEach(([key, value]) => {
+          if (key !== '@context') {
+            const obj = typeof value === 'object' ? JSON.stringify(value).slice(0, 50) : String(value);
+            triples.push({ s: type || 'data', p: key, o: obj });
+          }
+        });
+      }
+
+      if (triples.length === 0) {
+        kgResults.innerHTML = '<div class="empty-state">No triples to display</div>';
+        return;
+      }
+
+      kgResults.innerHTML = triples.slice(0, 100).map(t => `
+        <div class="triple-item">
+          <span class="triple-subject">${escapeHtml(t.s)}</span>
+          <span class="triple-predicate">${escapeHtml(t.p)}</span>
+          <span class="triple-object">${escapeHtml(t.o)}</span>
+        </div>
+      `).join('');
+    }
+
+    async function loadTraceTriples() {
+      const kgResults = document.getElementById('kgResults');
+      kgResults.innerHTML = '<div class="empty-state">Loading traces...</div>';
+
+      try {
+        const res = await fetch(`${API_BASE}/traces`);
+        if (!res.ok) throw new Error('Failed to fetch traces');
+
+        const data = await res.json();
+        const traces = data.traces || [];
+
+        if (traces.length === 0) {
+          kgResults.innerHTML = '<div class="empty-state">No traces yet</div>';
+          return;
+        }
+
+        // Convert traces to triples
+        const triples = [];
+        traces.forEach(t => {
+          triples.push({ s: t.id, p: 'rdf:type', o: t.type?.join(', ') || 'prov:Activity' });
+          triples.push({ s: t.id, p: 'prov:wasAssociatedWith', o: t.wasAssociatedWith?.agentDID || 'unknown' });
+          triples.push({ s: t.id, p: 'acg:agentType', o: t.wasAssociatedWith?.agentType || 'unknown' });
+          if (t.used?.affordance) {
+            triples.push({ s: t.id, p: 'prov:used', o: t.used.affordance.actionType });
+          }
+          if (t.generated?.outcome) {
+            triples.push({ s: t.id, p: 'prov:generated', o: t.generated.outcome.status });
+          }
+          triples.push({ s: t.id, p: 'prov:startedAtTime', o: t.startedAtTime || '' });
+        });
+
+        kgResults.innerHTML = triples.map(t => `
+          <div class="triple-item">
+            <span class="triple-subject">${escapeHtml(t.s.slice(0, 40))}...</span>
+            <span class="triple-predicate">${escapeHtml(t.p)}</span>
+            <span class="triple-object">${escapeHtml(t.o)}</span>
+          </div>
+        `).join('');
+      } catch (err) {
+        kgResults.innerHTML = `<div class="empty-state" style="color: #ef4444;">Error: ${err.message}</div>`;
+      }
+    }
+
+    function filterKnowledgeGraph(query) {
+      if (!query) {
+        renderKnowledgeGraph(ontologyData, 'filtered');
+        return;
+      }
+
+      const q = query.toLowerCase();
+      const results = document.getElementById('kgResults');
+      const triples = results.querySelectorAll('.triple-item');
+
+      triples.forEach(t => {
+        const text = t.textContent.toLowerCase();
+        t.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+
+    // =========================================================================
+    // WebSocket for Real-Time Updates
+    // =========================================================================
+    let ws = null;
+    let wsReconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 10;
+
+    function connectWebSocket() {
+      try {
+        // WebSocket runs on HTTP port + 1
+        const httpPort = parseInt(window.location.port) || 3001;
+        const wsPort = httpPort + 1;
+        const wsUrl = `ws://${window.location.hostname}:${wsPort}`;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          log('WebSocket connected to ' + wsUrl, 'success');
+          wsReconnectAttempts = 0;
+          const indicator = document.getElementById('liveIndicator');
+          if (indicator) indicator.style.display = 'flex';
+          const statusDot = document.querySelector('.status-dot');
+          if (statusDot) statusDot.classList.add('connected');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleWebSocketMessage(data);
+          } catch (err) {
+            console.error('Failed to parse WebSocket message:', err);
+          }
+        };
+
+        ws.onclose = () => {
+          const indicator = document.getElementById('liveIndicator');
+          if (indicator) indicator.style.display = 'none';
+          const statusDot = document.querySelector('.status-dot');
+          if (statusDot) statusDot.classList.remove('connected');
+
+          // Attempt reconnect with exponential backoff
+          if (wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts), 30000);
+            wsReconnectAttempts++;
+            setTimeout(connectWebSocket, delay);
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.log('WebSocket error, will retry connection');
+        };
+      } catch (err) {
+        console.log('WebSocket not available, using polling');
+      }
+    }
+
+    // Try to connect WebSocket (enabled for real-time updates)
+    connectWebSocket();
+
+    // =========================================================================
+    // Notification System
+    // =========================================================================
+    const notifications = [];
+    const MAX_NOTIFICATIONS = 5;
+
+    function showNotification(message, type = 'info', duration = 4000) {
+      const container = document.getElementById('notificationContainer');
+      if (!container) return;
+
+      const notification = document.createElement('div');
+      notification.className = `notification notification-${type}`;
+      notification.innerHTML = `
+        <div class="notification-icon">${getNotificationIcon(type)}</div>
+        <div class="notification-content">
+          <div class="notification-message">${message}</div>
+          <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
+      `;
+
+      container.appendChild(notification);
+      notifications.push(notification);
+
+      // Remove oldest if too many
+      while (notifications.length > MAX_NOTIFICATIONS) {
+        const old = notifications.shift();
+        old?.remove();
+      }
+
+      // Auto-remove after duration
+      setTimeout(() => {
+        notification.classList.add('notification-exit');
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+
+    function getNotificationIcon(type) {
+      switch (type) {
+        case 'success': return '&#10004;';
+        case 'error': return '&#10008;';
+        case 'warning': return '&#9888;';
+        case 'federation': return '&#127760;';
+        case 'agent': return '&#129302;';
+        default: return '&#8505;';
+      }
+    }
+
+    // =========================================================================
+    // Federation Status Tracking
+    // =========================================================================
+    let federationStatus = {
+      connectedBrokers: [],
+      trustRelationships: [],
+      pendingRequests: []
+    };
+
+    async function fetchFederationStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/federation/status`);
+        if (res.ok) {
+          federationStatus = await res.json();
+          updateFederationUI();
+        }
+      } catch (err) {
+        // Federation endpoint may not be available
+      }
+    }
+
+    function updateFederationUI() {
+      const fedIndicator = document.getElementById('federationIndicator');
+      if (fedIndicator && federationStatus.connectedBrokers.length > 0) {
+        fedIndicator.textContent = `${federationStatus.connectedBrokers.length} federated`;
+        fedIndicator.style.display = 'inline-block';
+      }
+    }
+
+    // =========================================================================
+    // Enhanced WebSocket Handler
+    // =========================================================================
+    function handleWebSocketMessage(data) {
+      switch (data.type) {
+        case 'init':
+          // Initial state from server
+          if (data.payload.workflows) {
+            log(`Received ${data.payload.workflows.length} workflows`);
+          }
+          if (data.payload.logs) {
+            data.payload.logs.forEach(entry => {
+              log(`[${entry.component}] ${entry.message}`, entry.level === 'error' ? 'error' : '');
+            });
+          }
+          poll(); // Refresh UI with new data
+          break;
+
+        case 'log':
+          // Real-time log entry
+          const entry = data.payload;
+          log(`[${entry.component}] ${entry.message}`, entry.level === 'error' ? 'error' : '');
+          break;
+
+        case 'workflow-started':
+          showNotification(`Workflow started: ${data.payload.goal?.slice(0, 50)}...`, 'info');
+          poll();
+          break;
+
+        case 'workflow-completed':
+          showNotification(`Workflow completed`, 'success');
+          poll();
+          break;
+
+        case 'workflow-failed':
+          showNotification(`Workflow failed: ${data.payload.error}`, 'error', 6000);
+          poll();
+          break;
+
+        case 'workflow-cancelled':
+          showNotification(`Workflow cancelled`, 'warning');
+          poll();
+          break;
+
+        case 'agent-spawned':
+          showNotification(`Agent spawned: ${data.payload.agentType}`, 'agent');
+          poll();
+          break;
+
+        case 'task-routed':
+          // Silent update, just refresh
+          poll();
+          break;
+
+        case 'task-completed':
+          showNotification(`Task completed`, 'success');
+          poll();
+          break;
+
+        case 'task-failed':
+          showNotification(`Task failed: ${data.payload.error}`, 'error');
+          poll();
+          break;
+
+        case 'context-update':
+          if (currentContextGraph?.agentDID === data.agentDID) {
+            currentContextGraph = data.context;
+            renderContextGraph(currentContextGraph);
+          }
+          break;
+
+        case 'trace':
+          allTraces.unshift(data.trace);
+          renderTraceTimeline();
+          break;
+
+        case 'federation-event':
+          showNotification(`Federation: ${data.message}`, 'federation');
+          fetchFederationStatus();
+          break;
+
+        case 'error':
+          showNotification(`Error: ${data.message}`, 'error', 6000);
+          break;
+
+        default:
+          console.log('Unknown WebSocket message type:', data.type);
+      }
+    }
+
+    // =========================================================================
+    // Credentials Tab
+    // =========================================================================
+    let allCredentials = [];
+
+    async function refreshCredentials() {
+      try {
+        const res = await fetch(`${API_BASE}/credentials`);
+        if (!res.ok) throw new Error('Failed to fetch credentials');
+
+        const data = await res.json();
+        allCredentials = data.credentials || [];
+        renderCredentials();
+      } catch (err) {
+        console.error('Error fetching credentials:', err);
+        showNotification('Failed to load credentials', 'error');
+      }
+    }
+
+    function renderCredentials() {
+      const container = document.getElementById('credentialsList');
+
+      if (allCredentials.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128274;</div>
+            <div>No credentials loaded</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              View agent credentials, trusted issuers, and verification status
+            </p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = allCredentials.map(cred => `
+        <div class="trace-item" style="cursor: pointer;" onclick="showCredentialDetail('${cred.id}')">
+          <div class="trace-header">
+            <span class="trace-type" style="background: var(--accent-purple); color: white;">${cred.type?.[1] || cred.type?.[0] || 'Credential'}</span>
+            <span class="trace-time">${cred.issuanceDate ? formatTime(cred.issuanceDate) : 'N/A'}</span>
+          </div>
+          <div class="trace-agent" style="font-family: monospace; font-size: 0.65rem;">${cred.credentialSubject?.id?.slice(0, 40) || 'Unknown'}...</div>
+          <div class="trace-action">
+            <strong>Issuer:</strong> ${cred.issuer?.slice(0, 30) || 'Unknown'}...
+            ${cred.expirationDate && new Date(cred.expirationDate) < new Date()
+              ? '<span style="color: #ef4444; margin-left: 0.5rem;">Expired</span>'
+              : '<span style="color: #22c55e; margin-left: 0.5rem;">Valid</span>'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showCredentialDetail(credId) {
+      const cred = allCredentials.find(c => c.id === credId);
+      if (!cred) return;
+
+      modalTitle.textContent = 'Verifiable Credential';
+      modalContent.innerHTML = `
+        <div class="detail-section">
+          <h4>Credential ID</h4>
+          <pre style="font-size: 0.7rem;">${cred.id}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Type</h4>
+          <div class="value">${cred.type?.join(', ') || 'Unknown'}</div>
+        </div>
+        <div class="detail-section">
+          <h4>Issuer</h4>
+          <pre style="font-size: 0.65rem;">${cred.issuer || 'Unknown'}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Subject</h4>
+          <pre>${escapeHtml(JSON.stringify(cred.credentialSubject, null, 2))}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Validity</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Issued</label>
+              <div class="value">${cred.issuanceDate || 'N/A'}</div>
+            </div>
+            <div class="detail-item">
+              <label>Expires</label>
+              <div class="value">${cred.expirationDate || 'No expiration'}</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Full JSON-LD</h4>
+          <pre style="max-height: 200px;">${escapeHtml(JSON.stringify(cred, null, 2))}</pre>
+        </div>
+      `;
+      detailModal.classList.add('active');
+    }
+
+    // =========================================================================
+    // Workflow DAG Tab
+    // =========================================================================
+    let workflowDagZoom = null;
+    let workflowDagSvg = null;
+
+    function initWorkflowDag() {
+      const container = document.getElementById('workflowDagContainer');
+      const svg = d3.select('#workflowDagSvg');
+      const width = container.clientWidth || 600;
+      const height = container.clientHeight || 350;
+
+      svg.attr('width', width).attr('height', height);
+
+      workflowDagZoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on('zoom', (event) => {
+          svg.select('g').attr('transform', event.transform);
+        });
+
+      svg.call(workflowDagZoom);
+      workflowDagSvg = svg;
+    }
+
+    async function refreshWorkflowDag() {
+      const workflowId = document.getElementById('workflowDagSelect').value;
+      if (!workflowId) {
+        showNotification('Select a workflow first', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3000/workflow/${workflowId}/graph`);
+        if (!res.ok) throw new Error('Failed to fetch workflow graph');
+
+        const data = await res.json();
+        renderWorkflowDag(data);
+      } catch (err) {
+        console.error('Error fetching workflow DAG:', err);
+        showNotification('Failed to load workflow graph', 'error');
+      }
+    }
+
+    function renderWorkflowDag(graphData) {
+      if (!workflowDagSvg) initWorkflowDag();
+
+      const svg = workflowDagSvg;
+      const container = document.getElementById('workflowDagContainer');
+      const width = container.clientWidth || 600;
+      const height = container.clientHeight || 350;
+
+      svg.selectAll('*').remove();
+
+      const g = svg.append('g');
+
+      const nodes = graphData.nodes || [];
+      const links = graphData.edges || [];
+
+      // Color based on status
+      const statusColors = {
+        pending: '#94a3b8',
+        running: '#60a5fa',
+        completed: '#22c55e',
+        failed: '#ef4444'
+      };
+
+      // Create force simulation
+      const simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('y', d3.forceY().strength(0.1));
+
+      // Arrow marker for directed edges
+      svg.append('defs').append('marker')
+        .attr('id', 'dag-arrow')
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 20)
+        .attr('refY', 0)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('fill', '#64748b');
+
+      // Draw links
+      const link = g.append('g')
+        .selectAll('line')
+        .data(links)
+        .join('line')
+        .attr('stroke', '#64748b')
+        .attr('stroke-width', 2)
+        .attr('marker-end', 'url(#dag-arrow)');
+
+      // Draw nodes
+      const node = g.append('g')
+        .selectAll('g')
+        .data(nodes)
+        .join('g')
+        .call(d3.drag()
+          .on('start', dagDragStarted)
+          .on('drag', dagDragged)
+          .on('end', dagDragEnded));
+
+      node.append('circle')
+        .attr('r', 15)
+        .attr('fill', d => statusColors[d.status] || '#94a3b8')
+        .attr('stroke', '#1e293b')
+        .attr('stroke-width', 2);
+
+      node.append('text')
+        .attr('dy', 4)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'white')
+        .attr('font-size', '10px')
+        .text(d => d.label?.charAt(0) || '?');
+
+      node.append('title')
+        .text(d => `${d.label} (${d.status})`);
+
+      // Labels below nodes
+      node.append('text')
+        .attr('dy', 30)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#94a3b8')
+        .attr('font-size', '9px')
+        .text(d => d.label?.slice(0, 12) || 'Task');
+
+      simulation.on('tick', () => {
+        link
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+
+      function dagDragStarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dagDragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dagDragEnded(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+    }
+
+    function zoomWorkflowDag(factor) {
+      if (workflowDagSvg && workflowDagZoom) {
+        workflowDagSvg.transition().duration(300).call(
+          workflowDagZoom.scaleBy, factor
+        );
+      }
+    }
+
+    function resetWorkflowDag() {
+      if (workflowDagSvg && workflowDagZoom) {
+        workflowDagSvg.transition().duration(300).call(
+          workflowDagZoom.transform, d3.zoomIdentity
+        );
+      }
+    }
+
+    // Update workflow selector when workflows change
+    function updateWorkflowDagSelector() {
+      const select = document.getElementById('workflowDagSelect');
+      const currentValue = select.value;
+
+      select.innerHTML = '<option value="">Select workflow...</option>';
+      workflows.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = `${w.name || w.id.slice(0, 8)} (${w.status})`;
+        select.appendChild(opt);
+      });
+
+      if (currentValue && workflows.some(w => w.id === currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    // =========================================================================
+    // Logs Tab
+    // =========================================================================
+    let allLogs = [];
+    let logFilter = 'all';
+
+    async function refreshLogs() {
+      try {
+        const res = await fetch(`${API_BASE}/logs`);
+        if (!res.ok) throw new Error('Failed to fetch logs');
+
+        const data = await res.json();
+        allLogs = data.logs || [];
+        renderLogs();
+      } catch (err) {
+        console.error('Error fetching logs:', err);
+        showNotification('Failed to load logs', 'error');
+      }
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logsContainer');
+      const filter = document.getElementById('logLevelFilter').value;
+
+      const filteredLogs = filter === 'all'
+        ? allLogs
+        : allLogs.filter(l => l.level === filter);
+
+      if (filteredLogs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128466;</div>
+            <div>No logs matching filter</div>
+          </div>`;
+        return;
+      }
+
+      const levelColors = {
+        error: '#ef4444',
+        warn: '#f59e0b',
+        info: '#60a5fa',
+        debug: '#94a3b8'
+      };
+
+      container.innerHTML = filteredLogs.slice(0, 200).map(log => {
+        const time = log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '';
+        const levelColor = levelColors[log.level] || '#94a3b8';
+        const meta = log.context ? ` [${Object.entries(log.context).map(([k,v]) => `${k}=${v}`).join(' ')}]` : '';
+        return `<div style="padding: 2px 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-muted);">${time}</span>
+          <span style="color: ${levelColor}; font-weight: bold; text-transform: uppercase; margin: 0 0.5rem;">${log.level}</span>
+          <span style="color: var(--text-primary);">${escapeHtml(log.message)}</span>
+          <span style="color: var(--text-muted); font-size: 0.6rem;">${escapeHtml(meta)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function clearLogs() {
+      allLogs = [];
+      renderLogs();
+      showNotification('Logs cleared', 'info');
+    }
+
+    // Filter change handler
+    document.getElementById('logLevelFilter')?.addEventListener('change', renderLogs);
+
+    // =========================================================================
+    // Federation Tab
+    // =========================================================================
+    let wsConnection = null;
+    let currentBrokerId = 'dashboard-' + Math.random().toString(36).slice(2, 10);
+    let federationData = {
+      connections: [],
+      sharedContexts: [],
+      groups: [],
+      presence: []
+    };
+
+    function switchFedTab(tabName) {
+      document.querySelectorAll('.fed-sub-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.fed-tab-content').forEach(c => c.classList.remove('active'));
+
+      document.querySelector(`[data-fedtab="${tabName}"]`)?.classList.add('active');
+      document.getElementById(`fedtab-${tabName}`)?.classList.add('active');
+    }
+
+    function connectWebSocket() {
+      if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+        showNotification('Already connected', 'info');
+        return;
+      }
+
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+        wsConnection = new WebSocket(wsUrl);
+
+        wsConnection.onopen = () => {
+          updateWsStatus(true);
+          log('WebSocket connected for federation', 'info');
+          showNotification('WebSocket connected', 'success');
+
+          // Authenticate
+          wsConnection.send(JSON.stringify({
+            type: 'auth',
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            payload: { brokerId: currentBrokerId }
+          }));
+        };
+
+        wsConnection.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            handleFederationMessage(msg);
+          } catch (err) {
+            console.error('Failed to parse WebSocket message:', err);
+          }
+        };
+
+        wsConnection.onclose = () => {
+          updateWsStatus(false);
+          log('WebSocket disconnected', 'warn');
+        };
+
+        wsConnection.onerror = (err) => {
+          updateWsStatus(false);
+          console.error('WebSocket error:', err);
+          showNotification('WebSocket connection failed', 'error');
+        };
+      } catch (err) {
+        console.error('Failed to connect WebSocket:', err);
+        showNotification('Failed to connect: ' + err.message, 'error');
+      }
+    }
+
+    function updateWsStatus(connected) {
+      const dot = document.getElementById('wsStatusDot');
+      const text = document.getElementById('wsStatusText');
+      if (dot && text) {
+        dot.classList.toggle('connected', connected);
+        text.textContent = connected ? 'Connected' : 'Disconnected';
+      }
+    }
+
+    function handleFederationMessage(msg) {
+      switch (msg.type) {
+        case 'auth':
+          // Server requests auth - send credentials
+          wsConnection?.send(JSON.stringify({
+            type: 'auth',
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            payload: { brokerId: currentBrokerId }
+          }));
+          break;
+
+        case 'auth_success':
+          log('Authenticated to federation as ' + msg.payload.brokerId, 'info');
+          subscribeToFederationChannels();
+          break;
+
+        case 'subscribed':
+          log(`Subscribed to ${msg.payload.channel}`, 'info');
+          break;
+
+        case 'context_change':
+          log('Context change: ' + JSON.stringify(msg.payload).slice(0, 100), 'info');
+          refreshFederationData();
+          break;
+
+        case 'presence_update':
+          handlePresenceUpdate(msg.payload);
+          break;
+
+        case 'notification':
+          const notif = msg.payload.notification;
+          showNotification(notif.title + ': ' + notif.body, notif.type || 'info');
+          break;
+
+        case 'federation_message':
+          log('Federation: ' + JSON.stringify(msg.payload).slice(0, 100), 'info');
+          refreshFederationData();
+          break;
+
+        case 'pong':
+          // Keep-alive response
+          break;
+
+        case 'error':
+          showNotification('Federation error: ' + msg.payload.error, 'error');
+          break;
+      }
+    }
+
+    function subscribeToFederationChannels() {
+      const channels = ['context', 'presence', 'notifications', 'federation'];
+      channels.forEach(channel => {
+        wsConnection?.send(JSON.stringify({
+          type: 'subscribe',
+          id: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          payload: { channel }
+        }));
+      });
+    }
+
+    function handlePresenceUpdate(payload) {
+      const idx = federationData.presence.findIndex(p => p.brokerId === payload.brokerId);
+      if (idx >= 0) {
+        federationData.presence[idx] = payload;
+      } else {
+        federationData.presence.push(payload);
+      }
+      renderPresenceList();
+    }
+
+    async function refreshFederationData() {
+      try {
+        // Fetch connections
+        const connRes = await fetch(`${API_BASE}/social/${currentBrokerId}/connections`);
+        if (connRes.ok) {
+          const data = await connRes.json();
+          federationData.connections = data.connections || [];
+          renderConnectionsList();
+        }
+
+        // Fetch shared contexts
+        const ctxRes = await fetch(`${API_BASE}/contexts?brokerId=${currentBrokerId}`);
+        if (ctxRes.ok) {
+          const data = await ctxRes.json();
+          federationData.sharedContexts = data.contexts || [];
+          renderSharedContextsList();
+        }
+
+        // Fetch groups
+        const groupRes = await fetch(`${API_BASE}/social/${currentBrokerId}/groups`);
+        if (groupRes.ok) {
+          const data = await groupRes.json();
+          federationData.groups = data.groups || [];
+          renderGroupsList();
+        }
+
+        // Update counts
+        updateFederationCounts();
+      } catch (err) {
+        console.error('Error fetching federation data:', err);
+      }
+    }
+
+    function updateFederationCounts() {
+      document.getElementById('federationCount').textContent = federationData.connections.length;
+      document.getElementById('connectionCount').textContent = federationData.connections.length;
+      document.getElementById('sharedContextCount').textContent = federationData.sharedContexts.length;
+      document.getElementById('groupCount').textContent = federationData.groups.length;
+    }
+
+    function renderConnectionsList() {
+      const container = document.getElementById('connectionsList');
+      if (federationData.connections.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 1.5rem;">
+            <div class="empty-state-icon">&#129309;</div>
+            <div>No connections yet</div>
+            <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+              Connect with other brokers to share contexts and collaborate
+            </p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = federationData.connections.map(conn => `
+        <div class="fed-card">
+          <div class="fed-card-header">
+            <span class="fed-card-title">${escapeHtml(conn.displayName || conn.targetBrokerId.slice(0, 16) + '...')}</span>
+            <div class="fed-card-actions">
+              <span class="presence-dot ${conn.presence?.state || 'offline'}"></span>
+              <button class="fed-action-btn" onclick="viewConnection('${conn.id}')">View</button>
+            </div>
+          </div>
+          <div class="fed-card-meta">
+            ${conn.protocol || 'native'} &bull; Connected ${new Date(conn.connectedAt).toLocaleDateString()}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderSharedContextsList() {
+      const container = document.getElementById('sharedContextsList');
+      if (federationData.sharedContexts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 1.5rem;">
+            <div class="empty-state-icon">&#128194;</div>
+            <div>No shared contexts</div>
+            <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+              Create a shared context to collaborate in real-time with CRDT sync
+            </p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = federationData.sharedContexts.map(ctx => `
+        <div class="fed-card">
+          <div class="fed-card-header">
+            <span class="fed-card-title">${escapeHtml(ctx.name)}</span>
+            <div class="fed-card-actions">
+              <span style="font-size: 0.65rem; color: var(--text-muted);">${ctx.syncStrategy || 'crdt'}</span>
+              <button class="fed-action-btn" onclick="openSharedContext('${ctx.id}')">Open</button>
+            </div>
+          </div>
+          <div class="fed-card-meta">
+            ${ctx.graph?.nodes?.size || 0} nodes &bull; ${Object.keys(ctx.replicas || {}).length} replicas &bull; v${ctx.version || 1}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderGroupsList() {
+      const container = document.getElementById('groupsList');
+      if (federationData.groups.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 1.5rem;">
+            <div class="empty-state-icon">&#128101;</div>
+            <div>No groups</div>
+            <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+              Create groups to organize shared contexts and team collaboration
+            </p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = federationData.groups.map(group => `
+        <div class="fed-card">
+          <div class="fed-card-header">
+            <span class="fed-card-title">${escapeHtml(group.name)}</span>
+            <div class="fed-card-actions">
+              <button class="fed-action-btn" onclick="viewGroup('${group.id}')">View</button>
+            </div>
+          </div>
+          <div class="fed-card-meta">
+            ${group.members?.length || 0} members &bull; ${group.isPrivate ? 'Private' : 'Public'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPresenceList() {
+      const container = document.getElementById('presenceList');
+      const activePresence = federationData.presence.filter(p => p.presence?.state !== 'offline');
+
+      if (activePresence.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 1.5rem;">
+            <div class="empty-state-icon">&#128994;</div>
+            <div>No active presence</div>
+            <p style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+              Connect to see who's online in your federation network
+            </p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = activePresence.map(p => `
+        <div class="presence-item">
+          <div class="presence-avatar">${(p.brokerId || '?')[0].toUpperCase()}</div>
+          <div class="presence-info">
+            <div class="presence-name">${escapeHtml(p.brokerId?.slice(0, 20) || 'Unknown')}</div>
+            <div class="presence-status">${p.contextId ? 'In: ' + p.contextId.slice(0, 12) + '...' : 'Online'}</div>
+          </div>
+          <div class="presence-dot ${p.presence?.state || 'offline'}"></div>
+        </div>
+      `).join('');
+    }
+
+    async function sendConnectionRequest() {
+      const input = document.getElementById('inviteCode');
+      const code = input.value.trim();
+      if (!code) {
+        showNotification('Please enter an invite code or broker ID', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/social/${currentBrokerId}/connections/request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetBrokerId: code })
+        });
+
+        if (res.ok) {
+          showNotification('Connection request sent', 'success');
+          input.value = '';
+          refreshFederationData();
+        } else {
+          const err = await res.json();
+          showNotification('Failed: ' + (err.message || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showNotification('Request failed: ' + err.message, 'error');
+      }
+    }
+
+    async function generateInviteLink() {
+      try {
+        const res = await fetch(`${API_BASE}/social/${currentBrokerId}/invites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expiresInHours: 24 })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const inviteCode = data.invite?.code || data.code;
+          if (inviteCode) {
+            navigator.clipboard?.writeText(inviteCode);
+            showNotification('Invite code copied to clipboard!', 'success');
+          }
+        } else {
+          showNotification('Failed to generate invite', 'error');
+        }
+      } catch (err) {
+        showNotification('Failed: ' + err.message, 'error');
+      }
+    }
+
+    async function createSharedContext() {
+      const input = document.getElementById('newContextName');
+      const name = input.value.trim();
+      if (!name) {
+        showNotification('Please enter a context name', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/contexts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            brokerId: currentBrokerId,
+            syncStrategy: 'crdt'
+          })
+        });
+
+        if (res.ok) {
+          showNotification('Shared context created', 'success');
+          input.value = '';
+          refreshFederationData();
+        } else {
+          const err = await res.json();
+          showNotification('Failed: ' + (err.message || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showNotification('Creation failed: ' + err.message, 'error');
+      }
+    }
+
+    async function createGroup() {
+      const input = document.getElementById('newGroupName');
+      const name = input.value.trim();
+      if (!name) {
+        showNotification('Please enter a group name', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/social/${currentBrokerId}/groups`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+
+        if (res.ok) {
+          showNotification('Group created', 'success');
+          input.value = '';
+          refreshFederationData();
+        } else {
+          const err = await res.json();
+          showNotification('Failed: ' + (err.message || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showNotification('Creation failed: ' + err.message, 'error');
+      }
+    }
+
+    function viewConnection(connId) {
+      const conn = federationData.connections.find(c => c.id === connId);
+      if (conn) {
+        alert(JSON.stringify(conn, null, 2));
+      }
+    }
+
+    function openSharedContext(ctxId) {
+      const ctx = federationData.sharedContexts.find(c => c.id === ctxId);
+      if (ctx) {
+        // Switch to context graph tab and load context
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelector('[data-tab="context-graph"]')?.classList.add('active');
+        document.getElementById('tab-context-graph')?.classList.add('active');
+
+        showNotification('Loading shared context: ' + ctx.name, 'info');
+      }
+    }
+
+    function viewGroup(groupId) {
+      const group = federationData.groups.find(g => g.id === groupId);
+      if (group) {
+        alert(JSON.stringify(group, null, 2));
+      }
+    }
+
+    // Initialize federation when switching to tab
+    const origTabClick = document.querySelector('[data-tab="federation"]');
+    if (origTabClick) {
+      origTabClick.addEventListener('click', () => {
+        refreshFederationData();
+      });
+    }
+
+    // =========================================================================
+    // Start Dashboard
+    // =========================================================================
+    poll();
+    fetchFederationStatus();
+    initWorkflowDag();
+    setInterval(poll, 2000);
+    setInterval(fetchFederationStatus, 10000); // Check federation less frequently
+    log('Dashboard initialized - Protocol v1.0');
+    log('Graph visualization ready (D3.js)');
+    log('WebSocket real-time updates enabled');
+  </script>
+</body>
+</html>

@@ -1,0 +1,825 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "disabledReason": "acg:disabledReason",
+      "errorState": "acg:hasErrorState",
+      "errorCode": "acg:errorCode",
+      "errorMessage": "acg:errorMessage",
+      "errorTimestamp": {
+        "@id": "acg:errorTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "errorSource": {
+        "@id": "acg:errorSource",
+        "@type": "@id"
+      },
+      "recoveryHint": "acg:recoveryHint",
+      "retryAfter": {
+        "@id": "acg:retryAfter",
+        "@type": "xsd:dateTime"
+      },
+      "degradedResources": {
+        "@id": "acg:hasDegradedResources",
+        "@container": "@set"
+      },
+      "resourceId": {
+        "@id": "acg:resourceId",
+        "@type": "@id"
+      },
+      "degradationLevel": "acg:degradationLevel",
+      "fallbackAvailable": {
+        "@id": "acg:fallbackAvailable",
+        "@type": "xsd:boolean"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-error-scenario-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkpExecutor456def",
+  "agentType": "aat:ExecutorAgentType",
+  "timestamp": "2026-01-24T18:00:00Z",
+  "expiresAt": "2026-01-24T18:30:00Z",
+  "nonce": "error-scenario-session-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "deployment-operations",
+    "resources": [
+      "urn:resource:production-cluster",
+      "urn:resource:staging-cluster",
+      "urn:resource:rollback-archive"
+    ],
+    "actions": [
+      "Act",
+      "Abort",
+      "RollbackAction"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ExecutorCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-executor-error-001",
+      "issuer": "did:web:ops-authority.example.com",
+      "validUntil": "2026-01-24T20:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpExecutor456def",
+        "capability": "ExecutorCapability",
+        "scope": [
+          "staging",
+          "production"
+        ]
+      }
+    }
+  ],
+  "errorState": {
+    "type": "acg:ErrorState",
+    "errorCode": "UPSTREAM_TIMEOUT",
+    "errorMessage": "Production cluster API timed out after 30 seconds during deployment",
+    "errorTimestamp": "2026-01-24T17:58:42Z",
+    "errorSource": "urn:resource:production-cluster",
+    "recoveryHint": "Use rollback affordance to restore previous deployment state, then retry after cluster recovery",
+    "retryAfter": "2026-01-24T18:15:00Z"
+  },
+  "degradedResources": [
+    {
+      "type": "acg:DegradedResource",
+      "resourceId": "urn:resource:production-cluster",
+      "degradationLevel": "unavailable",
+      "fallbackAvailable": true,
+      "_note": "Primary production cluster unreachable - staging fallback available"
+    },
+    {
+      "type": "acg:DegradedResource",
+      "resourceId": "urn:resource:monitoring-api",
+      "degradationLevel": "degraded",
+      "fallbackAvailable": false,
+      "_note": "Monitoring returning stale data (>5 min old)"
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "In error state, agent MUST NOT retry failed operation without explicit approval",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent SHOULD use rollback affordance before attempting alternative deployment path",
+      "enforcementLevel": "advisory"
+    },
+    {
+      "type": "acg:TemporalConstraint",
+      "rule": "Agent MUST wait until retryAfter timestamp before retrying failed operation",
+      "enforcementLevel": "strict"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-deploy-production",
+      "rel": "deploy-service",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Act",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://deploy.example.com/api/v1/deployments",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ActParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Deploys new version to production cluster",
+          "reversible": true
+        }
+      ],
+      "enabled": false,
+      "disabledReason": "Target resource 'production-cluster' is unavailable due to UPSTREAM_TIMEOUT. Retry after 2026-01-24T18:15:00Z",
+      "_note": "Primary action disabled due to error state",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T18:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-deploy-staging-fallback",
+      "rel": "deploy-service-fallback",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Act",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://deploy.example.com/api/v1/deployments/staging",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ActParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Deploys to staging cluster as fallback",
+          "reversible": true
+        }
+      ],
+      "enabled": true,
+      "_note": "Fallback deployment path available despite primary cluster failure",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T18:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-rollback-deployment",
+      "rel": "rollback-action",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RollbackAction",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://deploy.example.com/api/v1/deployments/rollback",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RollbackActionParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Rolls back to previous known-good deployment state",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Recommended action in error state - restore previous state before retry",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T18:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-abort-deployment",
+      "rel": "abort-operation",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Abort",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://deploy.example.com/api/v1/deployments/abort",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#AbortParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Cleanly aborts any in-progress deployment",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T18:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-escalate-failure",
+      "rel": "escalate-to-authority",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Escalate",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/escalations",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EscalateParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Notifies human operator of deployment failure requiring intervention",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Escalation available for human-in-the-loop recovery",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T18:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpExecutor456def"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "In error state, agent MUST NOT retry failed operation without explicit approval"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Agent SHOULD use rollback affordance before attempting alternative deployment path"
+      },
+      {
+        "id": "hn-constraint-3",
+        "kind": "Constraint",
+        "ref": "Agent MUST wait until retryAfter timestamp before retrying failed operation"
+      },
+      {
+        "id": "hn-aff-aff-deploy-production",
+        "kind": "Affordance",
+        "ref": "aff-deploy-production"
+      },
+      {
+        "id": "hn-target-aff-deploy-production",
+        "kind": "Target",
+        "ref": "https://deploy.example.com/api/v1/deployments"
+      },
+      {
+        "id": "hn-cred-aff-deploy-production-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      },
+      {
+        "id": "hn-aff-aff-deploy-staging-fallback",
+        "kind": "Affordance",
+        "ref": "aff-deploy-staging-fallback"
+      },
+      {
+        "id": "hn-target-aff-deploy-staging-fallback",
+        "kind": "Target",
+        "ref": "https://deploy.example.com/api/v1/deployments/staging"
+      },
+      {
+        "id": "hn-cred-aff-deploy-staging-fallback-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      },
+      {
+        "id": "hn-aff-aff-rollback-deployment",
+        "kind": "Affordance",
+        "ref": "aff-rollback-deployment"
+      },
+      {
+        "id": "hn-target-aff-rollback-deployment",
+        "kind": "Target",
+        "ref": "https://deploy.example.com/api/v1/deployments/rollback"
+      },
+      {
+        "id": "hn-cred-aff-rollback-deployment-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      },
+      {
+        "id": "hn-aff-aff-abort-deployment",
+        "kind": "Affordance",
+        "ref": "aff-abort-deployment"
+      },
+      {
+        "id": "hn-target-aff-abort-deployment",
+        "kind": "Target",
+        "ref": "https://deploy.example.com/api/v1/deployments/abort"
+      },
+      {
+        "id": "hn-aff-aff-escalate-failure",
+        "kind": "Affordance",
+        "ref": "aff-escalate-failure"
+      },
+      {
+        "id": "hn-target-aff-escalate-failure",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/escalations"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-deploy-production",
+        "relation": "affordance",
+        "affordanceRef": "aff-deploy-production",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-deploy-production",
+          "hn-target-aff-deploy-production",
+          "hn-cred-aff-deploy-production-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-deploy-production",
+          "target": "hn-target-aff-deploy-production",
+          "credential": [
+            "hn-cred-aff-deploy-production-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-deploy-staging-fallback",
+        "relation": "affordance",
+        "affordanceRef": "aff-deploy-staging-fallback",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-deploy-staging-fallback",
+          "hn-target-aff-deploy-staging-fallback",
+          "hn-cred-aff-deploy-staging-fallback-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-deploy-staging-fallback",
+          "target": "hn-target-aff-deploy-staging-fallback",
+          "credential": [
+            "hn-cred-aff-deploy-staging-fallback-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-rollback-deployment",
+        "relation": "affordance",
+        "affordanceRef": "aff-rollback-deployment",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-rollback-deployment",
+          "hn-target-aff-rollback-deployment",
+          "hn-cred-aff-rollback-deployment-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-rollback-deployment",
+          "target": "hn-target-aff-rollback-deployment",
+          "credential": [
+            "hn-cred-aff-rollback-deployment-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-abort-deployment",
+        "relation": "affordance",
+        "affordanceRef": "aff-abort-deployment",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-abort-deployment",
+          "hn-target-aff-abort-deployment",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-abort-deployment",
+          "target": "hn-target-aff-abort-deployment",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-escalate-failure",
+        "relation": "affordance",
+        "affordanceRef": "aff-escalate-failure",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-escalate-failure",
+          "hn-target-aff-escalate-failure",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-escalate-failure",
+          "target": "hn-target-aff-escalate-failure",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "deployment-operations"
+      },
+      {
+        "id": "obj-target-aff-deploy-production",
+        "ref": "https://deploy.example.com/api/v1/deployments"
+      },
+      {
+        "id": "obj-target-aff-deploy-staging-fallback",
+        "ref": "https://deploy.example.com/api/v1/deployments/staging"
+      },
+      {
+        "id": "obj-target-aff-rollback-deployment",
+        "ref": "https://deploy.example.com/api/v1/deployments/rollback"
+      },
+      {
+        "id": "obj-target-aff-abort-deployment",
+        "ref": "https://deploy.example.com/api/v1/deployments/abort"
+      },
+      {
+        "id": "obj-target-aff-escalate-failure",
+        "ref": "https://broker.example.com/acg/v1/escalations"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-deploy-production",
+        "name": "aat:Act",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-deploy-production"
+        ],
+        "affordanceRef": "aff-deploy-production",
+        "hyperedgeRef": "he-aff-deploy-production"
+      },
+      {
+        "id": "m-aff-deploy-staging-fallback",
+        "name": "aat:Act",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-deploy-staging-fallback"
+        ],
+        "affordanceRef": "aff-deploy-staging-fallback",
+        "hyperedgeRef": "he-aff-deploy-staging-fallback"
+      },
+      {
+        "id": "m-aff-rollback-deployment",
+        "name": "aat:RollbackAction",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-rollback-deployment"
+        ],
+        "affordanceRef": "aff-rollback-deployment",
+        "hyperedgeRef": "he-aff-rollback-deployment"
+      },
+      {
+        "id": "m-aff-abort-deployment",
+        "name": "aat:Abort",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-abort-deployment"
+        ],
+        "affordanceRef": "aff-abort-deployment",
+        "hyperedgeRef": "he-aff-abort-deployment"
+      },
+      {
+        "id": "m-aff-escalate-failure",
+        "name": "aat:Escalate",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-escalate-failure"
+        ],
+        "affordanceRef": "aff-escalate-failure",
+        "hyperedgeRef": "he-aff-escalate-failure"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P1Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true,
+    "_note": "Extended tracing in error scenarios for incident analysis"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Error state with degraded resources and recovery affordances",
+    "demonstrates": [
+      "Error state representation with code, message, source, and recovery hints",
+      "Degraded resources with fallback availability flags",
+      "Affordance disabling with specific disabledReason tied to error state",
+      "Fallback affordances that remain enabled during partial outage",
+      "RollbackAction affordance for causal reversal",
+      "Escalate affordance for human-in-the-loop recovery",
+      "Temporal constraints (retryAfter) for error recovery",
+      "Error-specific constraints governing agent behavior in failure modes"
+    ]
+  }
+}

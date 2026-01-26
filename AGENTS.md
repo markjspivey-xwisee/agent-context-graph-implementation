@@ -1,0 +1,56 @@
+# AGENTS.md — Non-Negotiable Rules
+
+These rules apply to all coding agents (Claude Code, Codex, humans).
+
+---
+
+## Absolute Invariants
+
+1. **No global tool lists**
+   - Agents may only act via Context Graph affordances.
+
+2. **Affordance absence = enforcement**
+   - If an action is not afforded, it must not be attempted.
+
+3. **AAT safety is structural**
+   - Never "filter" illegal actions.
+   - Illegal actions must not exist in the Context Graph.
+
+4. **Credentials are explicit**
+   - Capabilities are proven via VCs only.
+   - Never infer authority.
+
+5. **Every action is traceable**
+   - All traversals MUST emit a PROV trace.
+   - No exceptions.
+
+6. **Causality is external**
+   - Do not embed causal reasoning in LLM logic.
+   - Use references to causal semantics only.
+
+7. **Meaning is not hard-coded**
+   - Affordance labels are conventions.
+   - Do not assume semantics beyond documented effects.
+
+---
+
+## Forbidden Patterns
+
+- Hard-coded workflows
+- Hidden permissions
+- Silent side effects
+- "Best guess" authority
+- Action without provenance
+- Agent deciding what it is allowed to do
+
+---
+
+## Definition of Done (MVP)
+
+- Context Graph validates against schema
+- SHACL shapes pass
+- Golden-path example runs end-to-end
+- Negative tests fail correctly
+- PROV trace emitted for traversal
+
+If any invariant is violated, the implementation is incorrect.

@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  acg:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATA_DIR=/app/data
+      - LOG_LEVEL=info
+    volumes:
+      - acg-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Development service with hot reload
+  acg-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATA_DIR=/app/data
+    volumes:
+      - ./src:/app/src:ro
+      - ./spec:/app/spec:ro
+      - acg-data-dev:/app/data
+    command: npm run dev
+    profiles:
+      - dev
+
+  # Multi-broker setup for federation testing
+  broker-alice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BROKER_NAME=Alice
+      - BROKER_DID=did:web:alice.acg.local
+      - DATA_DIR=/app/data
+    volumes:
+      - broker-alice-data:/app/data
+    profiles:
+      - federation
+
+  broker-bob:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BROKER_NAME=Bob
+      - BROKER_DID=did:web:bob.acg.local
+      - DATA_DIR=/app/data
+    volumes:
+      - broker-bob-data:/app/data
+    profiles:
+      - federation
+
+  broker-carol:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BROKER_NAME=Carol
+      - BROKER_DID=did:web:carol.acg.local
+      - DATA_DIR=/app/data
+    volumes:
+      - broker-carol-data:/app/data
+    profiles:
+      - federation
+
+volumes:
+  acg-data:
+  acg-data-dev:
+  broker-alice-data:
+  broker-bob-data:
+  broker-carol-data:

@@ -1,0 +1,724 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/prov#",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/odrl/2/",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "fed": "https://agentcontextgraph.dev/federation#",
+      "id": "@id",
+      "type": "@type",
+      "ContextGraph": "acg:ContextGraph",
+      "Affordance": "acg:Affordance",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:hasNonce",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "actionType": {
+        "@id": "acg:hasActionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "enabled": "acg:isEnabled",
+      "effects": {
+        "@id": "acg:hasEffect",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasCredential",
+        "@container": "@set"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "constraints": {
+        "@id": "acg:hasConstraint",
+        "@container": "@set"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "scope": "acg:hasScope",
+      "rel": "hydra:supportedOperation",
+      "relVersion": "acg:relVersion",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "sh:shapesGraph",
+        "@type": "@id"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:coord-ctx-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkCoordinatorAgent123",
+  "agentType": "aat:CoordinatorAgentType",
+  "timestamp": "2024-12-15T10:00:00Z",
+  "expiresAt": "2024-12-15T10:05:00Z",
+  "nonce": "coord-nonce-abc123",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "workflow-orchestration",
+    "resources": [
+      "urn:workflow:feature-implementation",
+      "urn:agent:planner-001",
+      "urn:agent:executor-001",
+      "urn:agent:observer-001"
+    ],
+    "actions": [
+      "Delegate",
+      "Aggregate",
+      "StartWorkflow",
+      "CompleteWorkflow",
+      "Checkpoint"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "id": "urn:uuid:coord-vc-001",
+      "type": [
+        "VerifiableCredential",
+        "CoordinatorCapability"
+      ],
+      "issuer": "did:web:authority.example.com",
+      "validUntil": "2025-12-15T10:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkCoordinatorAgent123",
+        "capability": "CoordinatorCapability",
+        "maxDelegations": 10,
+        "allowedAgentTypes": [
+          "PlannerAgentType",
+          "ExecutorAgentType",
+          "ObserverAgentType"
+        ]
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "type": [
+        "odrl:Constraint",
+        "acg:ResourceConstraint"
+      ],
+      "rule": "Maximum 10 concurrent delegations",
+      "policyRef": "urn:policy:delegation-limits",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": [
+        "odrl:Constraint",
+        "acg:TemporalConstraint"
+      ],
+      "rule": "Workflows must complete within 1 hour",
+      "policyRef": "urn:policy:workflow-timeout",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-delegate-001",
+      "rel": "delegate",
+      "relVersion": "1.0.0",
+      "actionType": "Delegate",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/delegations",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#DelegateParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "CoordinatorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Creates delegation task",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2024-12-15T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-aggregate-001",
+      "rel": "aggregate",
+      "relVersion": "1.0.0",
+      "actionType": "Aggregate",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/aggregations",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#AggregateParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "CoordinatorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Aggregates results from delegations",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2024-12-15T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-start-workflow-001",
+      "rel": "start-workflow",
+      "relVersion": "1.0.0",
+      "actionType": "StartWorkflow",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/workflows",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#StartWorkflowParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "CoordinatorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates new workflow",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2024-12-15T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-complete-workflow-001",
+      "rel": "complete-workflow",
+      "relVersion": "1.0.0",
+      "actionType": "CompleteWorkflow",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/workflows/complete",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#CompleteWorkflowParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "CoordinatorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Marks workflow complete",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2024-12-15T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-checkpoint-001",
+      "rel": "checkpoint",
+      "relVersion": "1.0.0",
+      "actionType": "Checkpoint",
+      "target": {
+        "type": "broker",
+        "href": "broker://infrastructure/checkpoint/create"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#CheckpointParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates workflow checkpoint",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2024-12-15T10:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkCoordinatorAgent123"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "urn:policy:delegation-limits"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "urn:policy:workflow-timeout"
+      },
+      {
+        "id": "hn-aff-aff-delegate-001",
+        "kind": "Affordance",
+        "ref": "aff-delegate-001"
+      },
+      {
+        "id": "hn-target-aff-delegate-001",
+        "kind": "Target",
+        "ref": "https://broker.example.com/delegations"
+      },
+      {
+        "id": "hn-cred-aff-delegate-001-1",
+        "kind": "Credential",
+        "ref": "CoordinatorCapability"
+      },
+      {
+        "id": "hn-aff-aff-aggregate-001",
+        "kind": "Affordance",
+        "ref": "aff-aggregate-001"
+      },
+      {
+        "id": "hn-target-aff-aggregate-001",
+        "kind": "Target",
+        "ref": "https://broker.example.com/aggregations"
+      },
+      {
+        "id": "hn-cred-aff-aggregate-001-1",
+        "kind": "Credential",
+        "ref": "CoordinatorCapability"
+      },
+      {
+        "id": "hn-aff-aff-start-workflow-001",
+        "kind": "Affordance",
+        "ref": "aff-start-workflow-001"
+      },
+      {
+        "id": "hn-target-aff-start-workflow-001",
+        "kind": "Target",
+        "ref": "https://broker.example.com/workflows"
+      },
+      {
+        "id": "hn-cred-aff-start-workflow-001-1",
+        "kind": "Credential",
+        "ref": "CoordinatorCapability"
+      },
+      {
+        "id": "hn-aff-aff-complete-workflow-001",
+        "kind": "Affordance",
+        "ref": "aff-complete-workflow-001"
+      },
+      {
+        "id": "hn-target-aff-complete-workflow-001",
+        "kind": "Target",
+        "ref": "https://broker.example.com/workflows/complete"
+      },
+      {
+        "id": "hn-cred-aff-complete-workflow-001-1",
+        "kind": "Credential",
+        "ref": "CoordinatorCapability"
+      },
+      {
+        "id": "hn-aff-aff-checkpoint-001",
+        "kind": "Affordance",
+        "ref": "aff-checkpoint-001"
+      },
+      {
+        "id": "hn-target-aff-checkpoint-001",
+        "kind": "Target",
+        "ref": "broker://infrastructure/checkpoint/create"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-delegate-001",
+        "relation": "affordance",
+        "affordanceRef": "aff-delegate-001",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-delegate-001",
+          "hn-target-aff-delegate-001",
+          "hn-cred-aff-delegate-001-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-delegate-001",
+          "target": "hn-target-aff-delegate-001",
+          "credential": [
+            "hn-cred-aff-delegate-001-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-aggregate-001",
+        "relation": "affordance",
+        "affordanceRef": "aff-aggregate-001",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-aggregate-001",
+          "hn-target-aff-aggregate-001",
+          "hn-cred-aff-aggregate-001-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-aggregate-001",
+          "target": "hn-target-aff-aggregate-001",
+          "credential": [
+            "hn-cred-aff-aggregate-001-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-start-workflow-001",
+        "relation": "affordance",
+        "affordanceRef": "aff-start-workflow-001",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-start-workflow-001",
+          "hn-target-aff-start-workflow-001",
+          "hn-cred-aff-start-workflow-001-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-start-workflow-001",
+          "target": "hn-target-aff-start-workflow-001",
+          "credential": [
+            "hn-cred-aff-start-workflow-001-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-complete-workflow-001",
+        "relation": "affordance",
+        "affordanceRef": "aff-complete-workflow-001",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-complete-workflow-001",
+          "hn-target-aff-complete-workflow-001",
+          "hn-cred-aff-complete-workflow-001-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-complete-workflow-001",
+          "target": "hn-target-aff-complete-workflow-001",
+          "credential": [
+            "hn-cred-aff-complete-workflow-001-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-checkpoint-001",
+        "relation": "affordance",
+        "affordanceRef": "aff-checkpoint-001",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-checkpoint-001",
+          "hn-target-aff-checkpoint-001",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-checkpoint-001",
+          "target": "hn-target-aff-checkpoint-001",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "workflow-orchestration"
+      },
+      {
+        "id": "obj-target-aff-delegate-001",
+        "ref": "https://broker.example.com/delegations"
+      },
+      {
+        "id": "obj-target-aff-aggregate-001",
+        "ref": "https://broker.example.com/aggregations"
+      },
+      {
+        "id": "obj-target-aff-start-workflow-001",
+        "ref": "https://broker.example.com/workflows"
+      },
+      {
+        "id": "obj-target-aff-complete-workflow-001",
+        "ref": "https://broker.example.com/workflows/complete"
+      },
+      {
+        "id": "obj-target-aff-checkpoint-001",
+        "ref": "broker://infrastructure/checkpoint/create"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-delegate-001",
+        "name": "Delegate",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-delegate-001"
+        ],
+        "affordanceRef": "aff-delegate-001",
+        "hyperedgeRef": "he-aff-delegate-001"
+      },
+      {
+        "id": "m-aff-aggregate-001",
+        "name": "Aggregate",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-aggregate-001"
+        ],
+        "affordanceRef": "aff-aggregate-001",
+        "hyperedgeRef": "he-aff-aggregate-001"
+      },
+      {
+        "id": "m-aff-start-workflow-001",
+        "name": "StartWorkflow",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-start-workflow-001"
+        ],
+        "affordanceRef": "aff-start-workflow-001",
+        "hyperedgeRef": "he-aff-start-workflow-001"
+      },
+      {
+        "id": "m-aff-complete-workflow-001",
+        "name": "CompleteWorkflow",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-complete-workflow-001"
+        ],
+        "affordanceRef": "aff-complete-workflow-001",
+        "hyperedgeRef": "he-aff-complete-workflow-001"
+      },
+      {
+        "id": "m-aff-checkpoint-001",
+        "name": "Checkpoint",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-checkpoint-001"
+        ],
+        "affordanceRef": "aff-checkpoint-001",
+        "hyperedgeRef": "he-aff-checkpoint-001"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P1Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true
+  }
+}

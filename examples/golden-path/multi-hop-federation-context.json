@@ -1,0 +1,997 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    "https://agentcontextgraph.dev/federation#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "fed": "https://agentcontextgraph.dev/federation#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "federation": "acg:hasFederation",
+      "originBroker": "fed:originBroker",
+      "trustDomain": {
+        "@id": "fed:memberOfDomain",
+        "@type": "@id"
+      },
+      "federatedBrokers": {
+        "@id": "fed:includesBroker",
+        "@container": "@set"
+      },
+      "trustLevel": "fed:hasTrustLevel",
+      "maxFederationHops": {
+        "@id": "fed:maxFederationHops",
+        "@type": "xsd:integer"
+      },
+      "currentHop": {
+        "@id": "fed:currentHop",
+        "@type": "xsd:integer"
+      },
+      "federationPath": {
+        "@id": "fed:federationPath",
+        "@container": "@list"
+      },
+      "credentialBridges": {
+        "@id": "fed:hasCredentialBridge",
+        "@container": "@set"
+      },
+      "fromDomain": {
+        "@id": "fed:fromDomain",
+        "@type": "@id"
+      },
+      "toDomain": {
+        "@id": "fed:toDomain",
+        "@type": "@id"
+      },
+      "bridgeStatus": "fed:bridgeStatus",
+      "brokerDID": {
+        "@id": "fed:brokerDID",
+        "@type": "@id"
+      },
+      "serviceEndpoint": {
+        "@id": "fed:serviceEndpoint",
+        "@type": "@id"
+      },
+      "status": "fed:brokerStatus",
+      "supportedDIDMethods": {
+        "@id": "fed:supportedDIDMethods",
+        "@container": "@set"
+      },
+      "federationProtocols": {
+        "@id": "fed:federationProtocols",
+        "@container": "@set"
+      },
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "remoteBroker": "fed:remoteBroker",
+      "requiresCrossdomainAuth": {
+        "@id": "fed:requiresCrossdomainAuth",
+        "@type": "xsd:boolean"
+      },
+      "federationProtocol": "fed:federationProtocol",
+      "hopCount": {
+        "@id": "fed:hopCount",
+        "@type": "xsd:integer"
+      },
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "bridgeRef": {
+        "@id": "fed:bridgeRef",
+        "@type": "@id"
+      },
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "disabledReason": "acg:disabledReason",
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-multi-hop-federation-001",
+  "type": [
+    "acg:ContextGraph",
+    "fed:FederatedContext"
+  ],
+  "agentDID": "did:key:z6MkpPlannerMultiHop123",
+  "agentType": "aat:PlannerAgentType",
+  "timestamp": "2026-01-24T19:00:00Z",
+  "expiresAt": "2026-01-24T19:30:00Z",
+  "nonce": "multi-hop-federation-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "cross-org-planning",
+    "resources": [
+      "urn:resource:org-alpha:inventory",
+      "urn:resource:org-beta:shipping",
+      "urn:resource:org-gamma:fulfillment"
+    ],
+    "actions": [
+      "EmitPlan",
+      "Observe",
+      "FederateContext"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:PlannerCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-planner-multihop-001",
+      "issuer": "did:web:broker-alpha.example.com",
+      "validUntil": "2026-01-24T20:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpPlannerMultiHop123",
+        "capability": "PlannerCapability",
+        "scope": [
+          "cross-org-planning"
+        ]
+      }
+    },
+    {
+      "type": [
+        "VerifiableCredential",
+        "fed:FederationPassportCredential"
+      ],
+      "id": "urn:uuid:cred-federation-passport-001",
+      "issuer": "did:web:trust-domain.supply-chain.example.com",
+      "validUntil": "2026-01-24T20:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpPlannerMultiHop123",
+        "capability": "FederationPassport",
+        "trustDomains": [
+          "did:web:trust-domain.supply-chain.example.com",
+          "did:web:trust-domain.logistics.example.com"
+        ],
+        "maxHops": 3
+      },
+      "_note": "Cross-domain passport enabling multi-hop federation"
+    }
+  ],
+  "federation": {
+    "type": "fed:FederationInfo",
+    "originBroker": {
+      "type": "fed:BrokerRef",
+      "brokerDID": "did:web:broker-alpha.example.com",
+      "serviceEndpoint": "https://broker-alpha.example.com/acg/v1",
+      "status": "Active"
+    },
+    "trustDomain": "did:web:trust-domain.supply-chain.example.com",
+    "federatedBrokers": [
+      {
+        "type": "fed:BrokerRef",
+        "brokerDID": "did:web:broker-beta.example.com",
+        "serviceEndpoint": "https://broker-beta.example.com/acg/v1",
+        "status": "Active",
+        "supportedDIDMethods": [
+          "did:key",
+          "did:web"
+        ],
+        "federationProtocols": [
+          "ActivityPub",
+          "DIDComm"
+        ]
+      },
+      {
+        "type": "fed:BrokerRef",
+        "brokerDID": "did:web:broker-gamma.example.com",
+        "serviceEndpoint": "https://broker-gamma.example.com/acg/v1",
+        "status": "Active",
+        "supportedDIDMethods": [
+          "did:key",
+          "did:web",
+          "did:dht"
+        ],
+        "federationProtocols": [
+          "DIDComm",
+          "LDN"
+        ]
+      }
+    ],
+    "trustLevel": "LimitedTrust",
+    "maxFederationHops": 3,
+    "currentHop": 2,
+    "federationPath": [
+      {
+        "type": "fed:FederationHop",
+        "brokerDID": "did:web:broker-alpha.example.com",
+        "hopNumber": 0,
+        "protocol": "origin",
+        "_note": "Origin broker - agent's home"
+      },
+      {
+        "type": "fed:FederationHop",
+        "brokerDID": "did:web:broker-beta.example.com",
+        "hopNumber": 1,
+        "protocol": "ActivityPub",
+        "_note": "First hop via ActivityPub"
+      },
+      {
+        "type": "fed:FederationHop",
+        "brokerDID": "did:web:broker-gamma.example.com",
+        "hopNumber": 2,
+        "protocol": "DIDComm",
+        "_note": "Current location - second hop via DIDComm"
+      }
+    ],
+    "credentialBridges": [
+      {
+        "type": "fed:CredentialBridge",
+        "id": "urn:bridge:alpha-to-beta",
+        "fromDomain": "did:web:broker-alpha.example.com",
+        "toDomain": "did:web:broker-beta.example.com",
+        "bridgeStatus": "active",
+        "_note": "Bidirectional credential bridge between Alpha and Beta"
+      },
+      {
+        "type": "fed:CredentialBridge",
+        "id": "urn:bridge:beta-to-gamma",
+        "fromDomain": "did:web:broker-beta.example.com",
+        "toDomain": "did:web:broker-gamma.example.com",
+        "bridgeStatus": "active",
+        "_note": "Bidirectional credential bridge between Beta and Gamma"
+      },
+      {
+        "type": "fed:CredentialBridge",
+        "id": "urn:bridge:alpha-to-gamma-direct",
+        "fromDomain": "did:web:broker-alpha.example.com",
+        "toDomain": "did:web:broker-gamma.example.com",
+        "bridgeStatus": "pending",
+        "_note": "Direct bridge pending - currently requires 2-hop path"
+      }
+    ]
+  },
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent MUST NOT exceed maxFederationHops (3) in cross-broker traversal",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent MUST present valid FederationPassport at each hop",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Cross-domain affordances with LimitedTrust SHOULD include additional verification",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-observe-gamma-fulfillment",
+      "rel": "observe-remote-resource",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Observe",
+      "target": {
+        "type": "acg:FederatedTarget",
+        "href": "https://broker-gamma.example.com/acg/v1/resources/fulfillment/status",
+        "method": "GET",
+        "remoteBroker": {
+          "brokerDID": "did:web:broker-gamma.example.com",
+          "serviceEndpoint": "https://broker-gamma.example.com/acg/v1"
+        },
+        "requiresCrossdomainAuth": true,
+        "federationProtocol": "DIDComm",
+        "hopCount": 2
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ObserveParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "FederationPassport",
+          "bridgeRef": "urn:bridge:beta-to-gamma"
+        }
+      ],
+      "effects": [],
+      "enabled": true,
+      "_note": "Federated observation at Gamma broker (2 hops from origin)",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T19:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-observe-beta-shipping",
+      "rel": "observe-remote-resource",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Observe",
+      "target": {
+        "type": "acg:FederatedTarget",
+        "href": "https://broker-beta.example.com/acg/v1/resources/shipping/status",
+        "method": "GET",
+        "remoteBroker": {
+          "brokerDID": "did:web:broker-beta.example.com",
+          "serviceEndpoint": "https://broker-beta.example.com/acg/v1"
+        },
+        "requiresCrossdomainAuth": true,
+        "federationProtocol": "ActivityPub",
+        "hopCount": 1
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ObserveParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "FederationPassport",
+          "bridgeRef": "urn:bridge:alpha-to-beta"
+        }
+      ],
+      "effects": [],
+      "enabled": true,
+      "_note": "Federated observation at Beta broker (1 hop from origin)",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T19:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-emit-cross-org-plan",
+      "rel": "emit-plan",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EmitPlan",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker-alpha.example.com/acg/v1/plans",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EmitPlanParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "PlannerCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates cross-organization plan referencing federated resources",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Plan emission at origin broker with federated resource references",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T19:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-federate-to-delta",
+      "rel": "request-federation",
+      "relVersion": "1.0.0",
+      "actionType": "aat:FederateContext",
+      "target": {
+        "type": "acg:FederatedTarget",
+        "href": "https://broker-delta.example.com/acg/v1/federation/materialize",
+        "method": "POST",
+        "remoteBroker": {
+          "brokerDID": "did:web:broker-delta.example.com",
+          "serviceEndpoint": "https://broker-delta.example.com/acg/v1",
+          "status": "Active"
+        },
+        "federationProtocol": "LDN",
+        "hopCount": 3
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#FederateContextParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "FederationPassport"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Establishes federation with Delta broker, extending context to 3 hops",
+          "reversible": true
+        }
+      ],
+      "enabled": false,
+      "disabledReason": "Would exceed maxFederationHops (3). Current position at hop 2, federation to Delta would be hop 3 (max allowed).",
+      "_note": "Disabled because we're at hop 2 and this would create hop 3 which is the max - further federation from Delta would be blocked",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T19:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-establish-direct-bridge",
+      "rel": "establish-trust",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EstablishTrust",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker-alpha.example.com/acg/v1/federation/trust",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EstablishTrustParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "FederationCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Establishes direct Alpha-Gamma bridge, reducing hop count",
+          "reversible": true
+        }
+      ],
+      "enabled": false,
+      "disabledReason": "Agent lacks FederationCapability credential. Only brokers can establish trust relationships.",
+      "_note": "Would enable direct Alpha-Gamma path but requires broker-level authority",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T19:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpPlannerMultiHop123"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Agent MUST NOT exceed maxFederationHops (3) in cross-broker traversal"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Agent MUST present valid FederationPassport at each hop"
+      },
+      {
+        "id": "hn-constraint-3",
+        "kind": "Constraint",
+        "ref": "Cross-domain affordances with LimitedTrust SHOULD include additional verification"
+      },
+      {
+        "id": "hn-aff-aff-observe-gamma-fulfillment",
+        "kind": "Affordance",
+        "ref": "aff-observe-gamma-fulfillment"
+      },
+      {
+        "id": "hn-target-aff-observe-gamma-fulfillment",
+        "kind": "Target",
+        "ref": "https://broker-gamma.example.com/acg/v1/resources/fulfillment/status"
+      },
+      {
+        "id": "hn-cred-aff-observe-gamma-fulfillment-1",
+        "kind": "Credential",
+        "ref": "FederationPassport"
+      },
+      {
+        "id": "hn-aff-aff-observe-beta-shipping",
+        "kind": "Affordance",
+        "ref": "aff-observe-beta-shipping"
+      },
+      {
+        "id": "hn-target-aff-observe-beta-shipping",
+        "kind": "Target",
+        "ref": "https://broker-beta.example.com/acg/v1/resources/shipping/status"
+      },
+      {
+        "id": "hn-cred-aff-observe-beta-shipping-1",
+        "kind": "Credential",
+        "ref": "FederationPassport"
+      },
+      {
+        "id": "hn-aff-aff-emit-cross-org-plan",
+        "kind": "Affordance",
+        "ref": "aff-emit-cross-org-plan"
+      },
+      {
+        "id": "hn-target-aff-emit-cross-org-plan",
+        "kind": "Target",
+        "ref": "https://broker-alpha.example.com/acg/v1/plans"
+      },
+      {
+        "id": "hn-cred-aff-emit-cross-org-plan-1",
+        "kind": "Credential",
+        "ref": "PlannerCapability"
+      },
+      {
+        "id": "hn-aff-aff-federate-to-delta",
+        "kind": "Affordance",
+        "ref": "aff-federate-to-delta"
+      },
+      {
+        "id": "hn-target-aff-federate-to-delta",
+        "kind": "Target",
+        "ref": "https://broker-delta.example.com/acg/v1/federation/materialize"
+      },
+      {
+        "id": "hn-cred-aff-federate-to-delta-1",
+        "kind": "Credential",
+        "ref": "FederationPassport"
+      },
+      {
+        "id": "hn-aff-aff-establish-direct-bridge",
+        "kind": "Affordance",
+        "ref": "aff-establish-direct-bridge"
+      },
+      {
+        "id": "hn-target-aff-establish-direct-bridge",
+        "kind": "Target",
+        "ref": "https://broker-alpha.example.com/acg/v1/federation/trust"
+      },
+      {
+        "id": "hn-cred-aff-establish-direct-bridge-1",
+        "kind": "Credential",
+        "ref": "FederationCapability"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-observe-gamma-fulfillment",
+        "relation": "affordance",
+        "affordanceRef": "aff-observe-gamma-fulfillment",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-observe-gamma-fulfillment",
+          "hn-target-aff-observe-gamma-fulfillment",
+          "hn-cred-aff-observe-gamma-fulfillment-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-observe-gamma-fulfillment",
+          "target": "hn-target-aff-observe-gamma-fulfillment",
+          "credential": [
+            "hn-cred-aff-observe-gamma-fulfillment-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-observe-beta-shipping",
+        "relation": "affordance",
+        "affordanceRef": "aff-observe-beta-shipping",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-observe-beta-shipping",
+          "hn-target-aff-observe-beta-shipping",
+          "hn-cred-aff-observe-beta-shipping-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-observe-beta-shipping",
+          "target": "hn-target-aff-observe-beta-shipping",
+          "credential": [
+            "hn-cred-aff-observe-beta-shipping-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-emit-cross-org-plan",
+        "relation": "affordance",
+        "affordanceRef": "aff-emit-cross-org-plan",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-emit-cross-org-plan",
+          "hn-target-aff-emit-cross-org-plan",
+          "hn-cred-aff-emit-cross-org-plan-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-emit-cross-org-plan",
+          "target": "hn-target-aff-emit-cross-org-plan",
+          "credential": [
+            "hn-cred-aff-emit-cross-org-plan-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-federate-to-delta",
+        "relation": "affordance",
+        "affordanceRef": "aff-federate-to-delta",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-federate-to-delta",
+          "hn-target-aff-federate-to-delta",
+          "hn-cred-aff-federate-to-delta-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-federate-to-delta",
+          "target": "hn-target-aff-federate-to-delta",
+          "credential": [
+            "hn-cred-aff-federate-to-delta-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-establish-direct-bridge",
+        "relation": "affordance",
+        "affordanceRef": "aff-establish-direct-bridge",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-establish-direct-bridge",
+          "hn-target-aff-establish-direct-bridge",
+          "hn-cred-aff-establish-direct-bridge-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-establish-direct-bridge",
+          "target": "hn-target-aff-establish-direct-bridge",
+          "credential": [
+            "hn-cred-aff-establish-direct-bridge-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "cross-org-planning"
+      },
+      {
+        "id": "obj-target-aff-observe-gamma-fulfillment",
+        "ref": "https://broker-gamma.example.com/acg/v1/resources/fulfillment/status"
+      },
+      {
+        "id": "obj-target-aff-observe-beta-shipping",
+        "ref": "https://broker-beta.example.com/acg/v1/resources/shipping/status"
+      },
+      {
+        "id": "obj-target-aff-emit-cross-org-plan",
+        "ref": "https://broker-alpha.example.com/acg/v1/plans"
+      },
+      {
+        "id": "obj-target-aff-federate-to-delta",
+        "ref": "https://broker-delta.example.com/acg/v1/federation/materialize"
+      },
+      {
+        "id": "obj-target-aff-establish-direct-bridge",
+        "ref": "https://broker-alpha.example.com/acg/v1/federation/trust"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-observe-gamma-fulfillment",
+        "name": "aat:Observe",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-observe-gamma-fulfillment"
+        ],
+        "affordanceRef": "aff-observe-gamma-fulfillment",
+        "hyperedgeRef": "he-aff-observe-gamma-fulfillment"
+      },
+      {
+        "id": "m-aff-observe-beta-shipping",
+        "name": "aat:Observe",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-observe-beta-shipping"
+        ],
+        "affordanceRef": "aff-observe-beta-shipping",
+        "hyperedgeRef": "he-aff-observe-beta-shipping"
+      },
+      {
+        "id": "m-aff-emit-cross-org-plan",
+        "name": "aat:EmitPlan",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-emit-cross-org-plan"
+        ],
+        "affordanceRef": "aff-emit-cross-org-plan",
+        "hyperedgeRef": "he-aff-emit-cross-org-plan"
+      },
+      {
+        "id": "m-aff-federate-to-delta",
+        "name": "aat:FederateContext",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-federate-to-delta"
+        ],
+        "affordanceRef": "aff-federate-to-delta",
+        "hyperedgeRef": "he-aff-federate-to-delta"
+      },
+      {
+        "id": "m-aff-establish-direct-bridge",
+        "name": "aat:EstablishTrust",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-establish-direct-bridge"
+        ],
+        "affordanceRef": "aff-establish-direct-bridge",
+        "hyperedgeRef": "he-aff-establish-direct-bridge"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P90D",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true,
+    "_note": "Cross-domain traces require extended retention for federation audit"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Multi-hop federation across three organizations with credential bridging",
+    "demonstrates": [
+      "Multi-hop federation path tracking (federationPath with hop numbers)",
+      "FederationPassport credential for cross-domain traversal",
+      "Credential bridges between broker pairs",
+      "FederatedTarget with hopCount and federationProtocol",
+      "maxFederationHops constraint enforcement",
+      "currentHop tracking for hop limit validation",
+      "Mixed federation protocols (ActivityPub, DIDComm, LDN)",
+      "Trust level (LimitedTrust) affecting verification requirements",
+      "Affordance disabling when hop limits would be exceeded",
+      "Cross-organization planning with federated resource observation"
+    ]
+  }
+}

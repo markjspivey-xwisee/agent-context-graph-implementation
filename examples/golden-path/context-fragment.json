@@ -1,0 +1,262 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://agentcontextgraph.dev/context/v1",
+    "https://agentcontextgraph.dev/ontology",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "hypergraph": { "@id": "acg:hasHypergraph" },
+      "category": { "@id": "acg:hasCategory" },
+      "nodes": { "@id": "acg:hasNode", "@container": "@set" },
+      "hyperedges": { "@id": "acg:hasHyperedge", "@container": "@set" },
+      "connects": { "@id": "acg:connectsNode", "@container": "@set" },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": { "@id": "acg:hasObject", "@container": "@set" },
+      "morphisms": { "@id": "acg:hasMorphism", "@container": "@set" },
+      "composition": { "@id": "acg:hasComposition", "@container": "@set" },
+      "usageSemantics": { "@id": "acg:hasUsageSemantics" },
+      "stability": { "@id": "acg:usageStability", "@type": "xsd:decimal" },
+      "drift": { "@id": "acg:usageDrift", "@type": "xsd:decimal" },
+      "polysemy": { "@id": "acg:usagePolysemy", "@type": "xsd:decimal" },
+      "evidenceWindow": { "@id": "acg:usageEvidenceWindow", "@type": "xsd:duration" },
+      "lastObservedAt": { "@id": "acg:usageLastObservedAt", "@type": "xsd:dateTime" },
+      "usageExamples": { "@id": "acg:usageExampleTrace", "@container": "@set" },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "agentDID": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+  "agentType": "aat:PlannerAgentType",
+  "timestamp": "2026-01-23T15:00:00Z",
+  "expiresAt": "2026-01-23T15:05:00Z",
+  "nonce": "abc123xyz789",
+  "scope": {
+    "domain": "planning",
+    "resources": [
+      "urn:resource:project-alpha",
+      "urn:resource:team-data"
+    ],
+    "actions": [
+      "EmitPlan",
+      "RequestInfo",
+      "ValidatePlan"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "id": "urn:uuid:cred-001",
+      "type": [
+        "VerifiableCredential",
+        "PlannerCapability"
+      ],
+      "issuer": "did:web:authority.example.com",
+      "validUntil": "2026-12-31T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+        "capability": "PlannerCapability"
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "type": "deontic",
+      "rule": "MUST include rationale for all plan steps",
+      "policyRef": "urn:policy:planning-guidelines-v1",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "temporal",
+      "rule": "Plans must be generated within 30 seconds",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "affordances": [
+    {
+      "id": "aff-emit-plan",
+      "rel": "emit-plan",
+      "relVersion": "1.0.0",
+      "actionType": "EmitPlan",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/plans",
+        "method": "POST"
+      },
+      "params": {
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EmitPlanParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "schema": "PlannerCapability",
+          "issuer": "did:web:authority.example.com"
+        }
+      ],
+      "effects": [
+        {
+          "type": "resource-create",
+          "description": "Creates a new plan resource",
+          "reversible": false
+        },
+        {
+          "type": "event-emit",
+          "description": "Emits PlanCreated event",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-23T15:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "id": "aff-request-info",
+      "rel": "request-info",
+      "relVersion": "1.0.0",
+      "actionType": "RequestInfo",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/info-requests",
+        "method": "POST"
+      },
+      "params": {
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RequestInfoParamsShape"
+      },
+      "effects": [
+        {
+          "type": "event-emit",
+          "description": "Emits InfoRequested event",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-23T15:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "id": "aff-validate-plan",
+      "rel": "validate-plan",
+      "relVersion": "1.0.0",
+      "actionType": "ValidatePlan",
+      "target": {
+        "type": "HTTP",
+        "href": "https://broker.example.com/plans/validate",
+        "method": "POST"
+      },
+      "params": {
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ValidatePlanParamsShape"
+      },
+      "effects": [
+        {
+          "type": "state-change",
+          "description": "No state change - validation only",
+          "reversible": true
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-23T15:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
+      },
+      {
+        "id": "hn-aff-emit",
+        "kind": "Affordance",
+        "ref": "aff-emit-plan"
+      },
+      {
+        "id": "hn-target-emit",
+        "kind": "Target",
+        "ref": "https://broker.example.com/plans"
+      },
+      {
+        "id": "hn-cred-planner",
+        "kind": "Credential",
+        "ref": "urn:uuid:cred-001"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-emit-plan",
+        "relation": "affordance",
+        "affordanceRef": "aff-emit-plan",
+        "connects": [
+          "hn-agent",
+          "hn-aff-emit",
+          "hn-target-emit",
+          "hn-cred-planner"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-emit",
+          "target": "hn-target-emit",
+          "credential": "hn-cred-planner"
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-planning-scope",
+        "ref": "urn:resource:project-alpha"
+      },
+      {
+        "id": "obj-plan-resource",
+        "ref": "https://broker.example.com/plans"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-emit-plan",
+        "name": "EmitPlan",
+        "domain": [
+          "obj-planning-scope"
+        ],
+        "codomain": [
+          "obj-plan-resource"
+        ],
+        "affordanceRef": "aff-emit-plan",
+        "hyperedgeRef": "he-emit-plan"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P1Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true
+  }
+}

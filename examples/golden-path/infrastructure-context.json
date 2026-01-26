@@ -1,0 +1,908 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "disabledReason": "acg:disabledReason",
+      "enclave": "acg:hasEnclave",
+      "enclaveId": "acg:enclaveId",
+      "worktreePath": "acg:worktreePath",
+      "enclaveStatus": "acg:enclaveStatus",
+      "boundAgent": {
+        "@id": "acg:boundToAgent",
+        "@type": "@id"
+      },
+      "enclaveScope": {
+        "@id": "acg:enclaveScope",
+        "@container": "@set"
+      },
+      "checkpoints": {
+        "@id": "acg:hasCheckpoints",
+        "@container": "@set"
+      },
+      "checkpointId": "acg:checkpointId",
+      "checkpointLabel": "acg:checkpointLabel",
+      "contextGraphId": "acg:contextGraphId",
+      "checkpointHash": "acg:checkpointHash",
+      "checkpointSignature": "acg:checkpointSignature",
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-infrastructure-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkpExecutorPolecatAlpha",
+  "agentType": "aat:ExecutorAgentType",
+  "timestamp": "2026-01-24T16:00:00Z",
+  "expiresAt": "2026-01-24T18:00:00Z",
+  "nonce": "enclave-session-alpha-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "isolated-code-execution",
+    "resources": [
+      "urn:resource:worktree-alpha",
+      "file:src/**/*.ts",
+      "api:github.com/repos/example/project"
+    ],
+    "actions": [
+      "Act",
+      "CreateEnclave",
+      "SealEnclave",
+      "DestroyEnclave",
+      "Checkpoint",
+      "Resume"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ExecutorCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-executor-alpha-001",
+      "issuer": "did:web:orchestrator.example.com",
+      "validUntil": "2026-01-24T18:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpExecutorPolecatAlpha",
+        "capability": "ExecutorCapability",
+        "scope": [
+          "file:src/**/*.ts",
+          "api:github.com"
+        ]
+      }
+    },
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:EnclaveCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-enclave-001",
+      "issuer": "did:web:orchestrator.example.com",
+      "validUntil": "2026-01-24T18:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpExecutorPolecatAlpha",
+        "capability": "EnclaveCapability"
+      }
+    }
+  ],
+  "enclave": {
+    "type": "acg:ExecutionEnclave",
+    "enclaveId": "urn:enclave:alpha-001",
+    "worktreePath": "/worktrees/agent-alpha-001",
+    "enclaveStatus": "active",
+    "boundAgent": "did:key:z6MkpExecutorPolecatAlpha",
+    "enclaveScope": [
+      "file:src/**/*.ts",
+      "file:tests/**/*.test.ts",
+      "api:github.com/repos/example/project"
+    ],
+    "_note": "Isolated git worktree for this agent - Gas Town Polecat pattern"
+  },
+  "checkpoints": [
+    {
+      "type": "acg:ContextCheckpoint",
+      "checkpointId": "urn:checkpoint:alpha-001-init",
+      "checkpointLabel": "Initial state before code changes",
+      "contextGraphId": "urn:uuid:ctx-infrastructure-001",
+      "timestamp": "2026-01-24T16:00:00Z",
+      "checkpointHash": "sha256:abc123def456789...",
+      "checkpointSignature": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+    },
+    {
+      "type": "acg:ContextCheckpoint",
+      "checkpointId": "urn:checkpoint:alpha-001-mid",
+      "checkpointLabel": "After refactoring auth module",
+      "contextGraphId": "urn:uuid:ctx-infrastructure-001",
+      "timestamp": "2026-01-24T16:30:00Z",
+      "checkpointHash": "sha256:def789abc123456...",
+      "checkpointSignature": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:ResourceConstraint",
+      "rule": "Agent MUST only modify files within assigned enclave scope",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Agent MUST checkpoint before making destructive changes",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-create-enclave",
+      "rel": "create-isolated-workspace",
+      "relVersion": "1.0.0",
+      "actionType": "aat:CreateEnclave",
+      "target": {
+        "type": "acg:InternalTarget",
+        "href": "urn:internal:enclave-manager"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#CreateEnclaveParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "EnclaveCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates a new git worktree for isolated execution",
+          "reversible": true
+        }
+      ],
+      "enabled": false,
+      "disabledReason": "Agent already has an active enclave",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-seal-enclave",
+      "rel": "seal-workspace",
+      "relVersion": "1.0.0",
+      "actionType": "aat:SealEnclave",
+      "target": {
+        "type": "acg:InternalTarget",
+        "href": "urn:internal:enclave-manager"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#SealEnclaveParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "EnclaveCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Transitions enclave to read-only sealed state",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-destroy-enclave",
+      "rel": "cleanup-workspace",
+      "relVersion": "1.0.0",
+      "actionType": "aat:DestroyEnclave",
+      "target": {
+        "type": "acg:InternalTarget",
+        "href": "urn:internal:enclave-manager"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#DestroyEnclaveParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "EnclaveCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceDeleteEffect",
+          "description": "Destroys worktree and cleans up enclave state",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-checkpoint",
+      "rel": "save-state",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Checkpoint",
+      "target": {
+        "type": "acg:InternalTarget",
+        "href": "urn:internal:checkpoint-manager"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#CheckpointParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates immutable checkpoint of context graph and agent state",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Gas Town Beads pattern - enables crash recovery and resume",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-resume",
+      "rel": "restore-state",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Resume",
+      "target": {
+        "type": "acg:InternalTarget",
+        "href": "urn:internal:checkpoint-manager"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ResumeParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Restores context and agent state from checkpoint",
+          "reversible": true
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-execute-code-change",
+      "rel": "execute-action",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Act",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/actions/execute",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ActParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Modifies files within enclave scope",
+          "reversible": true
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T16:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpExecutorPolecatAlpha"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Agent MUST only modify files within assigned enclave scope"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Agent MUST checkpoint before making destructive changes"
+      },
+      {
+        "id": "hn-aff-aff-create-enclave",
+        "kind": "Affordance",
+        "ref": "aff-create-enclave"
+      },
+      {
+        "id": "hn-target-aff-create-enclave",
+        "kind": "Target",
+        "ref": "urn:internal:enclave-manager"
+      },
+      {
+        "id": "hn-cred-aff-create-enclave-1",
+        "kind": "Credential",
+        "ref": "EnclaveCapability"
+      },
+      {
+        "id": "hn-aff-aff-seal-enclave",
+        "kind": "Affordance",
+        "ref": "aff-seal-enclave"
+      },
+      {
+        "id": "hn-target-aff-seal-enclave",
+        "kind": "Target",
+        "ref": "urn:internal:enclave-manager"
+      },
+      {
+        "id": "hn-cred-aff-seal-enclave-1",
+        "kind": "Credential",
+        "ref": "EnclaveCapability"
+      },
+      {
+        "id": "hn-aff-aff-destroy-enclave",
+        "kind": "Affordance",
+        "ref": "aff-destroy-enclave"
+      },
+      {
+        "id": "hn-target-aff-destroy-enclave",
+        "kind": "Target",
+        "ref": "urn:internal:enclave-manager"
+      },
+      {
+        "id": "hn-cred-aff-destroy-enclave-1",
+        "kind": "Credential",
+        "ref": "EnclaveCapability"
+      },
+      {
+        "id": "hn-aff-aff-checkpoint",
+        "kind": "Affordance",
+        "ref": "aff-checkpoint"
+      },
+      {
+        "id": "hn-target-aff-checkpoint",
+        "kind": "Target",
+        "ref": "urn:internal:checkpoint-manager"
+      },
+      {
+        "id": "hn-aff-aff-resume",
+        "kind": "Affordance",
+        "ref": "aff-resume"
+      },
+      {
+        "id": "hn-target-aff-resume",
+        "kind": "Target",
+        "ref": "urn:internal:checkpoint-manager"
+      },
+      {
+        "id": "hn-aff-aff-execute-code-change",
+        "kind": "Affordance",
+        "ref": "aff-execute-code-change"
+      },
+      {
+        "id": "hn-target-aff-execute-code-change",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/actions/execute"
+      },
+      {
+        "id": "hn-cred-aff-execute-code-change-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-create-enclave",
+        "relation": "affordance",
+        "affordanceRef": "aff-create-enclave",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-create-enclave",
+          "hn-target-aff-create-enclave",
+          "hn-cred-aff-create-enclave-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-create-enclave",
+          "target": "hn-target-aff-create-enclave",
+          "credential": [
+            "hn-cred-aff-create-enclave-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-seal-enclave",
+        "relation": "affordance",
+        "affordanceRef": "aff-seal-enclave",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-seal-enclave",
+          "hn-target-aff-seal-enclave",
+          "hn-cred-aff-seal-enclave-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-seal-enclave",
+          "target": "hn-target-aff-seal-enclave",
+          "credential": [
+            "hn-cred-aff-seal-enclave-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-destroy-enclave",
+        "relation": "affordance",
+        "affordanceRef": "aff-destroy-enclave",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-destroy-enclave",
+          "hn-target-aff-destroy-enclave",
+          "hn-cred-aff-destroy-enclave-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-destroy-enclave",
+          "target": "hn-target-aff-destroy-enclave",
+          "credential": [
+            "hn-cred-aff-destroy-enclave-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-checkpoint",
+        "relation": "affordance",
+        "affordanceRef": "aff-checkpoint",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-checkpoint",
+          "hn-target-aff-checkpoint",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-checkpoint",
+          "target": "hn-target-aff-checkpoint",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-resume",
+        "relation": "affordance",
+        "affordanceRef": "aff-resume",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-resume",
+          "hn-target-aff-resume",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-resume",
+          "target": "hn-target-aff-resume",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-execute-code-change",
+        "relation": "affordance",
+        "affordanceRef": "aff-execute-code-change",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-execute-code-change",
+          "hn-target-aff-execute-code-change",
+          "hn-cred-aff-execute-code-change-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-execute-code-change",
+          "target": "hn-target-aff-execute-code-change",
+          "credential": [
+            "hn-cred-aff-execute-code-change-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "isolated-code-execution"
+      },
+      {
+        "id": "obj-target-aff-create-enclave",
+        "ref": "urn:internal:enclave-manager"
+      },
+      {
+        "id": "obj-target-aff-seal-enclave",
+        "ref": "urn:internal:enclave-manager"
+      },
+      {
+        "id": "obj-target-aff-destroy-enclave",
+        "ref": "urn:internal:enclave-manager"
+      },
+      {
+        "id": "obj-target-aff-checkpoint",
+        "ref": "urn:internal:checkpoint-manager"
+      },
+      {
+        "id": "obj-target-aff-resume",
+        "ref": "urn:internal:checkpoint-manager"
+      },
+      {
+        "id": "obj-target-aff-execute-code-change",
+        "ref": "https://broker.example.com/acg/v1/actions/execute"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-create-enclave",
+        "name": "aat:CreateEnclave",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-create-enclave"
+        ],
+        "affordanceRef": "aff-create-enclave",
+        "hyperedgeRef": "he-aff-create-enclave"
+      },
+      {
+        "id": "m-aff-seal-enclave",
+        "name": "aat:SealEnclave",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-seal-enclave"
+        ],
+        "affordanceRef": "aff-seal-enclave",
+        "hyperedgeRef": "he-aff-seal-enclave"
+      },
+      {
+        "id": "m-aff-destroy-enclave",
+        "name": "aat:DestroyEnclave",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-destroy-enclave"
+        ],
+        "affordanceRef": "aff-destroy-enclave",
+        "hyperedgeRef": "he-aff-destroy-enclave"
+      },
+      {
+        "id": "m-aff-checkpoint",
+        "name": "aat:Checkpoint",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-checkpoint"
+        ],
+        "affordanceRef": "aff-checkpoint",
+        "hyperedgeRef": "he-aff-checkpoint"
+      },
+      {
+        "id": "m-aff-resume",
+        "name": "aat:Resume",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-resume"
+        ],
+        "affordanceRef": "aff-resume",
+        "hyperedgeRef": "he-aff-resume"
+      },
+      {
+        "id": "m-aff-execute-code-change",
+        "name": "aat:Act",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-execute-code-change"
+        ],
+        "affordanceRef": "aff-execute-code-change",
+        "hyperedgeRef": "he-aff-execute-code-change"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P90D",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Isolated execution with crash recovery (Gas Town patterns)",
+    "demonstrates": [
+      "Execution Enclave - isolated git worktree per agent (Polecat pattern)",
+      "Context Checkpoints - immutable state snapshots (Beads pattern)",
+      "Resume capability - crash recovery from checkpoints (Hooks pattern)",
+      "Enclave lifecycle: CreateEnclave → Act → Checkpoint → SealEnclave → DestroyEnclave",
+      "Scope-limited execution - agent can only modify files within assigned scope",
+      "EnclaveCapability credential requirement for infrastructure actions",
+      "Parallelization: ExecutorAgentType has maxConcurrent=20, requiresIsolation=true"
+    ]
+  }
+}

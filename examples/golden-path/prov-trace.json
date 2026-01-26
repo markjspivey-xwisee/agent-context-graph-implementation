@@ -1,0 +1,302 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/prov#",
+    "https://www.w3.org/2018/credentials/v1",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "dcterms": "http://purl.org/dc/terms/",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "wasAssociatedWith": "prov:wasAssociatedWith",
+      "used": "prov:used",
+      "generated": "prov:generated",
+      "startedAtTime": {
+        "@id": "prov:startedAtTime",
+        "@type": "xsd:dateTime"
+      },
+      "endedAtTime": {
+        "@id": "prov:endedAtTime",
+        "@type": "xsd:dateTime"
+      },
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "agentInstance": "acg:agentInstanceId",
+      "contextSnapshot": "acg:hasContextSnapshot",
+      "contextId": {
+        "@id": "acg:contextId",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "affordanceCount": {
+        "@id": "acg:affordanceCount",
+        "@type": "xsd:integer"
+      },
+      "affordance": "acg:usedAffordance",
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "targetType": "acg:targetType",
+      "targetHref": {
+        "@id": "acg:targetHref",
+        "@type": "@id"
+      },
+      "parameters": "acg:hasParameters",
+      "goal": "acg:hasGoal",
+      "steps": {
+        "@id": "acg:hasSteps",
+        "@container": "@list"
+      },
+      "action": "acg:stepAction",
+      "rationale": "acg:stepRationale",
+      "preconditions": {
+        "@id": "acg:preconditions",
+        "@container": "@list"
+      },
+      "expectedOutcome": "acg:expectedOutcome",
+      "constraints": {
+        "@id": "acg:constraints",
+        "@container": "@list"
+      },
+      "credentials": {
+        "@id": "acg:usedCredentials",
+        "@container": "@set"
+      },
+      "credentialId": {
+        "@id": "acg:credentialId",
+        "@type": "@id"
+      },
+      "credentialType": {
+        "@id": "acg:credentialType",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validAt": {
+        "@id": "acg:validAt",
+        "@type": "xsd:dateTime"
+      },
+      "outcome": "acg:hasOutcome",
+      "status": "acg:outcomeStatus",
+      "resultType": "acg:resultType",
+      "resultRef": {
+        "@id": "acg:resultRef",
+        "@type": "@id"
+      },
+      "stateChanges": {
+        "@id": "acg:stateChanges",
+        "@container": "@set"
+      },
+      "resource": {
+        "@id": "acg:affectedResource",
+        "@type": "@id"
+      },
+      "changeType": "acg:changeType",
+      "after": "acg:stateAfter",
+      "planId": {
+        "@id": "acg:planId",
+        "@type": "@id"
+      },
+      "eventsEmitted": {
+        "@id": "acg:eventsEmitted",
+        "@container": "@set"
+      },
+      "eventType": "acg:eventType",
+      "eventId": {
+        "@id": "acg:eventId",
+        "@type": "@id"
+      },
+      "newContext": "acg:generatedContext",
+      "affordancesDelta": "acg:affordancesDelta",
+      "added": {
+        "@id": "acg:addedAffordances",
+        "@container": "@set"
+      },
+      "removed": {
+        "@id": "acg:removedAffordances",
+        "@container": "@set"
+      },
+      "interventionLabel": "acg:interventionLabel",
+      "policyEvaluations": {
+        "@id": "acg:policyEvaluations",
+        "@container": "@set"
+      },
+      "policyRef": {
+        "@id": "acg:policyRef",
+        "@type": "@id"
+      },
+      "result": "acg:evaluationResult",
+      "reason": "acg:evaluationReason",
+      "signature": "acg:hasSignature",
+      "created": {
+        "@id": "dcterms:created",
+        "@type": "xsd:dateTime"
+      },
+      "verificationMethod": {
+        "@id": "acg:verificationMethod",
+        "@type": "@id"
+      },
+      "proofValue": "acg:proofValue",
+      "usageEvent": "acg:hasUsageEvent",
+      "usageRel": "acg:usageRel",
+      "usageRelVersion": "acg:usageRelVersion",
+      "usageActionType": "acg:usageActionType",
+      "usageTimestamp": {
+        "@id": "acg:usageTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "usageOutcomeStatus": "acg:usageOutcomeStatus"
+    }
+  ],
+  "id": "urn:uuid:trace-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": [
+    "prov:Activity",
+    "aat:Decision"
+  ],
+  "wasAssociatedWith": {
+    "agentDID": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+    "agentType": "aat:PlannerAgentType",
+    "agentInstance": "planner-instance-001"
+  },
+  "used": {
+    "contextSnapshot": {
+      "contextId": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "timestamp": "2026-01-23T15:00:00Z",
+      "nonce": "abc123xyz789",
+      "agentDID": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+      "affordanceCount": 3
+    },
+    "affordance": {
+      "id": "aff-emit-plan",
+      "rel": "emit-plan",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EmitPlan",
+      "targetType": "HTTP",
+      "targetHref": "https://broker.example.com/plans"
+    },
+    "parameters": {
+      "goal": "Implement user authentication feature",
+      "steps": [
+        {
+          "action": "Design authentication schema",
+          "rationale": "Define data structures before implementation",
+          "preconditions": [
+            "Requirements gathered"
+          ],
+          "expectedOutcome": "Schema document created"
+        },
+        {
+          "action": "Implement login endpoint",
+          "rationale": "Core authentication functionality",
+          "preconditions": [
+            "Schema approved"
+          ],
+          "expectedOutcome": "Working login API"
+        },
+        {
+          "action": "Add session management",
+          "rationale": "Maintain authenticated state",
+          "preconditions": [
+            "Login endpoint working"
+          ],
+          "expectedOutcome": "Sessions persisted and validated"
+        }
+      ],
+      "constraints": [
+        "Must use OAuth 2.0",
+        "Session timeout: 30 minutes"
+      ]
+    },
+    "credentials": [
+      {
+        "credentialId": "urn:uuid:cred-001",
+        "credentialType": [
+          "VerifiableCredential",
+          "PlannerCapability"
+        ],
+        "issuer": "did:web:authority.example.com",
+        "validAt": "2026-01-23T15:00:00Z"
+      }
+    ]
+  },
+  "generated": {
+    "outcome": {
+      "status": "success",
+      "resultType": "Plan",
+      "resultRef": "urn:uuid:plan-xyz-123"
+    },
+    "stateChanges": [
+      {
+        "resource": "urn:resource:plans",
+        "changeType": "create",
+        "after": {
+          "planId": "urn:uuid:plan-xyz-123",
+          "status": "pending-approval"
+        }
+      }
+    ],
+    "eventsEmitted": [
+      {
+        "eventType": "PlanCreated",
+        "eventId": "urn:uuid:event-plan-created-001",
+        "timestamp": "2026-01-23T15:00:02Z"
+      }
+    ],
+    "newContext": {
+      "contextId": "urn:uuid:context-after-plan",
+      "affordancesDelta": {
+        "added": [
+          "aff-approve-plan",
+          "aff-reject-plan"
+        ],
+        "removed": []
+      }
+    }
+  },
+  "interventionLabel": "do(EmitPlan, {goal: 'Implement user authentication feature'})",
+  "startedAtTime": "2026-01-23T15:00:00Z",
+  "endedAtTime": "2026-01-23T15:00:02Z",
+  "policyEvaluations": [
+    {
+      "policyRef": "urn:policy:planning-guidelines-v1",
+      "result": "permit",
+      "reason": "All plan steps include rationale"
+    },
+    {
+      "policyRef": "urn:policy:credential-check",
+      "result": "permit",
+      "reason": "Valid PlannerCapability credential presented"
+    }
+  ],
+  "signature": {
+    "type": "Ed25519Signature2020",
+    "created": "2026-01-23T15:00:02Z",
+    "verificationMethod": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK#keys-1",
+    "proofValue": "z3FXQjecWufY46yg7irN8ZSK..."
+  },
+  "usageEvent": {
+    "contextId": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "usageRel": "emit-plan",
+    "usageRelVersion": "1.0.0",
+    "usageActionType": "aat:EmitPlan",
+    "usageTimestamp": "2026-01-23T15:00:00Z",
+    "usageOutcomeStatus": "success"
+  }
+}

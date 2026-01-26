@@ -1,0 +1,812 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "storageStats": "acg:hasStorageStats",
+      "totalTraces": {
+        "@id": "acg:totalTraces",
+        "@type": "xsd:integer"
+      },
+      "totalSizeBytes": {
+        "@id": "acg:totalSizeBytes",
+        "@type": "xsd:integer"
+      },
+      "oldestTrace": {
+        "@id": "acg:oldestTrace",
+        "@type": "xsd:dateTime"
+      },
+      "newestTrace": {
+        "@id": "acg:newestTrace",
+        "@type": "xsd:dateTime"
+      },
+      "indices": {
+        "@id": "acg:hasIndices",
+        "@container": "@set"
+      },
+      "indexId": "acg:indexId",
+      "indexType": "acg:indexType",
+      "indexStatus": "acg:indexStatus",
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "includeContextSnapshot": {
+        "@id": "acg:includeContextSnapshot",
+        "@type": "xsd:boolean"
+      },
+      "includeOutcomes": {
+        "@id": "acg:includeOutcomes",
+        "@type": "xsd:boolean"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-archivist-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkpArchivist789xyz",
+  "agentType": "aat:ArchivistAgentType",
+  "timestamp": "2026-01-24T17:00:00Z",
+  "expiresAt": "2026-01-24T19:00:00Z",
+  "nonce": "archivist-session-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "trace-storage",
+    "resources": [
+      "urn:resource:trace-store-primary",
+      "urn:resource:trace-store-replica",
+      "urn:resource:knowledge-base"
+    ],
+    "actions": [
+      "Store",
+      "Retrieve",
+      "Index",
+      "Version"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ArchivistCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-archivist-001",
+      "issuer": "did:web:archive-authority.example.com",
+      "validUntil": "2027-01-24T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpArchivist789xyz",
+        "capability": "ArchivistCapability",
+        "scope": [
+          "traces",
+          "knowledge",
+          "provenance"
+        ]
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Archivist agents MUST NOT delete stored traces (immutability invariant)",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Archivist agents MUST NOT mutate stored content in place - versioning only",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "All stored traces MUST include valid PROV-O provenance metadata",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:TemporalConstraint",
+      "rule": "Traces MUST be stored within 5 seconds of generation",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "storageStats": {
+    "type": "acg:StorageStats",
+    "totalTraces": 1247832,
+    "totalSizeBytes": 52428800000,
+    "oldestTrace": "2025-01-01T00:00:00Z",
+    "newestTrace": "2026-01-24T16:59:58Z"
+  },
+  "indices": [
+    {
+      "type": "acg:TraceIndex",
+      "indexId": "urn:index:agent-did",
+      "indexType": "agent-lookup",
+      "indexStatus": "active",
+      "_note": "Index by agent DID for agent-specific trace retrieval"
+    },
+    {
+      "type": "acg:TraceIndex",
+      "indexId": "urn:index:action-type",
+      "indexType": "action-lookup",
+      "indexStatus": "active",
+      "_note": "Index by action type for action analysis"
+    },
+    {
+      "type": "acg:TraceIndex",
+      "indexId": "urn:index:temporal",
+      "indexType": "time-series",
+      "indexStatus": "active",
+      "_note": "Temporal index for time-range queries"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-store-trace",
+      "rel": "store-provenance",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Store",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://archive.example.com/api/v1/traces",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#StoreParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ArchivistCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates an immutable trace record",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Primary output action for Archivist agents (requiredOutputAction)",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T17:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-retrieve-trace",
+      "rel": "retrieve-provenance",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Retrieve",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://archive.example.com/api/v1/traces/{traceId}",
+        "method": "GET"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RetrieveParamsShape"
+      },
+      "effects": [],
+      "enabled": true,
+      "_note": "Pure retrieval - no side effects",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T17:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-retrieve-by-query",
+      "rel": "query-provenance",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Retrieve",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://archive.example.com/api/v1/traces/query",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RetrieveParamsShape"
+      },
+      "effects": [],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T17:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-index-traces",
+      "rel": "index-provenance",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Index",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://archive.example.com/api/v1/indices",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#IndexParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates or updates a trace index",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T17:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-version-trace",
+      "rel": "version-content",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Version",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://archive.example.com/api/v1/traces/{traceId}/versions",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#VersionParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates a new version linked to original (immutable append)",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Versioning is the only way to 'update' - original remains immutable",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T17:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpArchivist789xyz"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Archivist agents MUST NOT delete stored traces (immutability invariant)"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Archivist agents MUST NOT mutate stored content in place - versioning only"
+      },
+      {
+        "id": "hn-constraint-3",
+        "kind": "Constraint",
+        "ref": "All stored traces MUST include valid PROV-O provenance metadata"
+      },
+      {
+        "id": "hn-constraint-4",
+        "kind": "Constraint",
+        "ref": "Traces MUST be stored within 5 seconds of generation"
+      },
+      {
+        "id": "hn-aff-aff-store-trace",
+        "kind": "Affordance",
+        "ref": "aff-store-trace"
+      },
+      {
+        "id": "hn-target-aff-store-trace",
+        "kind": "Target",
+        "ref": "https://archive.example.com/api/v1/traces"
+      },
+      {
+        "id": "hn-cred-aff-store-trace-1",
+        "kind": "Credential",
+        "ref": "ArchivistCapability"
+      },
+      {
+        "id": "hn-aff-aff-retrieve-trace",
+        "kind": "Affordance",
+        "ref": "aff-retrieve-trace"
+      },
+      {
+        "id": "hn-target-aff-retrieve-trace",
+        "kind": "Target",
+        "ref": "https://archive.example.com/api/v1/traces/{traceId}"
+      },
+      {
+        "id": "hn-aff-aff-retrieve-by-query",
+        "kind": "Affordance",
+        "ref": "aff-retrieve-by-query"
+      },
+      {
+        "id": "hn-target-aff-retrieve-by-query",
+        "kind": "Target",
+        "ref": "https://archive.example.com/api/v1/traces/query"
+      },
+      {
+        "id": "hn-aff-aff-index-traces",
+        "kind": "Affordance",
+        "ref": "aff-index-traces"
+      },
+      {
+        "id": "hn-target-aff-index-traces",
+        "kind": "Target",
+        "ref": "https://archive.example.com/api/v1/indices"
+      },
+      {
+        "id": "hn-aff-aff-version-trace",
+        "kind": "Affordance",
+        "ref": "aff-version-trace"
+      },
+      {
+        "id": "hn-target-aff-version-trace",
+        "kind": "Target",
+        "ref": "https://archive.example.com/api/v1/traces/{traceId}/versions"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-store-trace",
+        "relation": "affordance",
+        "affordanceRef": "aff-store-trace",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-store-trace",
+          "hn-target-aff-store-trace",
+          "hn-cred-aff-store-trace-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-store-trace",
+          "target": "hn-target-aff-store-trace",
+          "credential": [
+            "hn-cred-aff-store-trace-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-retrieve-trace",
+        "relation": "affordance",
+        "affordanceRef": "aff-retrieve-trace",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-retrieve-trace",
+          "hn-target-aff-retrieve-trace",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-retrieve-trace",
+          "target": "hn-target-aff-retrieve-trace",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-retrieve-by-query",
+        "relation": "affordance",
+        "affordanceRef": "aff-retrieve-by-query",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-retrieve-by-query",
+          "hn-target-aff-retrieve-by-query",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-retrieve-by-query",
+          "target": "hn-target-aff-retrieve-by-query",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-index-traces",
+        "relation": "affordance",
+        "affordanceRef": "aff-index-traces",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-index-traces",
+          "hn-target-aff-index-traces",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-index-traces",
+          "target": "hn-target-aff-index-traces",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-version-trace",
+        "relation": "affordance",
+        "affordanceRef": "aff-version-trace",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-version-trace",
+          "hn-target-aff-version-trace",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-version-trace",
+          "target": "hn-target-aff-version-trace",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "trace-storage"
+      },
+      {
+        "id": "obj-target-aff-store-trace",
+        "ref": "https://archive.example.com/api/v1/traces"
+      },
+      {
+        "id": "obj-target-aff-retrieve-trace",
+        "ref": "https://archive.example.com/api/v1/traces/{traceId}"
+      },
+      {
+        "id": "obj-target-aff-retrieve-by-query",
+        "ref": "https://archive.example.com/api/v1/traces/query"
+      },
+      {
+        "id": "obj-target-aff-index-traces",
+        "ref": "https://archive.example.com/api/v1/indices"
+      },
+      {
+        "id": "obj-target-aff-version-trace",
+        "ref": "https://archive.example.com/api/v1/traces/{traceId}/versions"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-store-trace",
+        "name": "aat:Store",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-store-trace"
+        ],
+        "affordanceRef": "aff-store-trace",
+        "hyperedgeRef": "he-aff-store-trace"
+      },
+      {
+        "id": "m-aff-retrieve-trace",
+        "name": "aat:Retrieve",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-retrieve-trace"
+        ],
+        "affordanceRef": "aff-retrieve-trace",
+        "hyperedgeRef": "he-aff-retrieve-trace"
+      },
+      {
+        "id": "m-aff-retrieve-by-query",
+        "name": "aat:Retrieve",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-retrieve-by-query"
+        ],
+        "affordanceRef": "aff-retrieve-by-query",
+        "hyperedgeRef": "he-aff-retrieve-by-query"
+      },
+      {
+        "id": "m-aff-index-traces",
+        "name": "aat:Index",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-index-traces"
+        ],
+        "affordanceRef": "aff-index-traces",
+        "hyperedgeRef": "he-aff-index-traces"
+      },
+      {
+        "id": "m-aff-version-trace",
+        "name": "aat:Version",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-version-trace"
+        ],
+        "affordanceRef": "aff-version-trace",
+        "hyperedgeRef": "he-aff-version-trace"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P10Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true,
+    "_note": "10-year retention for compliance and audit trails"
+  },
+  "structuralRequirements": {
+    "requiredOutputAction": "aat:Store"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Immutable trace storage and knowledge archival",
+    "demonstrates": [
+      "Archivist agent type with archival actions (Store, Retrieve, Index, Version)",
+      "Immutability constraints - Delete and Mutate are forbidden",
+      "Store as required output action (structural invariant)",
+      "Storage statistics and index metadata in context",
+      "Versioning as the immutable-append pattern for updates",
+      "Long retention periods (10 years) for compliance",
+      "Composition rules: ArchivistAgentType canComposeAfter any agent type"
+    ]
+  }
+}

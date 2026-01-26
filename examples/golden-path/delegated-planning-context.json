@@ -1,0 +1,875 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "parentPlan": "acg:hasParentPlan",
+      "parentPlanId": {
+        "@id": "acg:parentPlanId",
+        "@type": "@id"
+      },
+      "parentAgentDID": {
+        "@id": "acg:parentAgentDID",
+        "@type": "@id"
+      },
+      "delegatedAt": {
+        "@id": "acg:delegatedAt",
+        "@type": "xsd:dateTime"
+      },
+      "delegationScope": {
+        "@id": "acg:delegationScope",
+        "@container": "@set"
+      },
+      "mustReportTo": {
+        "@id": "acg:mustReportTo",
+        "@type": "@id"
+      },
+      "subPlans": {
+        "@id": "acg:hasSubPlans",
+        "@container": "@set"
+      },
+      "subPlanId": {
+        "@id": "acg:subPlanId",
+        "@type": "@id"
+      },
+      "assignedAgent": {
+        "@id": "acg:assignedAgent",
+        "@type": "@id"
+      },
+      "subPlanStatus": "acg:subPlanStatus",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-delegated-planner-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkpSubPlannerAlpha123",
+  "agentType": "aat:PlannerAgentType",
+  "timestamp": "2026-01-24T20:00:00Z",
+  "expiresAt": "2026-01-24T21:00:00Z",
+  "nonce": "delegated-planning-session-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "authentication-subsystem",
+    "resources": [
+      "urn:resource:auth-service",
+      "urn:resource:user-store",
+      "urn:resource:session-manager"
+    ],
+    "actions": [
+      "EmitPlan",
+      "RevisePlan",
+      "RequestInfo",
+      "Report"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:PlannerCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-subplanner-001",
+      "issuer": "did:web:orchestrator.example.com",
+      "validUntil": "2026-01-24T22:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpSubPlannerAlpha123",
+        "capability": "PlannerCapability",
+        "scope": [
+          "authentication-subsystem"
+        ]
+      }
+    },
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:DelegationCredential"
+      ],
+      "id": "urn:uuid:cred-delegation-001",
+      "issuer": "did:key:z6MkpMasterPlannerXYZ",
+      "validUntil": "2026-01-24T22:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpSubPlannerAlpha123",
+        "capability": "DelegatedPlanning",
+        "delegatedFrom": "did:key:z6MkpMasterPlannerXYZ",
+        "delegationChainLength": 1,
+        "maxChainLength": 3
+      },
+      "_note": "Delegation credential from master planner authorizing sub-planning"
+    }
+  ],
+  "parentPlan": {
+    "type": "acg:ParentPlanRef",
+    "parentPlanId": "urn:plan:master-auth-implementation-001",
+    "parentAgentDID": "did:key:z6MkpMasterPlannerXYZ",
+    "delegatedAt": "2026-01-24T19:55:00Z",
+    "delegationScope": [
+      "Design authentication schema",
+      "Plan session management",
+      "Define security policies"
+    ],
+    "mustReportTo": "did:key:z6MkpMasterPlannerXYZ",
+    "_note": "This sub-planner was delegated authentication subsystem planning"
+  },
+  "subPlans": [
+    {
+      "type": "acg:SubPlanRef",
+      "subPlanId": "urn:plan:oauth-integration-001",
+      "assignedAgent": "did:key:z6MkpOAuthSpecialist789",
+      "subPlanStatus": "in_progress",
+      "_note": "Further delegation to OAuth specialist"
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Sub-planner MUST NOT exceed delegated scope boundaries",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Sub-planner MUST report completion to parent planner",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Delegation chain MUST NOT exceed maxChainLength (3)",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:TemporalConstraint",
+      "rule": "Sub-plans MUST complete before parent plan deadline",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-emit-sub-plan",
+      "rel": "emit-plan",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EmitPlan",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/plans",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EmitPlanParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "PlannerCapability"
+        },
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "DelegatedPlanning"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates sub-plan within delegated scope",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Requires both PlannerCapability and DelegationCredential",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T20:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-delegate-further",
+      "rel": "delegate-planning",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EmitPlan",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/delegations",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EmitPlanParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "DelegatedPlanning"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates delegation to another planner (chain length +1)",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Can delegate further if within maxChainLength",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T20:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-report-to-parent",
+      "rel": "report-progress",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Report",
+      "target": {
+        "type": "acg:DIDCommTarget",
+        "didcommType": "https://agentcontextgraph.dev/protocols/plan-report/1.0",
+        "serviceEndpoint": "did:key:z6MkpMasterPlannerXYZ"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ReportParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Sends progress report to delegating parent planner",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Reports go to mustReportTo agent via DIDComm",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T20:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-request-clarification",
+      "rel": "request-info",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RequestInfo",
+      "target": {
+        "type": "acg:DIDCommTarget",
+        "didcommType": "https://agentcontextgraph.dev/protocols/request-info/1.0",
+        "serviceEndpoint": "did:key:z6MkpMasterPlannerXYZ"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RequestInfoParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Requests clarification from parent planner",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T20:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-revise-sub-plan",
+      "rel": "revise-plan",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RevisePlan",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/plans/{planId}/revisions",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RevisePlanParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "PlannerCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceUpdateEffect",
+          "description": "Creates revision of existing sub-plan",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T20:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpSubPlannerAlpha123"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Sub-planner MUST NOT exceed delegated scope boundaries"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Sub-planner MUST report completion to parent planner"
+      },
+      {
+        "id": "hn-constraint-3",
+        "kind": "Constraint",
+        "ref": "Delegation chain MUST NOT exceed maxChainLength (3)"
+      },
+      {
+        "id": "hn-constraint-4",
+        "kind": "Constraint",
+        "ref": "Sub-plans MUST complete before parent plan deadline"
+      },
+      {
+        "id": "hn-aff-aff-emit-sub-plan",
+        "kind": "Affordance",
+        "ref": "aff-emit-sub-plan"
+      },
+      {
+        "id": "hn-target-aff-emit-sub-plan",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/plans"
+      },
+      {
+        "id": "hn-cred-aff-emit-sub-plan-1",
+        "kind": "Credential",
+        "ref": "PlannerCapability"
+      },
+      {
+        "id": "hn-cred-aff-emit-sub-plan-2",
+        "kind": "Credential",
+        "ref": "DelegatedPlanning"
+      },
+      {
+        "id": "hn-aff-aff-delegate-further",
+        "kind": "Affordance",
+        "ref": "aff-delegate-further"
+      },
+      {
+        "id": "hn-target-aff-delegate-further",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/delegations"
+      },
+      {
+        "id": "hn-cred-aff-delegate-further-1",
+        "kind": "Credential",
+        "ref": "DelegatedPlanning"
+      },
+      {
+        "id": "hn-aff-aff-report-to-parent",
+        "kind": "Affordance",
+        "ref": "aff-report-to-parent"
+      },
+      {
+        "id": "hn-target-aff-report-to-parent",
+        "kind": "Target",
+        "ref": "did:key:z6MkpMasterPlannerXYZ"
+      },
+      {
+        "id": "hn-aff-aff-request-clarification",
+        "kind": "Affordance",
+        "ref": "aff-request-clarification"
+      },
+      {
+        "id": "hn-target-aff-request-clarification",
+        "kind": "Target",
+        "ref": "did:key:z6MkpMasterPlannerXYZ"
+      },
+      {
+        "id": "hn-aff-aff-revise-sub-plan",
+        "kind": "Affordance",
+        "ref": "aff-revise-sub-plan"
+      },
+      {
+        "id": "hn-target-aff-revise-sub-plan",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/plans/{planId}/revisions"
+      },
+      {
+        "id": "hn-cred-aff-revise-sub-plan-1",
+        "kind": "Credential",
+        "ref": "PlannerCapability"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-emit-sub-plan",
+        "relation": "affordance",
+        "affordanceRef": "aff-emit-sub-plan",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-emit-sub-plan",
+          "hn-target-aff-emit-sub-plan",
+          "hn-cred-aff-emit-sub-plan-1",
+          "hn-cred-aff-emit-sub-plan-2",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-emit-sub-plan",
+          "target": "hn-target-aff-emit-sub-plan",
+          "credential": [
+            "hn-cred-aff-emit-sub-plan-1",
+            "hn-cred-aff-emit-sub-plan-2"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-delegate-further",
+        "relation": "affordance",
+        "affordanceRef": "aff-delegate-further",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-delegate-further",
+          "hn-target-aff-delegate-further",
+          "hn-cred-aff-delegate-further-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-delegate-further",
+          "target": "hn-target-aff-delegate-further",
+          "credential": [
+            "hn-cred-aff-delegate-further-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-report-to-parent",
+        "relation": "affordance",
+        "affordanceRef": "aff-report-to-parent",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-report-to-parent",
+          "hn-target-aff-report-to-parent",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-report-to-parent",
+          "target": "hn-target-aff-report-to-parent",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-request-clarification",
+        "relation": "affordance",
+        "affordanceRef": "aff-request-clarification",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-request-clarification",
+          "hn-target-aff-request-clarification",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-request-clarification",
+          "target": "hn-target-aff-request-clarification",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-revise-sub-plan",
+        "relation": "affordance",
+        "affordanceRef": "aff-revise-sub-plan",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-revise-sub-plan",
+          "hn-target-aff-revise-sub-plan",
+          "hn-cred-aff-revise-sub-plan-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3",
+          "hn-constraint-4"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-revise-sub-plan",
+          "target": "hn-target-aff-revise-sub-plan",
+          "credential": [
+            "hn-cred-aff-revise-sub-plan-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3",
+            "hn-constraint-4"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "authentication-subsystem"
+      },
+      {
+        "id": "obj-target-aff-emit-sub-plan",
+        "ref": "https://broker.example.com/acg/v1/plans"
+      },
+      {
+        "id": "obj-target-aff-delegate-further",
+        "ref": "https://broker.example.com/acg/v1/delegations"
+      },
+      {
+        "id": "obj-target-aff-report-to-parent",
+        "ref": "did:key:z6MkpMasterPlannerXYZ"
+      },
+      {
+        "id": "obj-target-aff-request-clarification",
+        "ref": "did:key:z6MkpMasterPlannerXYZ"
+      },
+      {
+        "id": "obj-target-aff-revise-sub-plan",
+        "ref": "https://broker.example.com/acg/v1/plans/{planId}/revisions"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-emit-sub-plan",
+        "name": "aat:EmitPlan",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-emit-sub-plan"
+        ],
+        "affordanceRef": "aff-emit-sub-plan",
+        "hyperedgeRef": "he-aff-emit-sub-plan"
+      },
+      {
+        "id": "m-aff-delegate-further",
+        "name": "aat:EmitPlan",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-delegate-further"
+        ],
+        "affordanceRef": "aff-delegate-further",
+        "hyperedgeRef": "he-aff-delegate-further"
+      },
+      {
+        "id": "m-aff-report-to-parent",
+        "name": "aat:Report",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-report-to-parent"
+        ],
+        "affordanceRef": "aff-report-to-parent",
+        "hyperedgeRef": "he-aff-report-to-parent"
+      },
+      {
+        "id": "m-aff-request-clarification",
+        "name": "aat:RequestInfo",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-request-clarification"
+        ],
+        "affordanceRef": "aff-request-clarification",
+        "hyperedgeRef": "he-aff-request-clarification"
+      },
+      {
+        "id": "m-aff-revise-sub-plan",
+        "name": "aat:RevisePlan",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-revise-sub-plan"
+        ],
+        "affordanceRef": "aff-revise-sub-plan",
+        "hyperedgeRef": "he-aff-revise-sub-plan"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P1Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true,
+    "_note": "Full tracing for delegation chain audit"
+  },
+  "structuralRequirements": {
+    "requiredOutputAction": "aat:EmitPlan"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Delegated planning with hierarchical sub-planners",
+    "demonstrates": [
+      "Delegation credential (DelegatedPlanning) enabling sub-planning",
+      "ParentPlan reference tracking delegation chain",
+      "SubPlans array for further delegation tracking",
+      "DIDComm targets for parent-child planner communication",
+      "Delegation chain length constraints (maxChainLength)",
+      "Scope boundaries enforced via delegationScope",
+      "Report affordance for mandatory progress reporting to parent",
+      "Composition: PlannerAgentType delegating to PlannerAgentType"
+    ]
+  }
+}

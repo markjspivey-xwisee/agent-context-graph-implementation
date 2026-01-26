@@ -1,0 +1,682 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/odrl/2/",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "constraints": {
+        "@id": "acg:hasConstraints",
+        "@container": "@set"
+      },
+      "rule": "odrl:duty",
+      "enforcementLevel": "acg:enforcementLevel",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "schema": "sh:targetClass",
+      "required": {
+        "@id": "sh:minCount",
+        "@container": "@list"
+      },
+      "properties": "sh:property",
+      "default": "sh:defaultValue",
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "causalSemantics": "acg:hasCausalSemantics",
+      "interventionLabel": "acg:interventionLabel",
+      "outcomeVariables": {
+        "@id": "acg:outcomeVariables",
+        "@container": "@list"
+      },
+      "causalModelRef": {
+        "@id": "acg:causalModelRef",
+        "@type": "@id"
+      },
+      "evaluatorEndpoint": {
+        "@id": "acg:evaluatorEndpoint",
+        "@type": "@id"
+      },
+      "preconditions": {
+        "@id": "acg:preconditions",
+        "@container": "@list"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "includeContextSnapshot": {
+        "@id": "acg:includeContextSnapshot",
+        "@type": "xsd:boolean"
+      },
+      "includeOutcomes": {
+        "@id": "acg:includeOutcomes",
+        "@type": "xsd:boolean"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-causal-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkexecutorWithCausalEval123456789",
+  "agentType": "aat:ExecutorAgentType",
+  "timestamp": "2026-01-23T16:00:00Z",
+  "expiresAt": "2026-01-23T16:05:00Z",
+  "nonce": "causal-demo-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "execution",
+    "resources": [
+      "urn:resource:database-001"
+    ],
+    "actions": [
+      "Act",
+      "ReportOutcome"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ExecutorCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-executor-001",
+      "issuer": "did:web:authority.example.com",
+      "validUntil": "2026-12-31T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkexecutorWithCausalEval123456789",
+        "capability": "ExecutorCapability",
+        "scope": [
+          "database-write"
+        ]
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "type": [
+        "odrl:Constraint",
+        "acg:OutcomeConstraint"
+      ],
+      "rule": "Predicted downtime must be less than 5 minutes",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": [
+        "odrl:Constraint",
+        "acg:OutcomeConstraint"
+      ],
+      "rule": "Predicted data loss risk must be below 0.01",
+      "enforcementLevel": "strict"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance",
+        "acg:CausalAffordance"
+      ],
+      "id": "aff-migrate-schema",
+      "rel": "execute-migration",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Act",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://executor.example.com/migrations",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "schema": {
+          "type": "object",
+          "required": [
+            "migrationId",
+            "targetVersion"
+          ],
+          "properties": {
+            "migrationId": {
+              "type": "string"
+            },
+            "targetVersion": {
+              "type": "string"
+            },
+            "dryRun": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability",
+          "issuer": "did:web:authority.example.com"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Database schema updated",
+          "reversible": true
+        }
+      ],
+      "causalSemantics": {
+        "type": "acg:CausalSemantics",
+        "interventionLabel": "do(MigrateSchema, {targetVersion: $params.targetVersion})",
+        "outcomeVariables": [
+          "downtime_minutes",
+          "data_loss_probability",
+          "rollback_complexity"
+        ],
+        "causalModelRef": "urn:causal-model:db-migration-v2",
+        "evaluatorEndpoint": "https://causal.example.com/evaluate"
+      },
+      "preconditions": [
+        "Database is in healthy state",
+        "Backup completed within last hour"
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-23T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance",
+        "acg:CausalAffordance"
+      ],
+      "id": "aff-rollback",
+      "rel": "execute-rollback",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RollbackAction",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://executor.example.com/rollback",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "schema": {
+          "type": "object",
+          "required": [
+            "migrationId"
+          ],
+          "properties": {
+            "migrationId": {
+              "type": "string"
+            },
+            "toVersion": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ExecutorCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Database rolled back to previous state",
+          "reversible": false
+        }
+      ],
+      "causalSemantics": {
+        "type": "acg:CausalSemantics",
+        "interventionLabel": "do(Rollback, {migrationId: $params.migrationId})",
+        "outcomeVariables": [
+          "downtime_minutes",
+          "data_integrity_preserved"
+        ],
+        "causalModelRef": "urn:causal-model:db-rollback-v1",
+        "evaluatorEndpoint": "https://causal.example.com/evaluate"
+      },
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-23T16:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-report-outcome",
+      "rel": "report-outcome",
+      "relVersion": "1.0.0",
+      "actionType": "aat:ReportOutcome",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/outcomes",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "schema": {
+          "type": "object",
+          "required": [
+            "actionId",
+            "status"
+          ],
+          "properties": {
+            "actionId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "success",
+                "failure",
+                "partial"
+              ]
+            },
+            "details": {
+              "type": "object"
+            },
+            "observedOutcomes": {
+              "type": "object",
+              "description": "Actual values for causal outcome variables"
+            }
+          }
+        }
+      },
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Emits OutcomeReported event",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-23T16:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkexecutorWithCausalEval123456789"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Predicted downtime must be less than 5 minutes"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Predicted data loss risk must be below 0.01"
+      },
+      {
+        "id": "hn-aff-aff-migrate-schema",
+        "kind": "Affordance",
+        "ref": "aff-migrate-schema"
+      },
+      {
+        "id": "hn-target-aff-migrate-schema",
+        "kind": "Target",
+        "ref": "https://executor.example.com/migrations"
+      },
+      {
+        "id": "hn-cred-aff-migrate-schema-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability@did:web:authority.example.com"
+      },
+      {
+        "id": "hn-aff-aff-rollback",
+        "kind": "Affordance",
+        "ref": "aff-rollback"
+      },
+      {
+        "id": "hn-target-aff-rollback",
+        "kind": "Target",
+        "ref": "https://executor.example.com/rollback"
+      },
+      {
+        "id": "hn-cred-aff-rollback-1",
+        "kind": "Credential",
+        "ref": "ExecutorCapability"
+      },
+      {
+        "id": "hn-aff-aff-report-outcome",
+        "kind": "Affordance",
+        "ref": "aff-report-outcome"
+      },
+      {
+        "id": "hn-target-aff-report-outcome",
+        "kind": "Target",
+        "ref": "https://broker.example.com/outcomes"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-migrate-schema",
+        "relation": "affordance",
+        "affordanceRef": "aff-migrate-schema",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-migrate-schema",
+          "hn-target-aff-migrate-schema",
+          "hn-cred-aff-migrate-schema-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-migrate-schema",
+          "target": "hn-target-aff-migrate-schema",
+          "credential": [
+            "hn-cred-aff-migrate-schema-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-rollback",
+        "relation": "affordance",
+        "affordanceRef": "aff-rollback",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-rollback",
+          "hn-target-aff-rollback",
+          "hn-cred-aff-rollback-1",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-rollback",
+          "target": "hn-target-aff-rollback",
+          "credential": [
+            "hn-cred-aff-rollback-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-report-outcome",
+        "relation": "affordance",
+        "affordanceRef": "aff-report-outcome",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-report-outcome",
+          "hn-target-aff-report-outcome",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-report-outcome",
+          "target": "hn-target-aff-report-outcome",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "execution"
+      },
+      {
+        "id": "obj-target-aff-migrate-schema",
+        "ref": "https://executor.example.com/migrations"
+      },
+      {
+        "id": "obj-target-aff-rollback",
+        "ref": "https://executor.example.com/rollback"
+      },
+      {
+        "id": "obj-target-aff-report-outcome",
+        "ref": "https://broker.example.com/outcomes"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-migrate-schema",
+        "name": "aat:Act",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-migrate-schema"
+        ],
+        "affordanceRef": "aff-migrate-schema",
+        "hyperedgeRef": "he-aff-migrate-schema"
+      },
+      {
+        "id": "m-aff-rollback",
+        "name": "aat:RollbackAction",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-rollback"
+        ],
+        "affordanceRef": "aff-rollback",
+        "hyperedgeRef": "he-aff-rollback"
+      },
+      {
+        "id": "m-aff-report-outcome",
+        "name": "aat:ReportOutcome",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-report-outcome"
+        ],
+        "affordanceRef": "aff-report-outcome",
+        "hyperedgeRef": "he-aff-report-outcome"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P5Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Executor with causal outcome constraints",
+    "demonstrates": [
+      "Causal semantics on affordances",
+      "Intervention labels for SCM",
+      "Outcome variables for prediction",
+      "Policy constraints using causal predictions"
+    ]
+  }
+}

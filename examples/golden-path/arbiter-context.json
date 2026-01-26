@@ -1,0 +1,763 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    "https://www.w3.org/ns/odrl/2/",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "requiresCredential": {
+        "@id": "acg:requiresCredential",
+        "@container": "@set"
+      },
+      "schema": "acg:credentialSchema",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "pendingProposals": {
+        "@id": "acg:hasPendingProposals",
+        "@container": "@set"
+      },
+      "proposalId": "acg:proposalId",
+      "proposer": {
+        "@id": "acg:proposedBy",
+        "@type": "@id"
+      },
+      "proposedAction": "acg:proposedAction",
+      "proposalTimestamp": {
+        "@id": "acg:proposalTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "riskLevel": "acg:riskLevel",
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-arbiter-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:web:arbiter.governance.example.com",
+  "agentType": "aat:ArbiterAgentType",
+  "timestamp": "2026-01-24T15:00:00Z",
+  "expiresAt": "2026-01-24T15:15:00Z",
+  "nonce": "arbiter-governance-session-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "action-governance",
+    "resources": [
+      "urn:resource:pending-plans",
+      "urn:resource:execution-queue",
+      "urn:resource:escalation-log"
+    ],
+    "actions": [
+      "Approve",
+      "Deny",
+      "RequestModification",
+      "Escalate"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ArbiterCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-arbiter-001",
+      "issuer": "did:web:root-authority.example.com",
+      "validUntil": "2026-06-30T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:web:arbiter.governance.example.com",
+        "capability": "ArbiterCapability",
+        "scope": [
+          "financial",
+          "infrastructure",
+          "security"
+        ]
+      }
+    },
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:EscalationAuthority"
+      ],
+      "id": "urn:uuid:cred-escalation-001",
+      "issuer": "did:web:root-authority.example.com",
+      "validUntil": "2026-06-30T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:web:arbiter.governance.example.com",
+        "capability": "EscalationCapability",
+        "escalationTargets": [
+          "did:web:senior-arbiter.example.com",
+          "did:web:human-oversight.example.com"
+        ]
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Arbiter MUST NOT execute actions directly - only approve, deny, or modify",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "High-risk actions (riskLevel >= 'high') MUST be escalated to human oversight",
+      "policyRef": "urn:policy:human-in-the-loop",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:TemporalConstraint",
+      "rule": "Decisions MUST be made within 60 seconds of proposal receipt",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "pendingProposals": [
+    {
+      "type": "acg:ActionProposal",
+      "proposalId": "urn:proposal:deploy-v2.3.0",
+      "proposer": "did:key:z6MkpPlannerAgent456",
+      "proposedAction": {
+        "type": "aat:Act",
+        "description": "Deploy version 2.3.0 to production cluster",
+        "target": "urn:resource:production-cluster"
+      },
+      "proposalTimestamp": "2026-01-24T14:58:00Z",
+      "riskLevel": "medium"
+    },
+    {
+      "type": "acg:ActionProposal",
+      "proposalId": "urn:proposal:delete-user-data",
+      "proposer": "did:key:z6MkpPlannerAgent789",
+      "proposedAction": {
+        "type": "aat:WriteExternal",
+        "description": "Permanently delete user data for GDPR compliance",
+        "target": "urn:resource:user-database"
+      },
+      "proposalTimestamp": "2026-01-24T14:59:00Z",
+      "riskLevel": "high"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-approve-proposal",
+      "rel": "approve-action",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Approve",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/proposals/approve",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ApproveParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ArbiterCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Transitions proposal to 'approved' state, enabling executor pickup",
+          "reversible": false
+        },
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Emits ProposalApproved event to execution queue",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T15:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-deny-proposal",
+      "rel": "deny-action",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Deny",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/proposals/deny",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#DenyParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "ArbiterCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Transitions proposal to 'denied' state",
+          "reversible": false
+        },
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Emits ProposalDenied event with reason",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T15:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-request-modification",
+      "rel": "request-changes",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RequestModification",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/proposals/modify",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#RequestModificationParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Transitions proposal to 'modification-requested' state",
+          "reversible": false
+        },
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Sends modification request back to proposing planner",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T15:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-escalate-decision",
+      "rel": "escalate-to-authority",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Escalate",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/escalations",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#EscalateParamsShape"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "EscalationCapability"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:StateChangeEffect",
+          "description": "Transitions proposal to 'escalated' state",
+          "reversible": false
+        },
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Notifies escalation target (human or senior arbiter)",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Required for high-risk proposals per human-in-the-loop policy",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T15:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:web:arbiter.governance.example.com"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Arbiter MUST NOT execute actions directly - only approve, deny, or modify"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "urn:policy:human-in-the-loop"
+      },
+      {
+        "id": "hn-constraint-3",
+        "kind": "Constraint",
+        "ref": "Decisions MUST be made within 60 seconds of proposal receipt"
+      },
+      {
+        "id": "hn-aff-aff-approve-proposal",
+        "kind": "Affordance",
+        "ref": "aff-approve-proposal"
+      },
+      {
+        "id": "hn-target-aff-approve-proposal",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/proposals/approve"
+      },
+      {
+        "id": "hn-cred-aff-approve-proposal-1",
+        "kind": "Credential",
+        "ref": "ArbiterCapability"
+      },
+      {
+        "id": "hn-aff-aff-deny-proposal",
+        "kind": "Affordance",
+        "ref": "aff-deny-proposal"
+      },
+      {
+        "id": "hn-target-aff-deny-proposal",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/proposals/deny"
+      },
+      {
+        "id": "hn-cred-aff-deny-proposal-1",
+        "kind": "Credential",
+        "ref": "ArbiterCapability"
+      },
+      {
+        "id": "hn-aff-aff-request-modification",
+        "kind": "Affordance",
+        "ref": "aff-request-modification"
+      },
+      {
+        "id": "hn-target-aff-request-modification",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/proposals/modify"
+      },
+      {
+        "id": "hn-aff-aff-escalate-decision",
+        "kind": "Affordance",
+        "ref": "aff-escalate-decision"
+      },
+      {
+        "id": "hn-target-aff-escalate-decision",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/escalations"
+      },
+      {
+        "id": "hn-cred-aff-escalate-decision-1",
+        "kind": "Credential",
+        "ref": "EscalationCapability"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-approve-proposal",
+        "relation": "affordance",
+        "affordanceRef": "aff-approve-proposal",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-approve-proposal",
+          "hn-target-aff-approve-proposal",
+          "hn-cred-aff-approve-proposal-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-approve-proposal",
+          "target": "hn-target-aff-approve-proposal",
+          "credential": [
+            "hn-cred-aff-approve-proposal-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-deny-proposal",
+        "relation": "affordance",
+        "affordanceRef": "aff-deny-proposal",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-deny-proposal",
+          "hn-target-aff-deny-proposal",
+          "hn-cred-aff-deny-proposal-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-deny-proposal",
+          "target": "hn-target-aff-deny-proposal",
+          "credential": [
+            "hn-cred-aff-deny-proposal-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-request-modification",
+        "relation": "affordance",
+        "affordanceRef": "aff-request-modification",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-request-modification",
+          "hn-target-aff-request-modification",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-request-modification",
+          "target": "hn-target-aff-request-modification",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-escalate-decision",
+        "relation": "affordance",
+        "affordanceRef": "aff-escalate-decision",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-escalate-decision",
+          "hn-target-aff-escalate-decision",
+          "hn-cred-aff-escalate-decision-1",
+          "hn-constraint-1",
+          "hn-constraint-2",
+          "hn-constraint-3"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-escalate-decision",
+          "target": "hn-target-aff-escalate-decision",
+          "credential": [
+            "hn-cred-aff-escalate-decision-1"
+          ],
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2",
+            "hn-constraint-3"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "action-governance"
+      },
+      {
+        "id": "obj-target-aff-approve-proposal",
+        "ref": "https://broker.example.com/acg/v1/proposals/approve"
+      },
+      {
+        "id": "obj-target-aff-deny-proposal",
+        "ref": "https://broker.example.com/acg/v1/proposals/deny"
+      },
+      {
+        "id": "obj-target-aff-request-modification",
+        "ref": "https://broker.example.com/acg/v1/proposals/modify"
+      },
+      {
+        "id": "obj-target-aff-escalate-decision",
+        "ref": "https://broker.example.com/acg/v1/escalations"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-approve-proposal",
+        "name": "aat:Approve",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-approve-proposal"
+        ],
+        "affordanceRef": "aff-approve-proposal",
+        "hyperedgeRef": "he-aff-approve-proposal"
+      },
+      {
+        "id": "m-aff-deny-proposal",
+        "name": "aat:Deny",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-deny-proposal"
+        ],
+        "affordanceRef": "aff-deny-proposal",
+        "hyperedgeRef": "he-aff-deny-proposal"
+      },
+      {
+        "id": "m-aff-request-modification",
+        "name": "aat:RequestModification",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-request-modification"
+        ],
+        "affordanceRef": "aff-request-modification",
+        "hyperedgeRef": "he-aff-request-modification"
+      },
+      {
+        "id": "m-aff-escalate-decision",
+        "name": "aat:Escalate",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-escalate-decision"
+        ],
+        "affordanceRef": "aff-escalate-decision",
+        "hyperedgeRef": "he-aff-escalate-decision"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P7Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true,
+    "_note": "Extended retention for governance audit trail"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Human-in-the-loop governance for high-risk actions",
+    "demonstrates": [
+      "Arbiter agent type with normative actions (Approve, Deny, RequestModification, Escalate)",
+      "Action proposals pending governance decision",
+      "Risk-based escalation policy",
+      "Forbidden actions: Act, EmitPlan, Observe (Arbiters don't execute or observe)",
+      "Composition rules: ArbiterAgentType canComposeBefore ExecutorAgentType, canComposeAfter PlannerAgentType",
+      "Extended trace retention for audit compliance"
+    ]
+  }
+}

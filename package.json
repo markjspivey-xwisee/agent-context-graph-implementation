@@ -1,0 +1,75 @@
+{
+  "name": "agent-context-graph",
+  "version": "1.0.0",
+  "description": "Abstract Agent Type System with Context Graphs, DIDs/VCs, Causality, and Provenance",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "acg": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "validate:schemas": "tsx scripts/validate-schemas.ts",
+    "validate:examples": "tsx scripts/validate-examples.ts",
+    "orchestrator": "tsx src/orchestrator-server.ts",
+    "dashboard": "tsx src/dashboard/server.ts",
+    "demo": "tsx src/demo/multi-agent-demo.ts",
+    "cli": "tsx src/cli/index.ts",
+    "cli:validate": "tsx src/cli/index.ts validate",
+    "cli:validate-all": "tsx src/cli/index.ts validate-all",
+    "chat": "tsx src/cli/chat.ts",
+    "ws-client": "tsx src/cli/ws-client.ts"
+  },
+  "keywords": [
+    "agent",
+    "context-graph",
+    "abstract-agent-type",
+    "aat",
+    "did",
+    "verifiable-credentials",
+    "prov",
+    "causality",
+    "hypermedia",
+    "hateoas"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@hapi/hapi": "^21.3.3",
+    "@hapi/inert": "^7.1.0",
+    "@types/n3": "^1.26.1",
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
+    "better-sqlite3": "^12.6.2",
+    "did-resolver": "^4.1.0",
+    "eventemitter3": "^5.0.1",
+    "jsonld": "^9.0.0",
+    "key-did-resolver": "^3.0.0",
+    "n3": "^2.0.1",
+    "rdf-validate-shacl": "^0.6.5",
+    "uuid": "^9.0.1",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.11.0",
+    "@types/uuid": "^9.0.7",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

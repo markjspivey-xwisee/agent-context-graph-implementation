@@ -1,0 +1,676 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/activitystreams#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "as": "https://www.w3.org/ns/activitystreams#",
+      "ldp": "http://www.w3.org/ns/ldp#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "fed": "https://agentcontextgraph.dev/federation#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "remoteBroker": "fed:hostedBy",
+      "requiresCrossdomainAuth": {
+        "@id": "fed:requiresCrossdomainAuth",
+        "@type": "xsd:boolean"
+      },
+      "federationProtocol": "fed:supportsFederationProtocol",
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "federation": "fed:hasFederationInfo",
+      "originBroker": "fed:originBroker",
+      "trustDomain": {
+        "@id": "fed:memberOfDomain",
+        "@type": "@id"
+      },
+      "federatedBrokers": {
+        "@id": "fed:includesBroker",
+        "@container": "@set"
+      },
+      "trustLevel": "fed:hasTrustLevel",
+      "maxFederationHops": {
+        "@id": "fed:maxFederationHops",
+        "@type": "xsd:integer"
+      },
+      "credentialBridges": {
+        "@id": "fed:hasCredentialBridge",
+        "@container": "@set"
+      },
+      "brokerDID": {
+        "@id": "fed:hasBrokerDID",
+        "@type": "@id"
+      },
+      "serviceEndpoint": {
+        "@id": "fed:hasServiceEndpoint",
+        "@type": "@id"
+      },
+      "status": "fed:hasBrokerStatus",
+      "supportedDIDMethods": {
+        "@id": "fed:supportsDIDMethod",
+        "@container": "@set"
+      },
+      "federationProtocols": {
+        "@id": "fed:supportsFederationProtocol",
+        "@container": "@set"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-federated-001",
+  "type": [
+    "acg:ContextGraph",
+    "fed:FederatedContext"
+  ],
+  "agentDID": "did:web:agent.alice.example.com",
+  "agentType": "aat:PlannerAgentType",
+  "timestamp": "2026-01-24T10:00:00Z",
+  "expiresAt": "2026-01-24T10:05:00Z",
+  "nonce": "federated-demo-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "cross-organization-planning",
+    "resources": [
+      "urn:resource:local-project-alpha",
+      "did:web:broker.bob.example.org:resources:shared-data"
+    ],
+    "actions": [
+      "EmitPlan",
+      "RequestInfo",
+      "FederateContext"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:PlannerCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-planner-alice-001",
+      "issuer": "did:web:authority.alice.example.com",
+      "validUntil": "2026-12-31T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:web:agent.alice.example.com",
+        "capability": "PlannerCapability",
+        "scope": [
+          "local",
+          "federated"
+        ]
+      }
+    },
+    {
+      "type": [
+        "VerifiableCredential",
+        "fed:FederationCredential"
+      ],
+      "id": "urn:uuid:cred-federation-001",
+      "issuer": "did:web:trust-domain.example.net",
+      "validUntil": "2026-06-30T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:web:agent.alice.example.com",
+        "capability": "FederationCapability",
+        "trustedDomains": [
+          "did:web:trust-domain.example.net"
+        ]
+      }
+    }
+  ],
+  "federation": {
+    "type": "fed:FederationInfo",
+    "originBroker": {
+      "type": "fed:Broker",
+      "brokerDID": "did:web:broker.alice.example.com",
+      "serviceEndpoint": "https://broker.alice.example.com/acg/v1",
+      "status": "Active",
+      "supportedDIDMethods": [
+        "did:web",
+        "did:key",
+        "did:dht"
+      ],
+      "federationProtocols": [
+        "ActivityPub",
+        "DIDComm"
+      ]
+    },
+    "trustDomain": "did:web:trust-domain.example.net",
+    "federatedBrokers": [
+      {
+        "type": "fed:Broker",
+        "brokerDID": "did:web:broker.bob.example.org",
+        "serviceEndpoint": "https://broker.bob.example.org/acg/v1",
+        "status": "Active",
+        "supportedDIDMethods": [
+          "did:web",
+          "did:key"
+        ],
+        "federationProtocols": [
+          "ActivityPub",
+          "LDN"
+        ]
+      }
+    ],
+    "trustLevel": "LimitedTrust",
+    "maxFederationHops": 2,
+    "credentialBridges": [
+      {
+        "type": "fed:CredentialBridge",
+        "id": "urn:bridge:alice-to-bob-planner",
+        "fromDomain": "did:web:trust-domain.alice.example.com",
+        "toDomain": "did:web:trust-domain.bob.example.org"
+      }
+    ]
+  },
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-emit-plan-local",
+      "rel": "emit-plan",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EmitPlan",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.alice.example.com/acg/v1/plans",
+        "method": "POST"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates a new plan resource",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance",
+        "fed:RemoteAffordance"
+      ],
+      "id": "aff-request-data-federated",
+      "rel": "request-federated-data",
+      "relVersion": "1.0.0",
+      "actionType": "aat:RequestInfo",
+      "target": {
+        "type": "acg:FederatedTarget",
+        "href": "https://broker.bob.example.org/acg/v1/data/shared",
+        "method": "GET",
+        "remoteBroker": {
+          "type": "fed:Broker",
+          "brokerDID": "did:web:broker.bob.example.org",
+          "serviceEndpoint": "https://broker.bob.example.org/acg/v1"
+        },
+        "requiresCrossdomainAuth": true,
+        "federationProtocol": "DIDComm"
+      },
+      "effects": [],
+      "enabled": true,
+      "_note": "Federated affordance - requires cross-domain credential bridging",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance",
+        "fed:RemoteAffordance"
+      ],
+      "id": "aff-emit-plan-federated",
+      "rel": "emit-federated-plan",
+      "relVersion": "1.0.0",
+      "actionType": "aat:EmitPlan",
+      "target": {
+        "type": "acg:FederatedTarget",
+        "href": "https://broker.bob.example.org/acg/v1/plans",
+        "method": "POST",
+        "remoteBroker": {
+          "type": "fed:Broker",
+          "brokerDID": "did:web:broker.bob.example.org",
+          "serviceEndpoint": "https://broker.bob.example.org/acg/v1"
+        },
+        "requiresCrossdomainAuth": true,
+        "federationProtocol": "ActivityPub"
+      },
+      "requiresCredential": [
+        {
+          "type": "acg:CredentialRequirement",
+          "schema": "PlannerCapability",
+          "issuer": "did:web:trust-domain.example.net"
+        }
+      ],
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates a plan on remote broker",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Cross-domain planning requires bridged credentials",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T10:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-federate-context",
+      "rel": "federate-context",
+      "relVersion": "1.0.0",
+      "actionType": "aat:FederateContext",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.alice.example.com/acg/v1/federation/contexts",
+        "method": "POST"
+      },
+      "effects": [
+        {
+          "type": "acg:EventEmitEffect",
+          "description": "Emits ContextFederationRequested event to peer brokers",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T10:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:web:agent.alice.example.com"
+      },
+      {
+        "id": "hn-aff-aff-emit-plan-local",
+        "kind": "Affordance",
+        "ref": "aff-emit-plan-local"
+      },
+      {
+        "id": "hn-target-aff-emit-plan-local",
+        "kind": "Target",
+        "ref": "https://broker.alice.example.com/acg/v1/plans"
+      },
+      {
+        "id": "hn-aff-aff-request-data-federated",
+        "kind": "Affordance",
+        "ref": "aff-request-data-federated"
+      },
+      {
+        "id": "hn-target-aff-request-data-federated",
+        "kind": "Target",
+        "ref": "https://broker.bob.example.org/acg/v1/data/shared"
+      },
+      {
+        "id": "hn-aff-aff-emit-plan-federated",
+        "kind": "Affordance",
+        "ref": "aff-emit-plan-federated"
+      },
+      {
+        "id": "hn-target-aff-emit-plan-federated",
+        "kind": "Target",
+        "ref": "https://broker.bob.example.org/acg/v1/plans"
+      },
+      {
+        "id": "hn-cred-aff-emit-plan-federated-1",
+        "kind": "Credential",
+        "ref": "PlannerCapability@did:web:trust-domain.example.net"
+      },
+      {
+        "id": "hn-aff-aff-federate-context",
+        "kind": "Affordance",
+        "ref": "aff-federate-context"
+      },
+      {
+        "id": "hn-target-aff-federate-context",
+        "kind": "Target",
+        "ref": "https://broker.alice.example.com/acg/v1/federation/contexts"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-emit-plan-local",
+        "relation": "affordance",
+        "affordanceRef": "aff-emit-plan-local",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-emit-plan-local",
+          "hn-target-aff-emit-plan-local"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-emit-plan-local",
+          "target": "hn-target-aff-emit-plan-local"
+        }
+      },
+      {
+        "id": "he-aff-request-data-federated",
+        "relation": "affordance",
+        "affordanceRef": "aff-request-data-federated",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-request-data-federated",
+          "hn-target-aff-request-data-federated"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-request-data-federated",
+          "target": "hn-target-aff-request-data-federated"
+        }
+      },
+      {
+        "id": "he-aff-emit-plan-federated",
+        "relation": "affordance",
+        "affordanceRef": "aff-emit-plan-federated",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-emit-plan-federated",
+          "hn-target-aff-emit-plan-federated",
+          "hn-cred-aff-emit-plan-federated-1"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-emit-plan-federated",
+          "target": "hn-target-aff-emit-plan-federated",
+          "credential": [
+            "hn-cred-aff-emit-plan-federated-1"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-federate-context",
+        "relation": "affordance",
+        "affordanceRef": "aff-federate-context",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-federate-context",
+          "hn-target-aff-federate-context"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-federate-context",
+          "target": "hn-target-aff-federate-context"
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "cross-organization-planning"
+      },
+      {
+        "id": "obj-target-aff-emit-plan-local",
+        "ref": "https://broker.alice.example.com/acg/v1/plans"
+      },
+      {
+        "id": "obj-target-aff-request-data-federated",
+        "ref": "https://broker.bob.example.org/acg/v1/data/shared"
+      },
+      {
+        "id": "obj-target-aff-emit-plan-federated",
+        "ref": "https://broker.bob.example.org/acg/v1/plans"
+      },
+      {
+        "id": "obj-target-aff-federate-context",
+        "ref": "https://broker.alice.example.com/acg/v1/federation/contexts"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-emit-plan-local",
+        "name": "aat:EmitPlan",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-emit-plan-local"
+        ],
+        "affordanceRef": "aff-emit-plan-local",
+        "hyperedgeRef": "he-aff-emit-plan-local"
+      },
+      {
+        "id": "m-aff-request-data-federated",
+        "name": "aat:RequestInfo",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-request-data-federated"
+        ],
+        "affordanceRef": "aff-request-data-federated",
+        "hyperedgeRef": "he-aff-request-data-federated"
+      },
+      {
+        "id": "m-aff-emit-plan-federated",
+        "name": "aat:EmitPlan",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-emit-plan-federated"
+        ],
+        "affordanceRef": "aff-emit-plan-federated",
+        "hyperedgeRef": "he-aff-emit-plan-federated"
+      },
+      {
+        "id": "m-aff-federate-context",
+        "name": "aat:FederateContext",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-federate-context"
+        ],
+        "affordanceRef": "aff-federate-context",
+        "hyperedgeRef": "he-aff-federate-context"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P2Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "Federated cross-organization planning",
+    "demonstrates": [
+      "Federated context spanning multiple brokers",
+      "Trust domain membership and credential bridging",
+      "Remote affordances with FederatedTarget",
+      "Cross-domain credential requirements",
+      "ActivityPub and DIDComm federation protocols",
+      "Web-scale DID methods (did:web, did:key, did:dht)"
+    ]
+  }
+}

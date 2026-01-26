@@ -1,0 +1,603 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.w3.org/ns/hydra/core#",
+    "https://www.w3.org/ns/prov#",
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "sh": "http://www.w3.org/ns/shacl#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "hydra": "http://www.w3.org/ns/hydra/core#",
+      "acg": "https://agentcontextgraph.dev/ontology#",
+      "aat": "https://agentcontextgraph.dev/aat#",
+      "id": "@id",
+      "type": "@type",
+      "agentDID": {
+        "@id": "acg:hasDID",
+        "@type": "@id"
+      },
+      "agentType": {
+        "@id": "acg:hasAgentType",
+        "@type": "@id"
+      },
+      "timestamp": {
+        "@id": "acg:hasTimestamp",
+        "@type": "xsd:dateTime"
+      },
+      "expiresAt": {
+        "@id": "acg:expiresAt",
+        "@type": "xsd:dateTime"
+      },
+      "nonce": "acg:nonce",
+      "scope": "acg:hasScope",
+      "domain": "acg:scopeDomain",
+      "resources": {
+        "@id": "acg:scopeResources",
+        "@container": "@set"
+      },
+      "actions": {
+        "@id": "acg:scopeActions",
+        "@container": "@set"
+      },
+      "verifiedCredentials": {
+        "@id": "acg:hasVerifiedCredentials",
+        "@container": "@set"
+      },
+      "issuer": {
+        "@id": "acg:issuer",
+        "@type": "@id"
+      },
+      "validUntil": {
+        "@id": "acg:validUntil",
+        "@type": "xsd:dateTime"
+      },
+      "credentialSubject": "acg:credentialSubject",
+      "capability": "acg:capability",
+      "affordances": {
+        "@id": "acg:hasAffordance",
+        "@container": "@set"
+      },
+      "rel": "acg:relationType",
+      "relVersion": "acg:relationVersion",
+      "actionType": {
+        "@id": "acg:actionType",
+        "@type": "@id"
+      },
+      "target": "acg:hasTarget",
+      "href": {
+        "@id": "hydra:entrypoint",
+        "@type": "@id"
+      },
+      "method": "hydra:method",
+      "params": "acg:hasParams",
+      "shaclRef": {
+        "@id": "hydra:expects",
+        "@type": "@id"
+      },
+      "effects": {
+        "@id": "acg:hasEffects",
+        "@container": "@set"
+      },
+      "description": "rdfs:comment",
+      "reversible": {
+        "@id": "acg:isReversible",
+        "@type": "xsd:boolean"
+      },
+      "enabled": {
+        "@id": "acg:isEnabled",
+        "@type": "xsd:boolean"
+      },
+      "tracePolicy": "acg:hasTracePolicy",
+      "mustEmitProvActivity": {
+        "@id": "acg:mustEmitProvActivity",
+        "@type": "xsd:boolean"
+      },
+      "retentionPeriod": {
+        "@id": "acg:retentionPeriod",
+        "@type": "xsd:duration"
+      },
+      "includeContextSnapshot": {
+        "@id": "acg:includeContextSnapshot",
+        "@type": "xsd:boolean"
+      },
+      "includeOutcomes": {
+        "@id": "acg:includeOutcomes",
+        "@type": "xsd:boolean"
+      },
+      "_documentation": "rdfs:seeAlso",
+      "scenario": "acg:scenarioDescription",
+      "demonstrates": {
+        "@id": "acg:demonstrates",
+        "@container": "@list"
+      },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
+      "roles": "acg:roleBindings",
+      "kind": "acg:hypernodeKind",
+      "ref": "acg:hypernodeRef",
+      "relation": "acg:hyperedgeRelation",
+      "affordanceRef": "acg:affordanceRef",
+      "hyperedgeRef": "acg:hyperedgeRef",
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes"
+    }
+  ],
+  "id": "urn:uuid:ctx-observer-001",
+  "type": [
+    "acg:ContextGraph"
+  ],
+  "agentDID": "did:key:z6MkpObserver123abc",
+  "agentType": "aat:ObserverAgentType",
+  "timestamp": "2026-01-24T14:00:00Z",
+  "expiresAt": "2026-01-24T14:30:00Z",
+  "nonce": "observer-monitoring-session-001",
+  "scope": {
+    "type": "acg:Scope",
+    "domain": "system-monitoring",
+    "resources": [
+      "urn:resource:production-cluster",
+      "urn:resource:api-gateway",
+      "urn:resource:database-primary"
+    ],
+    "actions": [
+      "Observe",
+      "Report",
+      "Summarize"
+    ]
+  },
+  "verifiedCredentials": [
+    {
+      "type": [
+        "VerifiableCredential",
+        "acg:ObserverCapabilityCredential"
+      ],
+      "id": "urn:uuid:cred-observer-001",
+      "issuer": "did:web:ops-authority.example.com",
+      "validUntil": "2026-12-31T23:59:59Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkpObserver123abc",
+        "capability": "ObserverCapability",
+        "scope": [
+          "production",
+          "staging"
+        ]
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Observer agents MUST NOT modify any observed resources",
+      "enforcementLevel": "strict"
+    },
+    {
+      "type": "acg:DeonticConstraint",
+      "rule": "Observations MUST be reported within 60 seconds of collection",
+      "enforcementLevel": "advisory"
+    }
+  ],
+  "affordances": [
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-observe-cluster",
+      "rel": "observe-system",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Observe",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://monitoring.example.com/api/v1/clusters/production/metrics",
+        "method": "GET"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ObserveParamsShape"
+      },
+      "effects": [],
+      "enabled": true,
+      "_note": "Pure observation - no side effects",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T14:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-observe-api-health",
+      "rel": "observe-health",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Observe",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://monitoring.example.com/api/v1/gateways/api-gw-01/health",
+        "method": "GET"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ObserveParamsShape"
+      },
+      "effects": [],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T14:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-report-findings",
+      "rel": "report-observations",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Report",
+      "target": {
+        "type": "acg:HTTPTarget",
+        "href": "https://broker.example.com/acg/v1/reports",
+        "method": "POST"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#ReportParamsShape"
+      },
+      "effects": [
+        {
+          "type": "acg:ResourceCreateEffect",
+          "description": "Creates a new observation report",
+          "reversible": false
+        }
+      ],
+      "enabled": true,
+      "_note": "Primary output action for Observer agents (requiredOutputAction)",
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T14:00:00Z",
+        "usageExamples": []
+      }
+    },
+    {
+      "type": [
+        "hydra:Operation",
+        "acg:Affordance"
+      ],
+      "id": "aff-summarize-metrics",
+      "rel": "summarize-data",
+      "relVersion": "1.0.0",
+      "actionType": "aat:Summarize",
+      "target": {
+        "type": "acg:InternalTarget",
+        "href": "urn:internal:summarizer"
+      },
+      "params": {
+        "type": "sh:NodeShape",
+        "shaclRef": "https://agentcontextgraph.dev/shacl/params#SummarizeParamsShape"
+      },
+      "effects": [],
+      "enabled": true,
+      "usageSemantics": {
+        "stability": 0.85,
+        "drift": 0.05,
+        "polysemy": 1,
+        "evidenceWindow": "P30D",
+        "lastObservedAt": "2026-01-24T14:00:00Z",
+        "usageExamples": []
+      }
+    }
+  ],
+  "hypergraph": {
+    "type": "acg:Hypergraph",
+    "nodes": [
+      {
+        "id": "hn-agent",
+        "kind": "Agent",
+        "ref": "did:key:z6MkpObserver123abc"
+      },
+      {
+        "id": "hn-constraint-1",
+        "kind": "Constraint",
+        "ref": "Observer agents MUST NOT modify any observed resources"
+      },
+      {
+        "id": "hn-constraint-2",
+        "kind": "Constraint",
+        "ref": "Observations MUST be reported within 60 seconds of collection"
+      },
+      {
+        "id": "hn-aff-aff-observe-cluster",
+        "kind": "Affordance",
+        "ref": "aff-observe-cluster"
+      },
+      {
+        "id": "hn-target-aff-observe-cluster",
+        "kind": "Target",
+        "ref": "https://monitoring.example.com/api/v1/clusters/production/metrics"
+      },
+      {
+        "id": "hn-aff-aff-observe-api-health",
+        "kind": "Affordance",
+        "ref": "aff-observe-api-health"
+      },
+      {
+        "id": "hn-target-aff-observe-api-health",
+        "kind": "Target",
+        "ref": "https://monitoring.example.com/api/v1/gateways/api-gw-01/health"
+      },
+      {
+        "id": "hn-aff-aff-report-findings",
+        "kind": "Affordance",
+        "ref": "aff-report-findings"
+      },
+      {
+        "id": "hn-target-aff-report-findings",
+        "kind": "Target",
+        "ref": "https://broker.example.com/acg/v1/reports"
+      },
+      {
+        "id": "hn-aff-aff-summarize-metrics",
+        "kind": "Affordance",
+        "ref": "aff-summarize-metrics"
+      },
+      {
+        "id": "hn-target-aff-summarize-metrics",
+        "kind": "Target",
+        "ref": "urn:internal:summarizer"
+      }
+    ],
+    "hyperedges": [
+      {
+        "id": "he-aff-observe-cluster",
+        "relation": "affordance",
+        "affordanceRef": "aff-observe-cluster",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-observe-cluster",
+          "hn-target-aff-observe-cluster",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-observe-cluster",
+          "target": "hn-target-aff-observe-cluster",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-observe-api-health",
+        "relation": "affordance",
+        "affordanceRef": "aff-observe-api-health",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-observe-api-health",
+          "hn-target-aff-observe-api-health",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-observe-api-health",
+          "target": "hn-target-aff-observe-api-health",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-report-findings",
+        "relation": "affordance",
+        "affordanceRef": "aff-report-findings",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-report-findings",
+          "hn-target-aff-report-findings",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-report-findings",
+          "target": "hn-target-aff-report-findings",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      },
+      {
+        "id": "he-aff-summarize-metrics",
+        "relation": "affordance",
+        "affordanceRef": "aff-summarize-metrics",
+        "connects": [
+          "hn-agent",
+          "hn-aff-aff-summarize-metrics",
+          "hn-target-aff-summarize-metrics",
+          "hn-constraint-1",
+          "hn-constraint-2"
+        ],
+        "roles": {
+          "agent": "hn-agent",
+          "affordance": "hn-aff-aff-summarize-metrics",
+          "target": "hn-target-aff-summarize-metrics",
+          "constraint": [
+            "hn-constraint-1",
+            "hn-constraint-2"
+          ]
+        }
+      }
+    ]
+  },
+  "category": {
+    "type": "acg:ContextCategory",
+    "objects": [
+      {
+        "id": "obj-scope",
+        "ref": "system-monitoring"
+      },
+      {
+        "id": "obj-target-aff-observe-cluster",
+        "ref": "https://monitoring.example.com/api/v1/clusters/production/metrics"
+      },
+      {
+        "id": "obj-target-aff-observe-api-health",
+        "ref": "https://monitoring.example.com/api/v1/gateways/api-gw-01/health"
+      },
+      {
+        "id": "obj-target-aff-report-findings",
+        "ref": "https://broker.example.com/acg/v1/reports"
+      },
+      {
+        "id": "obj-target-aff-summarize-metrics",
+        "ref": "urn:internal:summarizer"
+      }
+    ],
+    "morphisms": [
+      {
+        "id": "m-aff-observe-cluster",
+        "name": "aat:Observe",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-observe-cluster"
+        ],
+        "affordanceRef": "aff-observe-cluster",
+        "hyperedgeRef": "he-aff-observe-cluster"
+      },
+      {
+        "id": "m-aff-observe-api-health",
+        "name": "aat:Observe",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-observe-api-health"
+        ],
+        "affordanceRef": "aff-observe-api-health",
+        "hyperedgeRef": "he-aff-observe-api-health"
+      },
+      {
+        "id": "m-aff-report-findings",
+        "name": "aat:Report",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-report-findings"
+        ],
+        "affordanceRef": "aff-report-findings",
+        "hyperedgeRef": "he-aff-report-findings"
+      },
+      {
+        "id": "m-aff-summarize-metrics",
+        "name": "aat:Summarize",
+        "domain": [
+          "obj-scope"
+        ],
+        "codomain": [
+          "obj-target-aff-summarize-metrics"
+        ],
+        "affordanceRef": "aff-summarize-metrics",
+        "hyperedgeRef": "he-aff-summarize-metrics"
+      }
+    ],
+    "composition": []
+  },
+  "tracePolicy": {
+    "type": "acg:TracePolicy",
+    "mustEmitProvActivity": true,
+    "retentionPeriod": "P1Y",
+    "includeContextSnapshot": true,
+    "includeOutcomes": true
+  },
+  "structuralRequirements": {
+    "requiredOutputAction": "aat:Report"
+  },
+  "_documentation": {
+    "type": "acg:Documentation",
+    "scenario": "System monitoring and health observation",
+    "demonstrates": [
+      "Observer agent type with pure observation actions",
+      "Report as required output action (structural invariant)",
+      "No side-effect affordances (Observe, Summarize)",
+      "Deontic constraints preventing state modification",
+      "Composition rules: ObserverAgentType canComposeBefore PlannerAgentType"
+    ]
+  }
+}
