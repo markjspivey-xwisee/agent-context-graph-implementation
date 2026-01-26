@@ -10,9 +10,10 @@ import { StubVerifier } from '../../src/services/verifier.js';
 import { PolicyEngine } from '../../src/services/policy-engine.js';
 import { StubCausalEvaluator } from '../../src/services/causal-evaluator.js';
 import { InMemoryTraceStore } from '../../src/services/trace-store.js';
+import { resolveSpecPath } from '../../src/utils/spec-path.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const specDir = join(__dirname, '..', '..', 'spec');
+const specDir = resolveSpecPath();
 const examplesDir = join(__dirname, '..', '..', 'examples', 'golden-path');
 
 /**

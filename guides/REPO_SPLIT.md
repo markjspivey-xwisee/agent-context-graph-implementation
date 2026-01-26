@@ -4,6 +4,7 @@ This project can be split into two repositories for clarity:
 
 ## 1) `agent-context-graph-foundations`
 **Contents:** principles, architecture, protocol, and spec layers.
+**Repo:** https://github.com/markjspivey-xwisee/agent-context-graph-foundations
 
 Suggested paths:
 - `principles/`
@@ -15,6 +16,7 @@ Suggested paths:
 
 ## 2) `agent-context-graph-implementation`
 **Contents:** reference implementation, demos, tests, and examples.
+**Repo:** https://github.com/markjspivey-xwisee/agent-context-graph-implementation
 
 Suggested paths:
 - `src/`
