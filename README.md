@@ -23,6 +23,7 @@ If your foundations repo lives elsewhere, set ACG_SPEC_DIR to its spec directory
 
 ## Start here
 
+- OVERVIEW.md
 - src/broker/context-broker.ts
 - src/agents/orchestrator.ts
 - src/dashboard/server.ts
