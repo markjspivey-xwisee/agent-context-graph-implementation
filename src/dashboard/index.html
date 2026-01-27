@@ -2072,7 +2072,33 @@
   </div>
 
   <script>
-    const API_BASE = 'http://localhost:3000';
+    const resolveHostForPort = (targetPort) => {
+      const host = window.location.hostname;
+      const match = host.match(/^(.*)-(\d+)\.app\.github\.dev$/);
+      if (match) {
+        return `${match[1]}-${targetPort}.app.github.dev`;
+      }
+      return host;
+    };
+
+    const buildHttpBase = (targetPort) => {
+      const protocol = window.location.protocol;
+      const host = resolveHostForPort(targetPort);
+      const hasExplicitPort = !/\.app\.github\.dev$/.test(host);
+      return hasExplicitPort ? `${protocol}//${host}:${targetPort}` : `${protocol}//${host}`;
+    };
+
+    const buildWsBase = (targetPort) => {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = resolveHostForPort(targetPort);
+      const hasExplicitPort = !/\.app\.github\.dev$/.test(host);
+      return hasExplicitPort ? `${wsProtocol}//${host}:${targetPort}` : `${wsProtocol}//${host}`;
+    };
+
+    const DASHBOARD_PORT = parseInt(window.location.port || '3001', 10);
+    const API_BASE = buildHttpBase(3000);
+    const REALTIME_WS_BASE = buildWsBase(DASHBOARD_PORT + 1);
+    const FEDERATION_WS_BASE = `${buildWsBase(3000)}/ws`;
     let connected = false;
     let selectedWorkflowId = null;
     let workflows = [];
@@ -3554,12 +3580,9 @@
     let wsReconnectAttempts = 0;
     const MAX_RECONNECT_ATTEMPTS = 10;
 
-    function connectWebSocket() {
+    function connectRealtimeWebSocket() {
       try {
-        // WebSocket runs on HTTP port + 1
-        const httpPort = parseInt(window.location.port) || 3001;
-        const wsPort = httpPort + 1;
-        const wsUrl = `ws://${window.location.hostname}:${wsPort}`;
+        const wsUrl = REALTIME_WS_BASE;
 
         ws = new WebSocket(wsUrl);
 
@@ -3591,7 +3614,7 @@
           if (wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
             const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts), 30000);
             wsReconnectAttempts++;
-            setTimeout(connectWebSocket, delay);
+            setTimeout(connectRealtimeWebSocket, delay);
           }
         };
 
@@ -3604,7 +3627,7 @@
     }
 
     // Try to connect WebSocket (enabled for real-time updates)
-    connectWebSocket();
+    connectRealtimeWebSocket();
 
     // =========================================================================
     // Notification System
@@ -4151,8 +4174,7 @@
       }
 
       try {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        const wsUrl = FEDERATION_WS_BASE;
 
         wsConnection = new WebSocket(wsUrl);
 
