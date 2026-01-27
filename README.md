@@ -60,6 +60,12 @@ source scripts/codespaces-start.sh codex-cli
 This clones the foundations repo, sets `ACG_SPEC_DIR`, installs dependencies, and
 sets `REASONING_BACKEND` for the current shell session.
 
+To start API + dashboard in a tmux split:
+
+```bash
+source scripts/codespaces-start.sh claude-cli --tmux
+```
+
 ## Reasoning backends
 
 The orchestrator and dashboard can use multiple reasoning backends:

@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FOUNDATIONS_DIR="${ROOT_DIR}/../agent-context-graph-foundations"
 BACKEND="${1:-}"
+MODE="${2:-}"
 
 is_sourced=false
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -45,6 +46,22 @@ echo "Next steps:"
 echo "  npm run dev"
 echo "  npm run dashboard"
 echo ""
+if [[ "${MODE}" == "--tmux" ]]; then
+  if command -v tmux >/dev/null 2>&1; then
+    if tmux has-session -t acg 2>/dev/null; then
+      echo "tmux session 'acg' already exists."
+    else
+      tmux new-session -d -s acg -c "${ROOT_DIR}" "npm run dev"
+      tmux split-window -h -t acg -c "${ROOT_DIR}" "npm run dashboard"
+    fi
+    echo "Attaching to tmux session 'acg'..."
+    tmux attach -t acg
+  else
+    echo "tmux not found. Install tmux or run the commands manually."
+  fi
+  exit 0
+fi
+
 if [[ "${is_sourced}" == "false" ]]; then
   echo "Tip: run 'source scripts/codespaces-start.sh <backend>' to persist env vars in your shell."
 fi
