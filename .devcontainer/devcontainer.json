@@ -1,0 +1,13 @@
+{
+  "name": "agent-context-graph-implementation",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  "forwardPorts": [3000, 3001],
+  "portsAttributes": {
+    "3000": { "label": "ACG API" },
+    "3001": { "label": "ACG Dashboard" }
+  },
+  "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
+  "containerEnv": {
+    "ACG_SPEC_DIR": "../agent-context-graph-foundations/spec"
+  }
+}
