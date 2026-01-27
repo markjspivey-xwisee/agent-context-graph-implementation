@@ -16,6 +16,7 @@ import { SocialFederationService, type ProfileVisibility, type ConnectionState, 
 import { SharedContextService, type SyncStrategy, type ConflictResolution, type AccessLevel } from './services/shared-context.js';
 import { RealtimeSyncService } from './services/realtime-sync.js';
 import { KnowledgeGraphService } from './services/knowledge-graph-service.js';
+import { SemanticQueryClient } from './services/semantic-query-client.js';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { resolveSpecPath } from './utils/spec-path.js';
@@ -27,6 +28,23 @@ function loadTurtleFiles(dir: string): string {
   if (!existsSync(dir)) return '';
   const files = readdirSync(dir).filter(f => f.endsWith('.ttl'));
   return files.map(f => readFileSync(join(dir, f), 'utf-8')).join('\n\n');
+}
+
+type JsonObject = Record<string, unknown>;
+
+function loadJsonFile(filePath: string, fallback: JsonObject): JsonObject {
+  if (!existsSync(filePath)) return fallback;
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf-8')) as JsonObject;
+  } catch (error) {
+    console.warn(`Could not parse JSON-LD file at ${filePath}:`, error);
+    return fallback;
+  }
+}
+
+function loadTextFile(filePath: string): string {
+  if (!existsSync(filePath)) return '';
+  return readFileSync(filePath, 'utf-8');
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -81,6 +99,7 @@ async function init() {
       ontologyRefs: [
         'https://www.w3.org/ns/dcat#',
         'https://www.omg.org/spec/DPROD/',
+        'https://hyprcat.io/vocab#',
         'https://www.w3.org/ns/r2rml#'
       ],
       queryEndpoint: 'https://broker.example.com/knowledge-graphs/default/query',
@@ -178,6 +197,54 @@ async function init() {
   const hydraContent = loadTurtleFiles(hydraDir);
   const shaclContent = loadTurtleFiles(shaclDir);
 
+  const semanticExamplesDir = join(__dirname, '..', '..', 'examples', 'semantic-layer');
+  const catalogDoc = loadJsonFile(join(semanticExamplesDir, 'catalog.jsonld'), {
+    '@context': 'http://www.w3.org/ns/hydra/core',
+    '@id': '/data/catalog',
+    '@type': 'hydra:Resource'
+  });
+  const dataProductsDoc = loadJsonFile(join(semanticExamplesDir, 'data-products.jsonld'), {
+    '@context': 'http://www.w3.org/ns/hydra/core',
+    '@id': '/data/products',
+    '@type': 'hydra:Collection',
+    'hydra:member': []
+  });
+  const dataContractsDoc = loadJsonFile(join(semanticExamplesDir, 'contracts.jsonld'), {
+    '@context': 'http://www.w3.org/ns/hydra/core',
+    '@id': '/data/contracts',
+    '@type': 'hydra:Collection',
+    'hydra:member': []
+  });
+  const contractShapeTurtle = loadTextFile(join(semanticExamplesDir, 'contract-shape.ttl'));
+
+  const getHydraMembers = (doc: JsonObject): JsonObject[] => {
+    const members = doc['hydra:member'];
+    if (!Array.isArray(members)) return [];
+    return members.filter((member): member is JsonObject => typeof member === 'object' && member !== null);
+  };
+
+  const buildIndex = (members: JsonObject[]): Map<string, JsonObject> => {
+    const index = new Map<string, JsonObject>();
+    for (const member of members) {
+      const id = typeof member['@id'] === 'string' ? member['@id'] : null;
+      if (id) index.set(id, member);
+    }
+    return index;
+  };
+
+  const dataProductIndex = buildIndex(getHydraMembers(dataProductsDoc));
+  const dataContractIndex = buildIndex(getHydraMembers(dataContractsDoc));
+
+  const normalizeProductId = (id: string): string => {
+    if (id.startsWith('urn:')) return id;
+    return `urn:acg:data-product:${id}`;
+  };
+
+  const normalizeContractId = (id: string): string => {
+    if (id.startsWith('urn:')) return id;
+    return `urn:acg:data-contract:${id}`;
+  };
+
   // Create Hapi server
   const server = Hapi.server({
     port: process.env.PORT ?? 3000,
@@ -186,6 +253,18 @@ async function init() {
       cors: true
     }
   });
+
+  let semanticQueryClient: SemanticQueryClient | null = null;
+  const getSemanticQueryClient = (overrideEndpoint?: string) => {
+    const endpoint = overrideEndpoint ?? process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? '';
+    if (!endpoint) {
+      throw new Error('Semantic layer endpoint missing. Set SEMANTIC_LAYER_SPARQL_ENDPOINT or provide semanticLayerRef.');
+    }
+    if (!semanticQueryClient || semanticQueryClient.endpoint !== endpoint) {
+      semanticQueryClient = new SemanticQueryClient({ endpoint });
+    }
+    return semanticQueryClient;
+  };
 
   // Health check endpoint
   server.route({
@@ -1541,6 +1620,134 @@ async function init() {
   });
 
   // ===========================================
+  // Semantic Catalog Endpoints (Hydra)
+  // ===========================================
+
+  // GET /data/catalog - Retrieve semantic catalog
+  server.route({
+    method: 'GET',
+    path: '/data/catalog',
+    handler: (_request, h) => {
+      return h.response(catalogDoc).type('application/ld+json');
+    }
+  });
+
+  // GET /data/products - List data products
+  server.route({
+    method: 'GET',
+    path: '/data/products',
+    handler: (_request, h) => {
+      return h.response(dataProductsDoc).type('application/ld+json');
+    }
+  });
+
+  // GET /data/products/{id} - Get specific data product
+  server.route({
+    method: 'GET',
+    path: '/data/products/{id}',
+    handler: (request, h) => {
+      const productId = normalizeProductId(request.params.id);
+      const product = dataProductIndex.get(productId);
+      if (!product) {
+        return h.response({ error: 'Data product not found' }).code(404);
+      }
+      return h.response(product).type('application/ld+json');
+    }
+  });
+
+  // GET /data/contracts - List data contracts
+  server.route({
+    method: 'GET',
+    path: '/data/contracts',
+    handler: (_request, h) => {
+      return h.response(dataContractsDoc).type('application/ld+json');
+    }
+  });
+
+  // GET /data/contracts/{id} - Get specific data contract
+  server.route({
+    method: 'GET',
+    path: '/data/contracts/{id}',
+    handler: (request, h) => {
+      const contractId = normalizeContractId(request.params.id);
+      const contract = dataContractIndex.get(contractId);
+      if (!contract) {
+        return h.response({ error: 'Data contract not found' }).code(404);
+      }
+      return h.response(contract).type('application/ld+json');
+    }
+  });
+
+  // GET /data/contracts/{id}/shape - Get SHACL shape for contract
+  server.route({
+    method: 'GET',
+    path: '/data/contracts/{id}/shape',
+    handler: (request, h) => {
+      const contractId = normalizeContractId(request.params.id);
+      const contract = dataContractIndex.get(contractId);
+      if (!contract) {
+        return h.response({ error: 'Data contract not found' }).code(404);
+      }
+      if (!contractShapeTurtle) {
+        return h.response({ error: 'Contract shape not available' }).code(404);
+      }
+      return h.response(contractShapeTurtle).type('text/turtle');
+    }
+  });
+
+  // ===========================================
+  // Data Query Endpoints (Semantic Layer)
+  // ===========================================
+
+  // POST /data/query - Execute a semantic query (SPARQL canonical)
+  server.route({
+    method: 'POST',
+    path: '/data/query',
+    handler: async (request, h) => {
+      try {
+        const payload = request.payload as {
+          query: string;
+          queryLanguage?: string;
+          semanticLayerRef?: string;
+          sourceRef?: string;
+          mappingRef?: string;
+          federationProfileRef?: string;
+          resultFormat?: string;
+          timeoutSeconds?: number;
+          maxRows?: number;
+        };
+
+        if (!payload?.query) {
+          return h.response({ error: 'query is required' }).code(400);
+        }
+
+        const queryLanguage = payload.queryLanguage?.toLowerCase() ?? 'sparql';
+        if (queryLanguage !== 'sparql') {
+          return h.response({ error: `Unsupported queryLanguage: ${queryLanguage}` }).code(400);
+        }
+
+        const semanticClient = getSemanticQueryClient(payload.semanticLayerRef);
+        const result = await semanticClient.query({
+          query: payload.query,
+          endpoint: payload.semanticLayerRef,
+          resultFormat: payload.resultFormat,
+          timeoutSeconds: payload.timeoutSeconds
+        });
+
+        return h.response({
+          queryId: result.queryId,
+          status: { state: 'SUCCEEDED' },
+          results: result.results,
+          contentType: result.contentType
+        }).code(200);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(400);
+      }
+    }
+  });
+
+  // ===========================================
   // Knowledge Graph Endpoints
   // ===========================================
 
@@ -1767,6 +1974,10 @@ async function init() {
         'sparqlQueries': '/sparql/queries',
         'rdf': '/rdf',
         'rdfStats': '/rdf/stats',
+        'dataCatalog': '/data/catalog',
+        'dataProducts': '/data/products',
+        'dataContracts': '/data/contracts',
+        'dataQuery': '/data/query',
         'knowledgeGraphs': '/knowledge-graphs',
         'tools': '/broker/tools',
         'policyEvaluate': '/policy/evaluate',
@@ -1828,6 +2039,15 @@ async function init() {
   console.log('  POST /sparql           - Execute a SPARQL query');
   console.log('  GET  /sparql/queries   - List named queries');
   console.log('  POST /sparql/queries/{name} - Execute named query');
+  console.log('\nSemantic Catalog Endpoints:');
+  console.log('  GET  /data/catalog     - Hydra semantic catalog');
+  console.log('  GET  /data/products    - List data products');
+  console.log('  GET  /data/products/{id} - Get data product');
+  console.log('  GET  /data/contracts   - List data contracts');
+  console.log('  GET  /data/contracts/{id} - Get data contract');
+  console.log('  GET  /data/contracts/{id}/shape - Get contract SHACL shape');
+  console.log('\nData Query Endpoints:');
+  console.log('  POST /data/query   - Execute a semantic query (SPARQL canonical)');
   console.log('\nRDF Endpoints:');
   console.log('  GET  /rdf           - Export all traces as Turtle');
   console.log('  GET  /rdf/stats     - RDF store statistics');

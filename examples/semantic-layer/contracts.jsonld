@@ -1,0 +1,35 @@
+{
+  "@context": {
+    "dcterms": "http://purl.org/dc/terms/",
+    "dprod": "https://ekgf.github.io/data-product-spec/dprod#",
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "hyprcat": "https://hyprcat.io/vocab#",
+    "sl": "https://agentcontextgraph.dev/semantic-layer#"
+  },
+  "@id": "/data/contracts",
+  "@type": "hydra:Collection",
+  "hydra:member": [
+    {
+      "@id": "urn:acg:data-contract:sales-insights-v1",
+      "@type": ["hyprcat:DataContract", "sl:DataContract"],
+      "dcterms:title": "Sales Insights Contract v1",
+      "dcterms:description": "Contract for the Sales Insights data product.",
+      "dcterms:identifier": "sales-insights-v1",
+      "sl:contractVersion": "1.0.0",
+      "sl:contractStatus": "sl:ContractActive",
+      "sl:contractFor": { "@id": "urn:acg:data-product:sales-insights" },
+      "sl:contractShape": { "@id": "urn:acg:shapes:sales-insights-contract" },
+      "dcterms:conformsTo": { "@id": "urn:acg:shapes:sales-insights-contract" },
+      "hydra:operation": [
+        {
+          "@type": "hydra:Operation",
+          "hydra:method": "GET",
+          "hydra:title": "Get contract shape",
+          "hydra:entrypoint": "/data/contracts/sales-insights-v1/shape",
+          "hydra:returns": "text/turtle"
+        }
+      ]
+    }
+  ],
+  "hydra:totalItems": 1
+}

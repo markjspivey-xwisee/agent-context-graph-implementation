@@ -1,0 +1,46 @@
+{
+  "@context": {
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "dprod": "https://ekgf.github.io/data-product-spec/dprod#",
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "hyprcat": "https://hyprcat.io/vocab#",
+    "sl": "https://agentcontextgraph.dev/semantic-layer#"
+  },
+  "@id": "/data/catalog",
+  "@type": ["dcat:Catalog", "hyprcat:Catalog", "sl:SemanticCatalog"],
+  "dcterms:title": "ACG Semantic Catalog",
+  "dcterms:description": "Hydra-enabled catalog of datasets, data products, and SHACL-based contracts.",
+  "dcat:dataset": [
+    { "@id": "urn:acg:dataset:sales-orders" }
+  ],
+  "dcat:service": [
+    {
+      "@id": "urn:acg:service:semantic-layer",
+      "@type": "dcat:DataService",
+      "dcterms:title": "Semantic Layer SPARQL Service",
+      "dcat:endpointURL": "https://semantic-layer.example.com/sparql",
+      "dcat:servesDataset": [{ "@id": "urn:acg:dataset:sales-orders" }],
+      "sl:servesProduct": [{ "@id": "urn:acg:data-product:sales-insights" }]
+    }
+  ],
+  "sl:hasDataProduct": [
+    { "@id": "urn:acg:data-product:sales-insights" }
+  ],
+  "hydra:operation": [
+    {
+      "@type": "hydra:Operation",
+      "hydra:method": "GET",
+      "hydra:title": "List data products",
+      "hydra:entrypoint": "/data/products",
+      "hydra:returns": "application/ld+json"
+    },
+    {
+      "@type": "hydra:Operation",
+      "hydra:method": "GET",
+      "hydra:title": "List data contracts",
+      "hydra:entrypoint": "/data/contracts",
+      "hydra:returns": "application/ld+json"
+    }
+  ]
+}

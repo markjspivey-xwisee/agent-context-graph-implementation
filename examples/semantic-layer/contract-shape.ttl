@@ -1,0 +1,32 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:acg:shapes:sales-insights-contract>
+    a sh:NodeShape ;
+    sh:targetClass dcat:Dataset ;
+    sh:property [
+        sh:path dcterms:identifier ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "Dataset identifier is required."@en ;
+    ] ;
+    sh:property [
+        sh:path dcterms:title ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "Dataset title is required."@en ;
+    ] ;
+    sh:property [
+        sh:path dcterms:description ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:message "Dataset description is required."@en ;
+    ] ;
+    sh:property [
+        sh:path dcat:keyword ;
+        sh:datatype xsd:string ;
+        sh:message "Dataset keywords must be strings."@en ;
+    ] .

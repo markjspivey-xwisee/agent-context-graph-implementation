@@ -1,0 +1,28 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix sl: <https://agentcontextgraph.dev/semantic-layer#> .
+
+<urn:acg:mapping:sales-orders>
+    a rr:TriplesMap ;
+    rr:logicalTable [
+        rr:tableName "sales_orders"
+    ] ;
+    rr:subjectMap [
+        rr:template "urn:acg:order/{order_id}" ;
+        rr:class dcat:Dataset
+    ] ;
+    rr:predicateObjectMap [
+        rr:predicate dcterms:identifier ;
+        rr:objectMap [ rr:column "order_id" ]
+    ] ;
+    rr:predicateObjectMap [
+        rr:predicate dcterms:title ;
+        rr:objectMap [ rr:column "order_name" ]
+    ] .
+
+<urn:acg:dataset:sales-orders>
+    a dcat:Dataset ;
+    dcterms:title "Sales Orders Dataset"@en ;
+    dcterms:description "Example dataset mapped via R2RML."@en ;
+    sl:hasMapping <urn:acg:mapping:sales-orders> .

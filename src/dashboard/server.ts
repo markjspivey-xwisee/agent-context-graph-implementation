@@ -237,6 +237,7 @@ async function init() {
       ontologyRefs: [
         'https://www.w3.org/ns/dcat#',
         'https://www.omg.org/spec/DPROD/',
+        'https://hyprcat.io/vocab#',
         'https://www.w3.org/ns/r2rml#'
       ],
       queryEndpoint: 'https://broker.example.com/knowledge-graphs/default/query',

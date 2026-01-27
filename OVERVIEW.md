@@ -4,7 +4,7 @@ This repo is the operational implementation of Agent Context Graph (ACG). It tur
 
 ## Executive summary
 
-ACG exposes an ephemeral Context Graph to agents at runtime and references a persistent Knowledge Graph for long-term memory. The broker generates affordances based on credentials, policies, and current state, and emits PROV traces for every traversal. The implementation respects the foundations contract (schemas, SHACL, ontology, and protocol) and keeps examples and tests aligned with those specs, including tool authoring endpoints.
+ACG exposes an ephemeral Context Graph to agents at runtime and references a persistent Knowledge Graph for long-term memory. A HyprCat-aligned Hydra semantic catalog exposes data products and SHACL contracts for semantic queries. The broker generates affordances based on credentials, policies, and current state, and emits PROV traces for every traversal. The implementation respects the foundations contract (schemas, SHACL, ontology, and protocol) and keeps examples and tests aligned with those specs, including tool authoring endpoints.
 
 ## Runtime shape (mermaid)
 
@@ -76,6 +76,7 @@ CI clones the foundations repo and sets ACG_SPEC_DIR so tests and schema validat
 - Add new demos/examples that conform to the specs.
 - Register tools via /broker/tools and surface them as affordances.
 - Add knowledge graph mappings and query endpoints for domain data.
+- Extend the semantic catalog with additional data products and contracts.
 
 ## Repos
 

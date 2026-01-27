@@ -1,0 +1,50 @@
+{
+  "@context": {
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "dprod": "https://ekgf.github.io/data-product-spec/dprod#",
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "hyprcat": "https://hyprcat.io/vocab#",
+    "sl": "https://agentcontextgraph.dev/semantic-layer#"
+  },
+  "@id": "/data/products",
+  "@type": "hydra:Collection",
+  "hydra:member": [
+    {
+      "@id": "urn:acg:data-product:sales-insights",
+      "@type": ["dprod:DataProduct", "hyprcat:DataProduct", "sl:DataProduct"],
+      "dcterms:title": "Sales Insights",
+      "dcterms:description": "Aggregated sales signals for reporting and forecasting.",
+      "dprod:domain": "sales",
+      "dprod:hasPort": [
+        {
+          "@type": "dprod:OutputPort",
+          "dcterms:title": "SPARQL Output",
+          "dprod:protocol": "SPARQL",
+          "dcat:dataset": { "@id": "urn:acg:dataset:sales-orders" }
+        }
+      ],
+      "sl:hasDataContract": [
+        { "@id": "urn:acg:data-contract:sales-insights-v1" }
+      ],
+      "hydra:operation": [
+        {
+          "@type": "hydra:Operation",
+          "hydra:method": "POST",
+          "hydra:title": "Query data product",
+          "hydra:entrypoint": "/data/query",
+          "hydra:expects": "application/sparql-query",
+          "hydra:returns": "application/sparql-results+json"
+        },
+        {
+          "@type": "hydra:Operation",
+          "hydra:method": "GET",
+          "hydra:title": "Get data contract",
+          "hydra:entrypoint": "/data/contracts/sales-insights-v1",
+          "hydra:returns": "application/ld+json"
+        }
+      ]
+    }
+  ],
+  "hydra:totalItems": 1
+}

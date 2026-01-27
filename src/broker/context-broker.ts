@@ -19,6 +19,7 @@ import { EnclaveService, type CreateEnclaveParams, type SealEnclaveParams, type 
 import { CheckpointStore, type CreateCheckpointParams, type ResumeCheckpointParams, type AgentCheckpointState } from '../services/checkpoint-store.js';
 import { UsageSemanticsService } from '../services/usage-semantics.js';
 import { KnowledgeGraphService } from '../services/knowledge-graph-service.js';
+import { SemanticQueryClient } from '../services/semantic-query-client.js';
 
 export interface ContextRequest {
   agentDID: string;
@@ -65,6 +66,7 @@ export class ContextBroker {
   private shaclInitialized: boolean = false;
   private usageSemanticsService: UsageSemanticsService;
   private knowledgeGraphService?: KnowledgeGraphService;
+  private semanticQueryClient: SemanticQueryClient | null = null;
 
   // Infrastructure services (Gas Town inspired)
   private enclaveService: EnclaveService;
@@ -122,6 +124,17 @@ export class ContextBroker {
       await this.shaclValidator.loadShapesFromDirectory(shaclDir);
       this.shaclInitialized = true;
     }
+  }
+
+  private getSemanticQueryClient(overrideEndpoint?: string): SemanticQueryClient {
+    const endpoint = overrideEndpoint ?? process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? '';
+    if (!endpoint) {
+      throw new Error('Semantic layer endpoint missing. Set SEMANTIC_LAYER_SPARQL_ENDPOINT or provide semanticLayerRef.');
+    }
+    if (!this.semanticQueryClient || this.semanticQueryClient.endpoint !== endpoint) {
+      this.semanticQueryClient = new SemanticQueryClient({ endpoint });
+    }
+    return this.semanticQueryClient;
   }
 
   /**
@@ -808,6 +821,22 @@ export class ContextBroker {
           ]
         } as Affordance;
 
+      case 'QueryData':
+        return {
+          ...baseAffordance,
+          target: {
+            type: 'broker',
+            href: 'broker://data/query'
+          },
+          params: {
+            shaclRef: `${shaclBase}QueryDataParamsShape`
+          },
+          requiresCredential: requiredCapability ? [{ schema: requiredCapability }] : undefined,
+          effects: [
+            { type: 'resource-read', description: 'Queries data via the semantic layer', reversible: true }
+          ]
+        } as Affordance;
+
       // =========================================================================
       // Infrastructure Actions (Gas Town inspired)
       // =========================================================================
@@ -968,6 +997,9 @@ export class ContextBroker {
       }
       if (cred.type.includes('ArchivistCapability')) {
         return 'aat:ArchivistAgentType';
+      }
+      if (cred.type.includes('AnalystCapability')) {
+        return 'aat:AnalystAgentType';
       }
     }
 
@@ -1210,6 +1242,49 @@ export class ContextBroker {
             { eventType: 'EnclaveDestroyed', eventId: result.traceId!, timestamp: now }
           ],
           contextChanged: true // Enclave gone means affordances changed
+        };
+      }
+
+      case 'QueryData': {
+        const query = parameters.query as string | undefined;
+        const queryLanguage = (parameters.queryLanguage as string | undefined)?.toLowerCase();
+        if (!query) {
+          return {
+            success: false,
+            resultType: 'QueryData',
+            data: { error: 'QueryData requires a query string' }
+          };
+        }
+        if (queryLanguage && queryLanguage !== 'sparql') {
+          return {
+            success: false,
+            resultType: 'QueryData',
+            data: { error: `Unsupported queryLanguage: ${queryLanguage}` }
+          };
+        }
+
+        const semanticClient = this.getSemanticQueryClient(parameters.semanticLayerRef as string | undefined);
+        const result = await semanticClient.query({
+          query,
+          endpoint: parameters.semanticLayerRef as string | undefined,
+          resultFormat: parameters.resultFormat as string | undefined,
+          timeoutSeconds: parameters.timeoutSeconds as number | undefined
+        });
+
+        return {
+          success: true,
+          resultType: 'QueryData',
+          resultRef: result.queryId,
+          data: {
+            queryId: result.queryId,
+            status: { state: 'SUCCEEDED' },
+            results: result.results,
+            contentType: result.contentType
+          },
+          eventsEmitted: [
+            { eventType: 'DataQueryExecuted', eventId: result.queryId, timestamp: now }
+          ],
+          contextChanged: false
         };
       }
 
