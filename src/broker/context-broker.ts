@@ -18,6 +18,7 @@ import { SHACLValidatorService, getSHACLValidator } from '../services/shacl-vali
 import { EnclaveService, type CreateEnclaveParams, type SealEnclaveParams, type DestroyEnclaveParams } from '../services/enclave-service.js';
 import { CheckpointStore, type CreateCheckpointParams, type ResumeCheckpointParams, type AgentCheckpointState } from '../services/checkpoint-store.js';
 import { UsageSemanticsService } from '../services/usage-semantics.js';
+import { KnowledgeGraphService } from '../services/knowledge-graph-service.js';
 
 export interface ContextRequest {
   agentDID: string;
@@ -63,6 +64,7 @@ export class ContextBroker {
   private shaclValidator: SHACLValidatorService;
   private shaclInitialized: boolean = false;
   private usageSemanticsService: UsageSemanticsService;
+  private knowledgeGraphService?: KnowledgeGraphService;
 
   // Infrastructure services (Gas Town inspired)
   private enclaveService: EnclaveService;
@@ -79,7 +81,8 @@ export class ContextBroker {
     causalEvaluator: ICausalEvaluator,
     enclaveService?: EnclaveService,
     checkpointStore?: CheckpointStore,
-    usageSemanticsService?: UsageSemanticsService
+    usageSemanticsService?: UsageSemanticsService,
+    knowledgeGraphService?: KnowledgeGraphService
   ) {
     this.verifier = verifier;
     this.policyEngine = policyEngine;
@@ -88,6 +91,7 @@ export class ContextBroker {
     this.causalEvaluator = causalEvaluator;
     this.shaclValidator = getSHACLValidator();
     this.usageSemanticsService = usageSemanticsService ?? new UsageSemanticsService(this.traceStore);
+    this.knowledgeGraphService = knowledgeGraphService;
 
     // Initialize infrastructure services (use defaults if not provided)
     this.enclaveService = enclaveService ?? new EnclaveService();
@@ -174,6 +178,11 @@ export class ContextBroker {
     const expiresAt = new Date(now.getTime() + this.CONTEXT_TTL_MS);
     const nonce = uuidv4();
 
+    const knowledgeGraphRef = this.knowledgeGraphService?.getDefaultGraph() ?? undefined;
+    const knowledgeGraphSnapshot = knowledgeGraphRef
+      ? this.knowledgeGraphService?.getSnapshot(knowledgeGraphRef.id) ?? undefined
+      : undefined;
+
     const context: ContextGraph = {
       '@context': [
         // W3C Standards
@@ -253,6 +262,19 @@ export class ContextBroker {
 
           // Trace policy
           'tracePolicy': 'acg:hasTracePolicy',
+          'knowledgeGraphRef': 'acg:knowledgeGraphRef',
+          'knowledgeGraphSnapshot': 'acg:knowledgeGraphSnapshot',
+          'ontologyRefs': { '@id': 'acg:knowledgeGraphOntologyRef', '@container': '@set' },
+          'queryEndpoint': { '@id': 'acg:knowledgeGraphQueryEndpoint', '@type': '@id' },
+          'updateEndpoint': { '@id': 'acg:knowledgeGraphUpdateEndpoint', '@type': '@id' },
+          'mappingsRef': { '@id': 'acg:knowledgeGraphMappingsRef', '@type': '@id' },
+          'graphId': { '@id': 'acg:knowledgeGraphId', '@type': '@id' },
+          'lastUpdated': { '@id': 'acg:knowledgeGraphLastUpdated', '@type': 'xsd:dateTime' },
+          'summary': 'acg:knowledgeGraphSummary',
+          'nodes': 'acg:knowledgeGraphNodes',
+          'edges': 'acg:knowledgeGraphEdges',
+          'datasets': 'acg:knowledgeGraphDatasets',
+          'dataProducts': 'acg:knowledgeGraphDataProducts',
 
           // SHACL reference
           'shaclRef': { '@id': 'sh:shapesGraph', '@type': '@id' },
@@ -278,6 +300,8 @@ export class ContextBroker {
       constraints,
       affordances,
       tracePolicy: this.getDefaultTracePolicy(),
+      knowledgeGraphRef,
+      knowledgeGraphSnapshot,
       // Include structural requirements from AAT spec
       structuralRequirements: requiredOutputAction ? { requiredOutputAction } : undefined
     };
@@ -464,7 +488,9 @@ export class ContextBroker {
           'usageRelVersion': 'acg:usageRelVersion',
           'usageActionType': 'acg:usageActionType',
           'usageOutcomeStatus': 'acg:usageOutcomeStatus',
-          'usageTimestamp': { '@id': 'acg:usageTimestamp', '@type': 'xsd:dateTime' }
+          'usageTimestamp': { '@id': 'acg:usageTimestamp', '@type': 'xsd:dateTime' },
+          'knowledgeGraphRef': 'acg:knowledgeGraphRef',
+          'knowledgeGraphUpdate': 'acg:knowledgeGraphUpdate'
         }
       ],
       id: `urn:uuid:${uuidv4()}`,
@@ -490,7 +516,8 @@ export class ContextBroker {
           targetHref: affordance.target.href
         },
         parameters: request.parameters,
-        credentials: credentialSnapshots
+        credentials: credentialSnapshots,
+        knowledgeGraphRef: context.knowledgeGraphRef
       },
       generated: {
         outcome: {

@@ -38,6 +38,10 @@ export interface ContextGraph {
   hypergraph?: Hypergraph;
   /** Optional category-theoretic view */
   category?: ContextCategory;
+  /** Reference to persistent knowledge graph */
+  knowledgeGraphRef?: KnowledgeGraphRef;
+  /** Optional lightweight knowledge graph snapshot */
+  knowledgeGraphSnapshot?: KnowledgeGraphSnapshot;
   /**
    * Structural requirements from AAT behavioral invariants
    * Populated by broker based on agent's AAT spec
@@ -84,6 +88,30 @@ export interface Scope {
   actions: string[];
 }
 
+export interface KnowledgeGraphRef {
+  id: string;
+  label?: string;
+  version?: string;
+  ontologyRefs?: string[];
+  queryEndpoint?: string;
+  updateEndpoint?: string;
+  mappingsRef?: string;
+}
+
+export interface KnowledgeGraphSnapshot {
+  graphId: string;
+  version: string;
+  lastUpdated: string;
+  summary?: KnowledgeGraphSummary;
+}
+
+export interface KnowledgeGraphSummary {
+  nodes?: number;
+  edges?: number;
+  datasets?: number;
+  dataProducts?: number;
+}
+
 export interface VerifiedCredentialRef {
   id: string;
   type: string[];
@@ -124,6 +152,8 @@ export interface Affordance {
   causalSemantics?: CausalSemantics;
   /** Usage-based semantics (acg:usageSemantics - ACG extension) */
   usageSemantics?: UsageSemantics;
+  /** Optional MCP tool mapping for this affordance */
+  mcpMapping?: MCPToolMapping;
   preconditions?: string[];
   /** Whether affordance is currently available (acg:enabled) */
   enabled: boolean;
@@ -330,6 +360,7 @@ export interface TraceInputs {
   affordance: AffordanceSnapshot;
   parameters: Record<string, unknown>;
   credentials: CredentialSnapshot[];
+  knowledgeGraphRef?: KnowledgeGraphRef;
 }
 
 export interface ContextSnapshot {
@@ -361,6 +392,13 @@ export interface TraceOutputs {
   stateChanges?: StateChange[];
   eventsEmitted?: EventEmitted[];
   newContext?: NewContextRef;
+  knowledgeGraphUpdate?: KnowledgeGraphUpdate;
+}
+
+export interface KnowledgeGraphUpdate {
+  graphId: string;
+  updateType: string;
+  updateRef?: string;
 }
 
 export interface Outcome {

@@ -4,7 +4,7 @@ This repo is the operational implementation of Agent Context Graph (ACG). It tur
 
 ## Executive summary
 
-ACG exposes a Context Graph to agents at runtime. The broker generates affordances based on credentials, policies, and current state, and emits PROV traces for every traversal. The implementation respects the foundations contract (schemas, SHACL, ontology, and protocol) and keeps examples and tests aligned with those specs.
+ACG exposes an ephemeral Context Graph to agents at runtime and references a persistent Knowledge Graph for long-term memory. The broker generates affordances based on credentials, policies, and current state, and emits PROV traces for every traversal. The implementation respects the foundations contract (schemas, SHACL, ontology, and protocol) and keeps examples and tests aligned with those specs, including tool authoring endpoints.
 
 ## Runtime shape (mermaid)
 
@@ -13,7 +13,9 @@ flowchart LR
   Agent -->|/context| Broker
   Broker --> AAT[AAT Registry]
   Broker --> Policy[Policy Engine]
-  Broker -->|Context Graph| Agent
+  Broker --> KG[Knowledge Graph Service]
+  Broker --> Tools[Tool Registry]
+  Broker -->|Context Graph + KG ref| Agent
   Agent -->|/traverse| Broker
   Broker --> Trace[Trace Store]
   Broker --> Outcome[Execution Result]
@@ -31,7 +33,7 @@ sequenceDiagram
   Agent->>Broker: POST /context (credentials)
   Broker->>AAT: Check action space
   Broker->>Policy: Evaluate constraints
-  Broker-->>Agent: Context Graph (affordances)
+  Broker-->>Agent: Context Graph (affordances + KG ref)
   Agent->>Broker: POST /traverse (affordance)
   Broker->>Trace: Emit PROV + usageEvent
   Broker-->>Agent: Outcome
@@ -72,6 +74,8 @@ CI clones the foundations repo and sets ACG_SPEC_DIR so tests and schema validat
 - Add affordance types in foundations ontology and protocol docs.
 - Extend policy rules or AAT composition rules in code.
 - Add new demos/examples that conform to the specs.
+- Register tools via /broker/tools and surface them as affordances.
+- Add knowledge graph mappings and query endpoints for domain data.
 
 ## Repos
 

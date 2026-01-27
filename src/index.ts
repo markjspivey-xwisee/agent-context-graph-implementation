@@ -15,6 +15,7 @@ import { ChannelBridgeService, PLATFORMS } from './services/channel-bridge.js';
 import { SocialFederationService, type ProfileVisibility, type ConnectionState, type GroupRole } from './services/social-federation.js';
 import { SharedContextService, type SyncStrategy, type ConflictResolution, type AccessLevel } from './services/shared-context.js';
 import { RealtimeSyncService } from './services/realtime-sync.js';
+import { KnowledgeGraphService } from './services/knowledge-graph-service.js';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { resolveSpecPath } from './utils/spec-path.js';
@@ -71,6 +72,23 @@ async function init() {
     }
   };
 
+  // Knowledge Graph registry (in-memory for now)
+  const knowledgeGraphService = new KnowledgeGraphService([
+    {
+      id: 'urn:kg:default',
+      label: 'Enterprise Knowledge Graph',
+      version: '2026.01',
+      ontologyRefs: [
+        'https://www.w3.org/ns/dcat#',
+        'https://www.omg.org/spec/DPROD/',
+        'https://www.w3.org/ns/r2rml#'
+      ],
+      queryEndpoint: 'https://broker.example.com/knowledge-graphs/default/query',
+      updateEndpoint: 'https://broker.example.com/knowledge-graphs/default/update',
+      mappingsRef: 'https://broker.example.com/knowledge-graphs/default/mappings'
+    }
+  ]);
+
   // Initialize SPARQL endpoint
   const sparqlEndpoint = new SPARQLEndpoint(rdfStore);
 
@@ -80,7 +98,11 @@ async function init() {
     policyEngine,
     aatRegistry,
     traceStore,
-    causalEvaluator
+    causalEvaluator,
+    undefined,
+    undefined,
+    undefined,
+    knowledgeGraphService
   );
 
   // In-memory workflow store for dashboard demo
@@ -654,6 +676,39 @@ async function init() {
     handler: () => {
       const tools = demoBroker.listTools();
       return { tools };
+    }
+  });
+
+  // POST /broker/tools - Register a new tool
+  server.route({
+    method: 'POST',
+    path: '/broker/tools',
+    handler: (request, h) => {
+      const payload = request.payload as {
+        name: string;
+        description?: string;
+        category: string;
+        endpoint?: string;
+        requiredCredentialIds?: string[];
+        schema?: unknown;
+        enabled?: boolean;
+      };
+
+      if (!payload?.name || !payload?.category) {
+        return h.response({ error: 'name and category are required' }).code(400);
+      }
+
+      const tool = demoBroker.registerTool({
+        name: payload.name,
+        description: payload.description,
+        category: payload.category as any,
+        endpoint: payload.endpoint,
+        requiredCredentialIds: payload.requiredCredentialIds,
+        schema: payload.schema,
+        enabled: payload.enabled
+      });
+
+      return h.response(tool).code(201);
     }
   });
 
@@ -1486,6 +1541,69 @@ async function init() {
   });
 
   // ===========================================
+  // Knowledge Graph Endpoints
+  // ===========================================
+
+  // GET /knowledge-graphs - List knowledge graphs
+  server.route({
+    method: 'GET',
+    path: '/knowledge-graphs',
+    handler: () => {
+      return { knowledgeGraphs: knowledgeGraphService.listGraphs() };
+    }
+  });
+
+  // POST /knowledge-graphs - Register a knowledge graph
+  server.route({
+    method: 'POST',
+    path: '/knowledge-graphs',
+    handler: (request, h) => {
+      const payload = request.payload as Record<string, unknown>;
+      if (!payload?.id) {
+        return h.response({ error: 'id is required' }).code(400);
+      }
+      const graph = knowledgeGraphService.registerGraph(payload as any);
+      return h.response(graph).code(201);
+    }
+  });
+
+  // POST /knowledge-graphs/{id}/query - Query a knowledge graph
+  server.route({
+    method: 'POST',
+    path: '/knowledge-graphs/{id}/query',
+    handler: (request, h) => {
+      const payload = request.payload as { query: string; language?: 'sparql' | 'dsl' };
+      if (!payload?.query) {
+        return h.response({ error: 'query is required' }).code(400);
+      }
+      const result = knowledgeGraphService.queryGraph(request.params.id, payload);
+      return h.response(result).code(200);
+    }
+  });
+
+  // POST /knowledge-graphs/{id}/mappings - Register mappings (stub)
+  server.route({
+    method: 'POST',
+    path: '/knowledge-graphs/{id}/mappings',
+    handler: (request, h) => {
+      const payload = request.payload as { mappingRef?: string };
+      if (!payload?.mappingRef) {
+        return h.response({ error: 'mappingRef is required' }).code(400);
+      }
+
+      const update = knowledgeGraphService.registerMapping(request.params.id, payload.mappingRef);
+      if (!update) {
+        return h.response({ error: 'Knowledge graph not found' }).code(404);
+      }
+
+      return h.response({
+        status: 'accepted',
+        update
+      }).code(202);
+    }
+  });
+
+  // ===========================================
   // SPARQL Endpoints
   // ===========================================
 
@@ -1649,6 +1767,8 @@ async function init() {
         'sparqlQueries': '/sparql/queries',
         'rdf': '/rdf',
         'rdfStats': '/rdf/stats',
+        'knowledgeGraphs': '/knowledge-graphs',
+        'tools': '/broker/tools',
         'policyEvaluate': '/policy/evaluate',
         'policyRules': '/policy/rules',
         'health': '/health'

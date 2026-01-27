@@ -12,6 +12,7 @@ import { PolicyEngine } from '../services/policy-engine.js';
 import { InMemoryTraceStore } from '../services/trace-store.js';
 import { StubCausalEvaluator } from '../services/causal-evaluator.js';
 import { resolveSpecPath } from '../utils/spec-path.js';
+import { KnowledgeGraphService } from '../services/knowledge-graph-service.js';
 
 // ============================================================
 // Structured Logging
@@ -228,12 +229,32 @@ async function init() {
   const traceStore = new InMemoryTraceStore();
   const causalEvaluator = new StubCausalEvaluator();
 
+  const knowledgeGraphService = new KnowledgeGraphService([
+    {
+      id: 'urn:kg:default',
+      label: 'Enterprise Knowledge Graph',
+      version: '2026.01',
+      ontologyRefs: [
+        'https://www.w3.org/ns/dcat#',
+        'https://www.omg.org/spec/DPROD/',
+        'https://www.w3.org/ns/r2rml#'
+      ],
+      queryEndpoint: 'https://broker.example.com/knowledge-graphs/default/query',
+      updateEndpoint: 'https://broker.example.com/knowledge-graphs/default/update',
+      mappingsRef: 'https://broker.example.com/knowledge-graphs/default/mappings'
+    }
+  ]);
+
   const contextBroker = new ContextBroker(
     verifier,
     policyEngine,
     aatRegistry,
     traceStore,
-    causalEvaluator
+    causalEvaluator,
+    undefined,
+    undefined,
+    undefined,
+    knowledgeGraphService
   );
 
   // Initialize SHACL validation if spec directory exists

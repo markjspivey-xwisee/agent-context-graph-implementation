@@ -11,6 +11,7 @@ import { PolicyEngine } from '../../src/services/policy-engine.js';
 import { StubCausalEvaluator } from '../../src/services/causal-evaluator.js';
 import { InMemoryTraceStore } from '../../src/services/trace-store.js';
 import { resolveSpecPath } from '../../src/utils/spec-path.js';
+import { KnowledgeGraphService } from '../../src/services/knowledge-graph-service.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const specDir = resolveSpecPath();
@@ -53,6 +54,8 @@ describe('Golden Path - Integration Tests', () => {
       expect(contextFragment.hypergraph).toBeDefined();
       expect(contextFragment.category).toBeDefined();
       expect(contextFragment.affordances.every((a: any) => a.usageSemantics)).toBe(true);
+      expect(contextFragment.knowledgeGraphRef).toBeDefined();
+      expect(contextFragment.knowledgeGraphSnapshot).toBeDefined();
       expect(valid).toBe(true);
     });
 
@@ -163,12 +166,32 @@ describe('Golden Path - Integration Tests', () => {
       const causalEvaluator = new StubCausalEvaluator();
       const traceStore = new InMemoryTraceStore();
 
+      const knowledgeGraphService = new KnowledgeGraphService([
+        {
+          id: 'urn:kg:default',
+          label: 'Enterprise Knowledge Graph',
+          version: '2026.01',
+          ontologyRefs: [
+            'https://www.w3.org/ns/dcat#',
+            'https://www.omg.org/spec/DPROD/',
+            'https://www.w3.org/ns/r2rml#'
+          ],
+          queryEndpoint: 'https://broker.example.com/knowledge-graphs/default/query',
+          updateEndpoint: 'https://broker.example.com/knowledge-graphs/default/update',
+          mappingsRef: 'https://broker.example.com/knowledge-graphs/default/mappings'
+        }
+      ]);
+
       broker = new ContextBroker(
         verifier,
         policyEngine,
         aatRegistry,
         traceStore,
-        causalEvaluator
+        causalEvaluator,
+        undefined,
+        undefined,
+        undefined,
+        knowledgeGraphService
       );
     });
 

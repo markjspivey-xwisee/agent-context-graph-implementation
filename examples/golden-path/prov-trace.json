@@ -162,7 +162,16 @@
         "@id": "acg:usageTimestamp",
         "@type": "xsd:dateTime"
       },
-      "usageOutcomeStatus": "acg:usageOutcomeStatus"
+      "usageOutcomeStatus": "acg:usageOutcomeStatus",
+      "knowledgeGraphRef": "acg:knowledgeGraphRef",
+      "queryEndpoint": {
+        "@id": "acg:knowledgeGraphQueryEndpoint",
+        "@type": "@id"
+      },
+      "updateEndpoint": {
+        "@id": "acg:knowledgeGraphUpdateEndpoint",
+        "@type": "@id"
+      }
     }
   ],
   "id": "urn:uuid:trace-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -234,7 +243,12 @@
         "issuer": "did:web:authority.example.com",
         "validAt": "2026-01-23T15:00:00Z"
       }
-    ]
+    ],
+    "knowledgeGraphRef": {
+      "id": "urn:kg:default",
+      "version": "2026.01",
+      "queryEndpoint": "https://broker.example.com/knowledge-graphs/default/query"
+    }
   },
   "generated": {
     "outcome": {

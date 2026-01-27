@@ -4,6 +4,7 @@ Reference implementation, demos, tests, and examples for Agent Context Graph (AC
 
 This repo operationalizes the foundations layer and keeps executable code, examples, and tests in sync with the specs.
 
+It includes persistent Knowledge Graph plumbing and tool authoring endpoints so agents can both consult long-term memory and register new tools through explicit affordances.
 ## Foundations dependency
 
 This repo expects the foundations repo for specs and ontologies.
@@ -28,6 +29,8 @@ If your foundations repo lives elsewhere, set ACG_SPEC_DIR to its spec directory
 - src/agents/orchestrator.ts
 - src/dashboard/server.ts
 - examples/golden-path/
+- examples/knowledge-graph/
+- examples/tool-authoring/
 - tests/integration/golden-path.test.ts
 
 ## Repo map

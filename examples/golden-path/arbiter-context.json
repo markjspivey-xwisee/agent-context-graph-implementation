@@ -189,7 +189,41 @@
         "@id": "acg:usageExampleTrace",
         "@container": "@set"
       },
-      "notes": "acg:usageNotes"
+      "notes": "acg:usageNotes",
+      "knowledgeGraphRef": {
+        "@id": "acg:knowledgeGraphRef"
+      },
+      "knowledgeGraphSnapshot": {
+        "@id": "acg:knowledgeGraphSnapshot"
+      },
+      "ontologyRefs": {
+        "@id": "acg:knowledgeGraphOntologyRef",
+        "@container": "@set"
+      },
+      "queryEndpoint": {
+        "@id": "acg:knowledgeGraphQueryEndpoint",
+        "@type": "@id"
+      },
+      "updateEndpoint": {
+        "@id": "acg:knowledgeGraphUpdateEndpoint",
+        "@type": "@id"
+      },
+      "mappingsRef": {
+        "@id": "acg:knowledgeGraphMappingsRef",
+        "@type": "@id"
+      },
+      "graphId": {
+        "@id": "acg:knowledgeGraphId",
+        "@type": "@id"
+      },
+      "lastUpdated": {
+        "@id": "acg:knowledgeGraphLastUpdated",
+        "@type": "xsd:dateTime"
+      },
+      "summary": "acg:knowledgeGraphSummary",
+      "edges": "acg:knowledgeGraphEdges",
+      "datasets": "acg:knowledgeGraphDatasets",
+      "dataProducts": "acg:knowledgeGraphDataProducts"
     }
   ],
   "id": "urn:uuid:ctx-arbiter-001",
@@ -759,5 +793,29 @@
       "Composition rules: ArbiterAgentType canComposeBefore ExecutorAgentType, canComposeAfter PlannerAgentType",
       "Extended trace retention for audit compliance"
     ]
+  },
+  "knowledgeGraphRef": {
+    "id": "urn:kg:default",
+    "label": "Enterprise Knowledge Graph",
+    "version": "2026.01",
+    "ontologyRefs": [
+      "https://www.w3.org/ns/dcat#",
+      "https://www.omg.org/spec/DPROD/",
+      "https://www.w3.org/ns/r2rml#"
+    ],
+    "queryEndpoint": "https://broker.example.com/knowledge-graphs/default/query",
+    "updateEndpoint": "https://broker.example.com/knowledge-graphs/default/update",
+    "mappingsRef": "https://broker.example.com/knowledge-graphs/default/mappings"
+  },
+  "knowledgeGraphSnapshot": {
+    "graphId": "urn:kg:default",
+    "version": "2026.01",
+    "lastUpdated": "2026-01-26T12:00:00Z",
+    "summary": {
+      "nodes": 15420,
+      "edges": 40211,
+      "datasets": 58,
+      "dataProducts": 12
+    }
   }
 }

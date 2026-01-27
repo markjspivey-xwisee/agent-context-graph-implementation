@@ -8,28 +8,104 @@
       "xsd": "http://www.w3.org/2001/XMLSchema#",
       "acg": "https://agentcontextgraph.dev/ontology#",
       "aat": "https://agentcontextgraph.dev/aat#",
-      "hypergraph": { "@id": "acg:hasHypergraph" },
-      "category": { "@id": "acg:hasCategory" },
-      "nodes": { "@id": "acg:hasNode", "@container": "@set" },
-      "hyperedges": { "@id": "acg:hasHyperedge", "@container": "@set" },
-      "connects": { "@id": "acg:connectsNode", "@container": "@set" },
+      "hypergraph": {
+        "@id": "acg:hasHypergraph"
+      },
+      "category": {
+        "@id": "acg:hasCategory"
+      },
+      "nodes": {
+        "@id": "acg:hasNode",
+        "@container": "@set"
+      },
+      "hyperedges": {
+        "@id": "acg:hasHyperedge",
+        "@container": "@set"
+      },
+      "connects": {
+        "@id": "acg:connectsNode",
+        "@container": "@set"
+      },
       "roles": "acg:roleBindings",
       "kind": "acg:hypernodeKind",
       "ref": "acg:hypernodeRef",
       "relation": "acg:hyperedgeRelation",
       "affordanceRef": "acg:affordanceRef",
       "hyperedgeRef": "acg:hyperedgeRef",
-      "objects": { "@id": "acg:hasObject", "@container": "@set" },
-      "morphisms": { "@id": "acg:hasMorphism", "@container": "@set" },
-      "composition": { "@id": "acg:hasComposition", "@container": "@set" },
-      "usageSemantics": { "@id": "acg:hasUsageSemantics" },
-      "stability": { "@id": "acg:usageStability", "@type": "xsd:decimal" },
-      "drift": { "@id": "acg:usageDrift", "@type": "xsd:decimal" },
-      "polysemy": { "@id": "acg:usagePolysemy", "@type": "xsd:decimal" },
-      "evidenceWindow": { "@id": "acg:usageEvidenceWindow", "@type": "xsd:duration" },
-      "lastObservedAt": { "@id": "acg:usageLastObservedAt", "@type": "xsd:dateTime" },
-      "usageExamples": { "@id": "acg:usageExampleTrace", "@container": "@set" },
-      "notes": "acg:usageNotes"
+      "objects": {
+        "@id": "acg:hasObject",
+        "@container": "@set"
+      },
+      "morphisms": {
+        "@id": "acg:hasMorphism",
+        "@container": "@set"
+      },
+      "composition": {
+        "@id": "acg:hasComposition",
+        "@container": "@set"
+      },
+      "usageSemantics": {
+        "@id": "acg:hasUsageSemantics"
+      },
+      "stability": {
+        "@id": "acg:usageStability",
+        "@type": "xsd:decimal"
+      },
+      "drift": {
+        "@id": "acg:usageDrift",
+        "@type": "xsd:decimal"
+      },
+      "polysemy": {
+        "@id": "acg:usagePolysemy",
+        "@type": "xsd:decimal"
+      },
+      "evidenceWindow": {
+        "@id": "acg:usageEvidenceWindow",
+        "@type": "xsd:duration"
+      },
+      "lastObservedAt": {
+        "@id": "acg:usageLastObservedAt",
+        "@type": "xsd:dateTime"
+      },
+      "usageExamples": {
+        "@id": "acg:usageExampleTrace",
+        "@container": "@set"
+      },
+      "notes": "acg:usageNotes",
+      "knowledgeGraphRef": {
+        "@id": "acg:knowledgeGraphRef"
+      },
+      "knowledgeGraphSnapshot": {
+        "@id": "acg:knowledgeGraphSnapshot"
+      },
+      "ontologyRefs": {
+        "@id": "acg:knowledgeGraphOntologyRef",
+        "@container": "@set"
+      },
+      "queryEndpoint": {
+        "@id": "acg:knowledgeGraphQueryEndpoint",
+        "@type": "@id"
+      },
+      "updateEndpoint": {
+        "@id": "acg:knowledgeGraphUpdateEndpoint",
+        "@type": "@id"
+      },
+      "mappingsRef": {
+        "@id": "acg:knowledgeGraphMappingsRef",
+        "@type": "@id"
+      },
+      "graphId": {
+        "@id": "acg:knowledgeGraphId",
+        "@type": "@id"
+      },
+      "lastUpdated": {
+        "@id": "acg:knowledgeGraphLastUpdated",
+        "@type": "xsd:dateTime"
+      },
+      "summary": "acg:knowledgeGraphSummary",
+      "edges": "acg:knowledgeGraphEdges",
+      "datasets": "acg:knowledgeGraphDatasets",
+      "dataProducts": "acg:knowledgeGraphDataProducts"
     }
   ],
   "id": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -258,5 +334,29 @@
     "retentionPeriod": "P1Y",
     "includeContextSnapshot": true,
     "includeOutcomes": true
+  },
+  "knowledgeGraphRef": {
+    "id": "urn:kg:default",
+    "label": "Enterprise Knowledge Graph",
+    "version": "2026.01",
+    "ontologyRefs": [
+      "https://www.w3.org/ns/dcat#",
+      "https://www.omg.org/spec/DPROD/",
+      "https://www.w3.org/ns/r2rml#"
+    ],
+    "queryEndpoint": "https://broker.example.com/knowledge-graphs/default/query",
+    "updateEndpoint": "https://broker.example.com/knowledge-graphs/default/update",
+    "mappingsRef": "https://broker.example.com/knowledge-graphs/default/mappings"
+  },
+  "knowledgeGraphSnapshot": {
+    "graphId": "urn:kg:default",
+    "version": "2026.01",
+    "lastUpdated": "2026-01-26T12:00:00Z",
+    "summary": {
+      "nodes": 15420,
+      "edges": 40211,
+      "datasets": 58,
+      "dataProducts": 12
+    }
   }
 }

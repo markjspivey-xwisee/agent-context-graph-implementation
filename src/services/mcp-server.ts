@@ -79,6 +79,12 @@ export interface MCPServerInfo {
 // MCP Server Implementation
 // =============================================================================
 
+export interface MCPServerOptions {
+  bootstrapTools?: boolean;
+  bootstrapResources?: boolean;
+  bootstrapPrompts?: boolean;
+}
+
 export class MCPServer extends EventEmitter {
   private tools: Map<string, {
     definition: MCPToolDefinition;
@@ -100,11 +106,17 @@ export class MCPServer extends EventEmitter {
     }
   };
 
-  constructor() {
+  constructor(options: MCPServerOptions = {}) {
     super();
-    this.registerBuiltInTools();
-    this.registerBuiltInResources();
-    this.registerBuiltInPrompts();
+    if (options.bootstrapTools) {
+      this.registerBuiltInTools();
+    }
+    if (options.bootstrapResources ?? true) {
+      this.registerBuiltInResources();
+    }
+    if (options.bootstrapPrompts ?? true) {
+      this.registerBuiltInPrompts();
+    }
   }
 
   /**
@@ -547,5 +559,5 @@ Provide:
   }
 }
 
-// Export singleton instance
-export const mcpServer = new MCPServer();
+// Export singleton instance (tools are registered explicitly, no global tool list)
+export const mcpServer = new MCPServer({ bootstrapTools: false });

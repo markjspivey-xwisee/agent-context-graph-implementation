@@ -1,0 +1,24 @@
+{
+  "name": "databricks_query",
+  "description": "Run a read-only SQL query against a Databricks SQL warehouse",
+  "category": "developer",
+  "endpoint": "https://dbc-1234.cloud.databricks.com/sql/1.0/warehouses/abc123",
+  "requiredCredentialIds": [
+    "urn:vc:databricks-readonly"
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sql": {
+        "type": "string",
+        "description": "SQL query to execute"
+      },
+      "warehouseId": {
+        "type": "string",
+        "description": "Optional warehouse override"
+      }
+    },
+    "required": ["sql"]
+  },
+  "enabled": true
+}

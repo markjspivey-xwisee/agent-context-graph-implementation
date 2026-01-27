@@ -1,0 +1,116 @@
+{
+  "@context": {
+    "id": "@id",
+    "type": "@type",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "acg": "https://agentcontextgraph.dev/ontology#",
+    "dcat": "https://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "dprod": "https://www.omg.org/spec/DPROD/",
+    "rr": "http://www.w3.org/ns/r2rml#",
+    "label": "rdfs:label",
+    "version": "acg:knowledgeGraphVersion",
+    "knowledgeGraphRef": "acg:knowledgeGraphRef",
+    "ontologyRefs": { "@id": "acg:knowledgeGraphOntologyRef", "@container": "@set" },
+    "queryEndpoint": { "@id": "acg:knowledgeGraphQueryEndpoint", "@type": "@id" },
+    "updateEndpoint": { "@id": "acg:knowledgeGraphUpdateEndpoint", "@type": "@id" },
+    "mappingsRef": { "@id": "acg:knowledgeGraphMappingsRef", "@type": "@id" },
+    "catalog": "dcat:catalog",
+    "dataset": { "@id": "dcat:dataset", "@container": "@set" },
+    "distribution": { "@id": "dcat:distribution", "@container": "@set" },
+    "accessService": { "@id": "dcat:accessService", "@type": "@id" },
+    "endpointURL": { "@id": "dcat:endpointURL", "@type": "@id" },
+    "servesDataset": { "@id": "dcat:servesDataset", "@container": "@set" },
+    "publisher": { "@id": "dcterms:publisher", "@type": "@id" },
+    "creator": { "@id": "dcterms:creator", "@type": "@id" },
+    "description": "dcterms:description",
+    "logicalTable": "rr:logicalTable",
+    "sqlQuery": "rr:sqlQuery",
+    "subjectMap": "rr:subjectMap",
+    "predicateObjectMap": "rr:predicateObjectMap",
+    "predicate": { "@id": "rr:predicate", "@type": "@id" },
+    "objectMap": "rr:objectMap",
+    "template": "rr:template",
+    "column": "rr:column"
+  },
+  "@graph": [
+    {
+      "id": "urn:kg:databricks-lakehouse",
+      "type": "acg:KnowledgeGraphRef",
+      "label": "Databricks Lakehouse Knowledge Graph",
+      "version": "2026.01",
+      "ontologyRefs": [
+        "https://www.w3.org/ns/dcat#",
+        "https://www.omg.org/spec/DPROD/",
+        "http://www.w3.org/ns/r2rml#"
+      ],
+      "queryEndpoint": "https://broker.example.com/knowledge-graphs/databricks/query",
+      "updateEndpoint": "https://broker.example.com/knowledge-graphs/databricks/update",
+      "mappingsRef": "https://broker.example.com/knowledge-graphs/databricks/mappings"
+    },
+    {
+      "id": "urn:catalog:databricks",
+      "type": "dcat:Catalog",
+      "label": "Databricks Unity Catalog",
+      "publisher": "urn:org:example",
+      "dataset": [
+        "urn:dataset:customer-orders"
+      ]
+    },
+    {
+      "id": "urn:dataset:customer-orders",
+      "type": "dcat:Dataset",
+      "label": "Customer Orders",
+      "description": "Orders table in the lakehouse (Delta format)",
+      "distribution": [
+        "urn:distribution:customer-orders-delta"
+      ]
+    },
+    {
+      "id": "urn:distribution:customer-orders-delta",
+      "type": "dcat:Distribution",
+      "label": "Customer Orders Delta",
+      "accessService": "urn:service:databricks-sql"
+    },
+    {
+      "id": "urn:service:databricks-sql",
+      "type": "dcat:DataService",
+      "label": "Databricks SQL Warehouse",
+      "endpointURL": "https://dbc-1234.cloud.databricks.com/sql/1.0/warehouses/abc123",
+      "servesDataset": [
+        "urn:dataset:customer-orders"
+      ]
+    },
+    {
+      "id": "urn:dataproduct:customer-orders",
+      "type": "dprod:DataProduct",
+      "label": "Customer Orders Data Product",
+      "description": "Curated orders product with governance and SLAs",
+      "creator": "urn:org:data-platform"
+    },
+    {
+      "id": "urn:mapping:customer-orders",
+      "type": "rr:TriplesMap",
+      "logicalTable": {
+        "sqlQuery": "SELECT order_id, customer_id, order_total, order_ts FROM main.sales.customer_orders"
+      },
+      "subjectMap": {
+        "template": "urn:order:{order_id}"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "urn:predicate:customerId",
+          "objectMap": { "column": "customer_id" }
+        },
+        {
+          "predicate": "urn:predicate:orderTotal",
+          "objectMap": { "column": "order_total" }
+        },
+        {
+          "predicate": "urn:predicate:orderTimestamp",
+          "objectMap": { "column": "order_ts" }
+        }
+      ]
+    }
+  ]
+}
