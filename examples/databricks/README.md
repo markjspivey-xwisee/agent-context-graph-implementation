@@ -1,9 +1,10 @@
 # Databricks Adapter Example
 
 This example shows how a Databricks source is accessed via the generalized `QueryData`
-affordance and the semantic layer. Databricks is an adapter example, not a protocol primitive.
-The semantic layer should publish HyprCat-aligned DCAT/DPROD metadata, Hydra catalog affordances,
-and SHACL data contracts, with R2RML mappings for source federation.
+affordance and a **virtual zero-copy semantic layer**. Databricks is an adapter example, not a protocol primitive.
+The semantic layer publishes HyprCat-aligned DCAT/DPROD metadata, Hydra catalog affordances,
+and SHACL data contracts, with **R2RML/OBDA mappings** that translate SPARQL to Databricks SQL at query time.
+No data is copied into the ACG runtime.
 
 ## Prereqs
 

@@ -3,19 +3,26 @@
 This adapter is **implementation-specific**. The protocol/spec layer is **SPARQL-first**
 and does **not** require Databricks.
 
-## Preferred Path: Semantic Layer
+## Preferred Path: Zero-Copy Semantic Layer
 
-Configure a virtual RDF layer (e.g., Ontop, Stardog, GraphDB, or similar) that:
+Configure a **virtual zero-copy semantic layer** (e.g., Ontop, Stardog, GraphDB, or similar) that:
 
 - Exposes a **SPARQL endpoint**
 - Uses **R2RML/OBDA** mappings over Databricks
-- Publishes **HyprCat-aligned DCAT/DPROD** metadata for datasets and data products
+- Translates **SPARQL to SQL** at query time (no data replication)
+- Publishes **HyprCat-aligned** DCAT/DPROD metadata, Hydra affordances, and SHACL contracts
 
 Set:
 
 - `SEMANTIC_LAYER_SPARQL_ENDPOINT`
 
 Then use `QueryData` with `queryLanguage: "sparql"`.
+
+### Zero-copy guarantee
+
+The semantic layer is a **virtual RDF overlay**. Databricks remains the source of truth, and
+all SPARQL queries are **federated/mapped** to SQL against Databricks at runtime via R2RML.
+No data is copied or persisted into the ACG runtime.
 
 ## SQL Adapter (Fallback / Dev)
 
