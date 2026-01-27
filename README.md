@@ -47,6 +47,19 @@ npm install
 npm run build
 npm run dashboard
 
+## Codespaces helper
+
+In Codespaces, you can run:
+
+```bash
+source scripts/codespaces-start.sh claude-cli
+# or
+source scripts/codespaces-start.sh codex-cli
+```
+
+This clones the foundations repo, sets `ACG_SPEC_DIR`, installs dependencies, and
+sets `REASONING_BACKEND` for the current shell session.
+
 ## Reasoning backends
 
 The orchestrator and dashboard can use multiple reasoning backends:
