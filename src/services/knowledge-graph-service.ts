@@ -56,7 +56,7 @@ export class KnowledgeGraphService {
     };
   }
 
-  queryGraph(id: string, _query: KnowledgeGraphQuery): unknown {
+  queryGraph(id: string, _query: KnowledgeGraphQuery): Record<string, unknown> {
     if (!this.graphs.has(id)) {
       return { error: 'Knowledge graph not found' };
     }
