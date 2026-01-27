@@ -6,6 +6,15 @@ This repo is the operational implementation of Agent Context Graph (ACG). It tur
 
 ACG exposes an ephemeral Context Graph to agents at runtime and references a persistent Knowledge Graph for long-term memory. A HyprCat-aligned Hydra semantic catalog exposes data products and SHACL contracts for semantic queries. The broker generates affordances based on credentials, policies, and current state, and emits PROV traces for every traversal. The implementation respects the foundations contract (schemas, SHACL, ontology, and protocol) and keeps examples and tests aligned with those specs, including tool authoring endpoints.
 
+## Zero-copy semantic layer (Databricks example)
+
+When a data source like Databricks is used, ACG treats it as an **adapter example**, not a protocol primitive. The canonical path is a **virtual zero-copy semantic layer** that:
+- Exposes a SPARQL endpoint over the source
+- Uses R2RML/OBDA mappings to translate SPARQL to Databricks SQL at query time
+- Publishes HyprCat-aligned DCAT/DPROD metadata, Hydra affordances, and SHACL contracts
+
+This preserves Databricks as the source of truth and keeps ACG runtime storage free of copied data.
+
 ## Runtime shape (mermaid)
 
 ```mermaid

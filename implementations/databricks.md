@@ -24,6 +24,35 @@ The semantic layer is a **virtual RDF overlay**. Databricks remains the source o
 all SPARQL queries are **federated/mapped** to SQL against Databricks at runtime via R2RML.
 No data is copied or persisted into the ACG runtime.
 
+## Agent chat flow (Databricks example)
+
+Below is the **intended multi-agent flow** when a human chats about Databricks-backed data.
+This is the same ACG runtime pattern used for any source; Databricks is only the adapter example.
+
+1) **Human prompt** (e.g., “Show revenue trends by region for Q3”).
+2) **Planner/Analyst agent requests context** via `POST /context`.
+   - The broker returns a **Context Graph** with a `QueryData` affordance, policy constraints,
+     and references to the **Knowledge Graph** and semantic catalog.
+3) **Catalog discovery** (Hydra + HyprCat):
+   - Agents browse `GET /data/catalog` and `GET /data/products` to locate the relevant data product
+     (DCAT/DPROD metadata, ownership, lineage).
+4) **Contract alignment** (SHACL):
+   - Agents read `GET /data/contracts/{id}` and `GET /data/contracts/{id}/shape` to understand
+     required shapes, units, and validation constraints before querying.
+5) **Semantic query** (canonical):
+   - The agent traverses `QueryData` with `queryLanguage: "sparql"` and a SPARQL query targeting
+     the selected data product.
+   - The **virtual semantic layer** translates SPARQL → Databricks SQL at runtime via R2RML/OBDA.
+6) **Results + traceability**:
+   - The broker returns results and emits **PROV traces** for the traversal.
+   - Usage semantics can be updated from traces to capture how affordances are used over time.
+7) **Follow-up questions / refinement**:
+   - The team of agents iterates with updated queries, using the same Context Graph constraints,
+     and the human sees responses grounded in the semantic layer.
+
+This flow keeps the **protocol SPARQL-first** while preserving Databricks as the operational system
+of record.
+
 ## SQL Adapter (Fallback / Dev)
 
 If you want direct SQL execution (adapter extension), configure:
