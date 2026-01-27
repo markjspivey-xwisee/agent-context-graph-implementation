@@ -20,6 +20,7 @@ import { CheckpointStore, type CreateCheckpointParams, type ResumeCheckpointPara
 import { UsageSemanticsService } from '../services/usage-semantics.js';
 import { KnowledgeGraphService } from '../services/knowledge-graph-service.js';
 import { SemanticQueryClient } from '../services/semantic-query-client.js';
+import { DatabricksSqlClient, type DatabricksSqlQueryRequest } from '../services/databricks-sql-client.js';
 
 export interface ContextRequest {
   agentDID: string;
@@ -67,6 +68,7 @@ export class ContextBroker {
   private usageSemanticsService: UsageSemanticsService;
   private knowledgeGraphService?: KnowledgeGraphService;
   private semanticQueryClient: SemanticQueryClient | null = null;
+  private databricksClient?: DatabricksSqlClient;
 
   // Infrastructure services (Gas Town inspired)
   private enclaveService: EnclaveService;
@@ -135,6 +137,29 @@ export class ContextBroker {
       this.semanticQueryClient = new SemanticQueryClient({ endpoint });
     }
     return this.semanticQueryClient;
+  }
+
+  private getDatabricksClient(): DatabricksSqlClient {
+    if (this.databricksClient) {
+      return this.databricksClient;
+    }
+
+    const host = process.env.DATABRICKS_HOST ?? '';
+    const token = process.env.DATABRICKS_TOKEN ?? '';
+    if (!host || !token) {
+      throw new Error('Databricks configuration missing. Set DATABRICKS_HOST and DATABRICKS_TOKEN.');
+    }
+
+    this.databricksClient = new DatabricksSqlClient({
+      host,
+      token,
+      warehouseId: process.env.DATABRICKS_WAREHOUSE_ID,
+      defaultCatalog: process.env.DATABRICKS_CATALOG,
+      defaultSchema: process.env.DATABRICKS_SCHEMA,
+      userAgent: 'agent-context-graph'
+    });
+
+    return this.databricksClient;
   }
 
   /**
@@ -1246,8 +1271,10 @@ export class ContextBroker {
       }
 
       case 'QueryData': {
-        const query = parameters.query as string | undefined;
-        const queryLanguage = (parameters.queryLanguage as string | undefined)?.toLowerCase();
+        const query = (parameters.query ?? parameters.sparql ?? parameters.statement) as string | undefined;
+        const queryLanguageRaw = (parameters.queryLanguage ??
+          (parameters.sparql ? 'sparql' : parameters.statement ? 'sql' : 'sparql')) as string | undefined;
+        const queryLanguage = queryLanguageRaw?.toLowerCase() ?? 'sparql';
         if (!query) {
           return {
             success: false,
@@ -1255,36 +1282,69 @@ export class ContextBroker {
             data: { error: 'QueryData requires a query string' }
           };
         }
-        if (queryLanguage && queryLanguage !== 'sparql') {
+        if (queryLanguage === 'sparql') {
+          const semanticClient = this.getSemanticQueryClient(parameters.semanticLayerRef as string | undefined);
+          const result = await semanticClient.query({
+            query,
+            endpoint: parameters.semanticLayerRef as string | undefined,
+            resultFormat: parameters.resultFormat as string | undefined,
+            timeoutSeconds: parameters.timeoutSeconds as number | undefined
+          });
+
           return {
-            success: false,
+            success: true,
             resultType: 'QueryData',
-            data: { error: `Unsupported queryLanguage: ${queryLanguage}` }
+            resultRef: result.queryId,
+            data: {
+              queryId: result.queryId,
+              status: { state: 'SUCCEEDED' },
+              results: result.results,
+              contentType: result.contentType
+            },
+            eventsEmitted: [
+              { eventType: 'DataQueryExecuted', eventId: result.queryId, timestamp: now }
+            ],
+            contextChanged: false
           };
         }
 
-        const semanticClient = this.getSemanticQueryClient(parameters.semanticLayerRef as string | undefined);
-        const result = await semanticClient.query({
-          query,
-          endpoint: parameters.semanticLayerRef as string | undefined,
-          resultFormat: parameters.resultFormat as string | undefined,
-          timeoutSeconds: parameters.timeoutSeconds as number | undefined
-        });
+        if (queryLanguage === 'sql') {
+          const client = this.getDatabricksClient();
+          const params: DatabricksSqlQueryRequest = {
+            statement: query,
+            warehouseId: parameters.warehouseId as string | undefined,
+            catalog: parameters.catalog as string | undefined,
+            schema: parameters.schema as string | undefined,
+            waitTimeoutSeconds: parameters.waitTimeoutSeconds as number | undefined,
+            timeoutSeconds: parameters.timeoutSeconds as number | undefined,
+            maxRows: parameters.maxRows as number | undefined
+          };
+
+          const result = await client.executeStatement(params);
+          const isFailure = result.status.state === 'FAILED' || result.status.state === 'CANCELED';
+          const queryId = result.statementId;
+
+          return {
+            success: !isFailure,
+            resultType: 'QueryData',
+            resultRef: queryId,
+            data: {
+              queryId,
+              status: result.status,
+              manifest: result.manifest,
+              results: result.result
+            },
+            eventsEmitted: [
+              { eventType: 'DataQueryExecuted', eventId: queryId, timestamp: now }
+            ],
+            contextChanged: false
+          };
+        }
 
         return {
-          success: true,
+          success: false,
           resultType: 'QueryData',
-          resultRef: result.queryId,
-          data: {
-            queryId: result.queryId,
-            status: { state: 'SUCCEEDED' },
-            results: result.results,
-            contentType: result.contentType
-          },
-          eventsEmitted: [
-            { eventType: 'DataQueryExecuted', eventId: result.queryId, timestamp: now }
-          ],
-          contextChanged: false
+          data: { error: `Unsupported queryLanguage: ${queryLanguageRaw ?? 'unknown'}` }
         };
       }
 

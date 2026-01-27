@@ -1,0 +1,16 @@
+{
+  "agentDID": "did:key:z6MkAnalystExample1111111111111111111111111",
+  "credentials": [
+    {
+      "@context": ["https://www.w3.org/2018/credentials/v1"],
+      "id": "urn:uuid:cred-analyst-001",
+      "type": ["VerifiableCredential", "ACGCapabilityCredential", "AnalystCapability"],
+      "issuer": "did:web:authority.example.com",
+      "issuanceDate": "2026-01-01T00:00:00Z",
+      "credentialSubject": {
+        "id": "did:key:z6MkAnalystExample1111111111111111111111111",
+        "capability": "AnalystCapability"
+      }
+    }
+  ]
+}

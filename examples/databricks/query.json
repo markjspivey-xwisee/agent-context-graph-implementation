@@ -1,0 +1,9 @@
+{
+  "query": "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5",
+  "queryLanguage": "sparql",
+  "semanticLayerRef": "https://semantic-layer.example.com/sparql",
+  "sourceRef": "urn:dcat:dataset:databricks:sample",
+  "mappingRef": "urn:r2rml:mapping:databricks-sample",
+  "timeoutSeconds": 120,
+  "maxRows": 100
+}

@@ -31,6 +31,7 @@ If your foundations repo lives elsewhere, set ACG_SPEC_DIR to its spec directory
 - examples/golden-path/
 - examples/knowledge-graph/
 - examples/semantic-layer/
+- examples/databricks/
 - examples/tool-authoring/
 - tests/integration/golden-path.test.ts
 

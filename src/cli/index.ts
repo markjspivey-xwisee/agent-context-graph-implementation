@@ -18,7 +18,10 @@ import { SHACLValidatorService } from '../services/shacl-validator.js';
 import { FederationService } from '../services/federation-service.js';
 import { EnclaveService } from '../services/enclave-service.js';
 import { CheckpointStore } from '../services/checkpoint-store.js';
+import { DatabricksSqlClient } from '../services/databricks-sql-client.js';
+import { SemanticQueryClient } from '../services/semantic-query-client.js';
 import { resolveSpecPath } from '../utils/spec-path.js';
+import { loadEnvFromFile } from '../utils/env.js';
 
 // ANSI colors for terminal output
 const colors = {
@@ -36,6 +39,8 @@ function colorize(text: string, color: keyof typeof colors): string {
 }
 
 async function main() {
+  loadEnvFromFile();
+
   const args = process.argv.slice(2);
   const command = args[0];
 
@@ -60,6 +65,14 @@ async function main() {
     case 'enclave':
       await handleEnclave(args.slice(1));
       break;
+    case 'data':
+    case 'databricks': {
+      if (command === 'databricks') {
+        console.log(colorize('Note: "acg databricks" is deprecated. Use "acg data".', 'yellow'));
+      }
+      await handleData(args.slice(1));
+      break;
+    }
     case 'version':
       console.log('acg version 1.0.0');
       break;
@@ -86,6 +99,8 @@ ${colorize('COMMANDS:', 'yellow')}
   checkpoint info <id>     Show checkpoint details
   enclave list             List all enclaves
   enclave info <id>        Show enclave details
+  data query               Execute a semantic data query
+  data status <id>         Fetch status for async SQL providers
   version                  Show version
   help                     Show this help
 
@@ -94,11 +109,18 @@ ${colorize('EXAMPLES:', 'yellow')}
   acg validate-all
   acg federate status
   acg checkpoint list
+  acg data query --query "SELECT 1" --queryLanguage sql
+  acg data query --query "SELECT * WHERE { ?s ?p ?o } LIMIT 1" --queryLanguage sparql
+  acg data status 01ee1234-5678-90ab-cdef-1234567890ab
 
 ${colorize('ENVIRONMENT:', 'yellow')}
   ACG_SPEC_DIR      Base directory containing spec assets (default: ./spec)
   ACG_SHACL_DIR     Directory containing SHACL shapes (default: ./spec/shacl)
   ACG_EXAMPLES_DIR  Directory containing examples (default: ./examples/golden-path)
+  SEMANTIC_LAYER_SPARQL_ENDPOINT  SPARQL endpoint for the virtual semantic layer
+  DATABRICKS_HOST   SQL adapter example: Databricks workspace host
+  DATABRICKS_TOKEN  SQL adapter example: Databricks personal access token
+  DATABRICKS_WAREHOUSE_ID  SQL adapter example: default warehouse id
 `);
 }
 
@@ -156,6 +178,187 @@ async function handleValidate(args: string[]) {
     console.error(colorize(`Error: ${error instanceof Error ? error.message : String(error)}`, 'red'));
     process.exit(1);
   }
+}
+
+async function handleData(args: string[]) {
+  const subcommand = args[0] ?? 'query';
+  const flags = parseFlags(args.slice(1));
+
+  switch (subcommand) {
+    case 'query': {
+      const statement = await resolveStatement(flags);
+      if (!statement) {
+        console.error(colorize('Error: Provide --query/--sparql/--statement or --file', 'red'));
+        console.log('Usage: acg data query --query "SELECT 1" --queryLanguage sql');
+        console.log('       acg data query --sparql "SELECT * WHERE { ?s ?p ?o } LIMIT 1"');
+        console.log('       acg data query --file ./query.sparql');
+        process.exit(1);
+      }
+
+      const queryLanguage = (getFlagString(flags, 'queryLanguage') ??
+        (getFlagString(flags, 'sparql') ? 'sparql' : getFlagString(flags, 'statement') ? 'sql' : 'sparql')).toLowerCase();
+
+      if (queryLanguage === 'sparql') {
+        const result = getSemanticQueryClient(getFlagString(flags, 'semanticLayerRef')).query({
+          query: statement,
+          endpoint: getFlagString(flags, 'semanticLayerRef'),
+          resultFormat: getFlagString(flags, 'resultFormat'),
+          timeoutSeconds: parseFlagInt(flags, 'timeoutSeconds')
+        });
+
+        const resolved = await result;
+        console.log(JSON.stringify({
+          queryId: resolved.queryId,
+          status: { state: 'SUCCEEDED' },
+          results: resolved.results,
+          contentType: resolved.contentType
+        }, null, 2));
+        break;
+      }
+
+      if (queryLanguage !== 'sql') {
+        console.error(colorize(`Error: Unsupported queryLanguage: ${queryLanguage}`, 'red'));
+        process.exit(1);
+      }
+
+      const client = getDatabricksClient();
+      const result = await client.executeStatement({
+        statement,
+        warehouseId: getFlagString(flags, 'warehouseId'),
+        catalog: getFlagString(flags, 'catalog'),
+        schema: getFlagString(flags, 'schema'),
+        waitTimeoutSeconds: parseFlagInt(flags, 'waitTimeoutSeconds'),
+        timeoutSeconds: parseFlagInt(flags, 'timeoutSeconds'),
+        maxRows: parseFlagInt(flags, 'maxRows')
+      });
+
+      console.log(JSON.stringify({
+        queryId: result.statementId,
+        status: result.status,
+        manifest: result.manifest,
+        results: result.result
+      }, null, 2));
+      break;
+    }
+
+    case 'status': {
+      const statementId = args[1] ?? getFlagString(flags, 'id');
+      if (!statementId) {
+        console.error(colorize('Error: No query id specified', 'red'));
+        console.log('Usage: acg data status <queryId> [--waitTimeoutSeconds 5]');
+        process.exit(1);
+      }
+
+      const provider = (getFlagString(flags, 'provider') ?? 'sql').toLowerCase();
+      if (provider !== 'sql') {
+        console.error(colorize('Error: Query status is only supported for async SQL providers', 'red'));
+        process.exit(1);
+      }
+
+      const client = getDatabricksClient();
+      const result = await client.getStatement(
+        statementId,
+        parseFlagInt(flags, 'waitTimeoutSeconds')
+      );
+
+      console.log(JSON.stringify({
+        queryId: result.statementId,
+        status: result.status,
+        manifest: result.manifest,
+        results: result.result
+      }, null, 2));
+      break;
+    }
+
+    default:
+      console.error(colorize(`Unknown data subcommand: ${subcommand}`, 'red'));
+      console.log('Usage: acg data [query|status <queryId>]');
+      process.exit(1);
+  }
+}
+
+async function resolveStatement(flags: Record<string, string | boolean>): Promise<string | null> {
+  const directStatement = getFlagString(flags, 'query')
+    ?? getFlagString(flags, 'sparql')
+    ?? getFlagString(flags, 'statement');
+  if (directStatement) return directStatement;
+
+  const file = getFlagString(flags, 'file');
+  if (!file) {
+    return null;
+  }
+
+  const filePath = resolve(file);
+  if (!existsSync(filePath)) {
+    console.error(colorize(`Error: File not found: ${filePath}`, 'red'));
+    process.exit(1);
+  }
+
+  if (filePath.endsWith('.json')) {
+    const content = readFileSync(filePath, 'utf-8');
+    const payload = JSON.parse(content) as { statement?: string; query?: string };
+    return (payload.statement ?? payload.query ?? '').toString();
+  }
+
+  return readFileSync(filePath, 'utf-8').trim();
+}
+
+function parseFlags(args: string[]): Record<string, string | boolean> {
+  const flags: Record<string, string | boolean> = {};
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg.startsWith('--')) continue;
+
+    const key = arg.slice(2);
+    const next = args[i + 1];
+    if (next && !next.startsWith('--')) {
+      flags[key] = next;
+      i += 1;
+    } else {
+      flags[key] = true;
+    }
+  }
+  return flags;
+}
+
+function getFlagString(flags: Record<string, string | boolean>, key: string): string | undefined {
+  const value = flags[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function parseFlagInt(flags: Record<string, string | boolean>, key: string): number | undefined {
+  const value = getFlagString(flags, key);
+  if (!value) return undefined;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function getDatabricksClient(): DatabricksSqlClient {
+  const host = process.env.DATABRICKS_HOST ?? '';
+  const token = process.env.DATABRICKS_TOKEN ?? '';
+  if (!host || !token) {
+    console.error(colorize('Error: DATABRICKS_HOST and DATABRICKS_TOKEN are required', 'red'));
+    process.exit(1);
+  }
+
+  return new DatabricksSqlClient({
+    host,
+    token,
+    warehouseId: process.env.DATABRICKS_WAREHOUSE_ID,
+    defaultCatalog: process.env.DATABRICKS_CATALOG,
+    defaultSchema: process.env.DATABRICKS_SCHEMA,
+    userAgent: 'agent-context-graph-cli'
+  });
+}
+
+function getSemanticQueryClient(overrideEndpoint?: string): SemanticQueryClient {
+  const endpoint = overrideEndpoint ?? process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? '';
+  if (!endpoint) {
+    console.error(colorize('Error: SEMANTIC_LAYER_SPARQL_ENDPOINT is required for SPARQL queries', 'red'));
+    process.exit(1);
+  }
+
+  return new SemanticQueryClient({ endpoint, userAgent: 'agent-context-graph-cli' });
 }
 
 async function handleValidateAll() {

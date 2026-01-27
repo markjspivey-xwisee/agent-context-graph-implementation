@@ -1,0 +1,12 @@
+{
+  "contextId": "urn:uuid:replace-with-context-id",
+  "affordanceId": "aff-querydata-replace-with-id",
+  "parameters": {
+    "query": "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5",
+    "queryLanguage": "sparql",
+    "semanticLayerRef": "https://semantic-layer.example.com/sparql",
+    "sourceRef": "urn:dcat:dataset:databricks:sample",
+    "mappingRef": "urn:r2rml:mapping:databricks-sample",
+    "maxRows": 100
+  }
+}

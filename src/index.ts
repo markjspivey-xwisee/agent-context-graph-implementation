@@ -17,6 +17,7 @@ import { SharedContextService, type SyncStrategy, type ConflictResolution, type 
 import { RealtimeSyncService } from './services/realtime-sync.js';
 import { KnowledgeGraphService } from './services/knowledge-graph-service.js';
 import { SemanticQueryClient } from './services/semantic-query-client.js';
+import { DatabricksSqlClient } from './services/databricks-sql-client.js';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { resolveSpecPath } from './utils/spec-path.js';
@@ -266,6 +267,28 @@ async function init() {
       semanticQueryClient = new SemanticQueryClient({ endpoint });
     }
     return semanticQueryClient;
+  };
+
+  let databricksClient: DatabricksSqlClient | null = null;
+  const getDatabricksClient = () => {
+    if (databricksClient) return databricksClient;
+
+    const host = process.env.DATABRICKS_HOST ?? '';
+    const token = process.env.DATABRICKS_TOKEN ?? '';
+    if (!host || !token) {
+      throw new Error('Databricks configuration missing. Set DATABRICKS_HOST and DATABRICKS_TOKEN.');
+    }
+
+    databricksClient = new DatabricksSqlClient({
+      host,
+      token,
+      warehouseId: process.env.DATABRICKS_WAREHOUSE_ID,
+      defaultCatalog: process.env.DATABRICKS_CATALOG,
+      defaultSchema: process.env.DATABRICKS_SCHEMA,
+      userAgent: 'agent-context-graph'
+    });
+
+    return databricksClient;
   };
 
   // Health check endpoint
@@ -1708,7 +1731,9 @@ async function init() {
     handler: async (request, h) => {
       try {
         const payload = request.payload as {
-          query: string;
+          query?: string;
+          sparql?: string;
+          statement?: string;
           queryLanguage?: string;
           semanticLayerRef?: string;
           sourceRef?: string;
@@ -1716,31 +1741,99 @@ async function init() {
           federationProfileRef?: string;
           resultFormat?: string;
           timeoutSeconds?: number;
+          warehouseId?: string;
+          catalog?: string;
+          schema?: string;
+          waitTimeoutSeconds?: number;
           maxRows?: number;
         };
 
-        if (!payload?.query) {
+        const query = (payload?.query ?? payload?.sparql ?? payload?.statement)?.toString();
+        if (!query) {
           return h.response({ error: 'query is required' }).code(400);
         }
 
-        const queryLanguage = payload.queryLanguage?.toLowerCase() ?? 'sparql';
-        if (queryLanguage !== 'sparql') {
-          return h.response({ error: `Unsupported queryLanguage: ${queryLanguage}` }).code(400);
+        const queryLanguage = (payload?.queryLanguage ??
+          (payload?.sparql ? 'sparql' : payload?.statement ? 'sql' : 'sparql')).toLowerCase();
+
+        if (queryLanguage === 'sparql') {
+          const semanticClient = getSemanticQueryClient(payload.semanticLayerRef);
+          const result = await semanticClient.query({
+            query,
+            endpoint: payload.semanticLayerRef,
+            resultFormat: payload.resultFormat,
+            timeoutSeconds: payload.timeoutSeconds
+          });
+
+          return h.response({
+            queryId: result.queryId,
+            status: { state: 'SUCCEEDED' },
+            results: result.results,
+            contentType: result.contentType
+          }).code(200);
         }
 
-        const semanticClient = getSemanticQueryClient(payload.semanticLayerRef);
-        const result = await semanticClient.query({
-          query: payload.query,
-          endpoint: payload.semanticLayerRef,
-          resultFormat: payload.resultFormat,
-          timeoutSeconds: payload.timeoutSeconds
-        });
+        if (queryLanguage === 'sql') {
+          const result = await getDatabricksClient().executeStatement({
+            statement: query,
+            warehouseId: payload.warehouseId,
+            catalog: payload.catalog,
+            schema: payload.schema,
+            waitTimeoutSeconds: payload.waitTimeoutSeconds,
+            timeoutSeconds: payload.timeoutSeconds,
+            maxRows: payload.maxRows
+          });
 
+          if (result.status.state === 'FAILED' || result.status.state === 'CANCELED') {
+            return h.response({
+              error: result.status.error ?? result.status.message ?? 'SQL query failed',
+              queryId: result.statementId,
+              status: result.status
+            }).code(400);
+          }
+
+          return h.response({
+            queryId: result.statementId,
+            status: result.status,
+            manifest: result.manifest,
+            results: result.result
+          }).code(200);
+        }
+
+        return h.response({ error: `Unsupported queryLanguage: ${payload.queryLanguage ?? 'unknown'}` }).code(400);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(400);
+      }
+    }
+  });
+
+  // GET /data/query/{queryId} - Fetch status/result for async SQL providers
+  server.route({
+    method: 'GET',
+    path: '/data/query/{queryId}',
+    handler: async (request, h) => {
+      try {
+        const queryId = request.params.queryId as string;
+        const waitTimeoutSeconds = request.query.waitTimeoutSeconds
+          ? parseInt(request.query.waitTimeoutSeconds as string)
+          : undefined;
+        const provider = (request.query.provider as string | undefined)?.toLowerCase() ?? 'sql';
+
+        if (!queryId) {
+          return h.response({ error: 'queryId is required' }).code(400);
+        }
+
+        if (provider !== 'sql') {
+          return h.response({ error: 'Query status is only supported for async SQL providers' }).code(400);
+        }
+
+        const result = await getDatabricksClient().getStatement(queryId, waitTimeoutSeconds);
         return h.response({
-          queryId: result.queryId,
-          status: { state: 'SUCCEEDED' },
-          results: result.results,
-          contentType: result.contentType
+          queryId: result.statementId,
+          status: result.status,
+          manifest: result.manifest,
+          results: result.result
         }).code(200);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -2049,7 +2142,8 @@ async function init() {
   console.log('  GET  /data/contracts/{id} - Get data contract');
   console.log('  GET  /data/contracts/{id}/shape - Get contract SHACL shape');
   console.log('\nData Query Endpoints:');
-  console.log('  POST /data/query   - Execute a semantic query (SPARQL canonical)');
+  console.log('  POST /data/query   - Execute a semantic query (SPARQL canonical; SQL adapter supported)');
+  console.log('  GET  /data/query/{queryId} - Fetch status for SQL adapters');
   console.log('\nRDF Endpoints:');
   console.log('  GET  /rdf           - Export all traces as Turtle');
   console.log('  GET  /rdf/stats     - RDF store statistics');
