@@ -254,9 +254,11 @@ async function init() {
     }
   });
 
+  const defaultSparqlEndpoint = `http://localhost:${process.env.PORT ?? 3000}/sparql`;
   let semanticQueryClient: SemanticQueryClient | null = null;
   const getSemanticQueryClient = (overrideEndpoint?: string) => {
-    const endpoint = overrideEndpoint ?? process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? '';
+    const endpoint =
+      overrideEndpoint ?? process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? defaultSparqlEndpoint;
     if (!endpoint) {
       throw new Error('Semantic layer endpoint missing. Set SEMANTIC_LAYER_SPARQL_ENDPOINT or provide semanticLayerRef.');
     }
