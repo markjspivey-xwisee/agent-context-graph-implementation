@@ -18,6 +18,7 @@ export interface ConcurrentOrchestratorConfig {
   useClaudeCodeCLI?: boolean;
   cliConfig?: ClaudeCodeClientConfig;
   defaultCredentials?: unknown[];
+  reasoningClient?: IReasoningClient;
 
   /**
    * AAT Registry for parallelization rules
@@ -138,7 +139,9 @@ export class ConcurrentOrchestrator extends EventEmitter<ConcurrentOrchestratorE
     this.aatRegistry = config.aatRegistry;
 
     // Create reasoning client
-    if (config.useClaudeCodeCLI) {
+    if (config.reasoningClient) {
+      this.reasoningClient = config.reasoningClient;
+    } else if (config.useClaudeCodeCLI) {
       this.reasoningClient = new ClaudeCodeClient(config.cliConfig);
     } else {
       this.reasoningClient = new LLMClient(config.anthropicApiKey);

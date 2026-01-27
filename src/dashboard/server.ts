@@ -13,6 +13,8 @@ import { InMemoryTraceStore } from '../services/trace-store.js';
 import { StubCausalEvaluator } from '../services/causal-evaluator.js';
 import { resolveSpecPath } from '../utils/spec-path.js';
 import { KnowledgeGraphService } from '../services/knowledge-graph-service.js';
+import { createReasoningClient } from '../agents/reasoning-client.js';
+import { resolveReasoningConfigFromEnv } from '../utils/reasoning-env.js';
 
 // ============================================================
 // Structured Logging
@@ -147,29 +149,24 @@ async function init() {
   // Get configuration from environment
   // Default broker URL is the dashboard server itself (self-contained)
   const brokerUrl = process.env.BROKER_URL ?? `http://localhost:${process.env.DASHBOARD_PORT ?? 3001}`;
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const port = process.env.DASHBOARD_PORT ?? 3001;
-  const useClaudeCodeCLI = process.env.USE_CLAUDE_CLI === 'true';
-  const claudeCliPath = process.env.CLAUDE_CLI_PATH ?? 'claude';
-
-  // Validate configuration based on backend
-  if (!useClaudeCodeCLI && !anthropicApiKey) {
-    console.error('ANTHROPIC_API_KEY environment variable is required when not using Claude Code CLI');
-    console.error('Set USE_CLAUDE_CLI=true to use Claude Code CLI instead');
+  let reasoningLabel = 'Anthropic API';
+  let reasoningClient;
+  try {
+    const resolved = resolveReasoningConfigFromEnv();
+    reasoningLabel = resolved.label;
+    reasoningClient = await createReasoningClient(resolved.clientConfig);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
     process.exit(1);
   }
 
   // Create orchestrator with appropriate backend
   const orchestrator = new Orchestrator({
     brokerUrl,
-    anthropicApiKey,
     maxConcurrentAgents: 10,
-    useClaudeCodeCLI,
-    cliConfig: useClaudeCodeCLI ? {
-      cliPath: claudeCliPath,
-      workingDirectory: process.cwd(),
-      timeout: 120000
-    } : undefined
+    reasoningClient
   });
 
   // Initialize credential store
@@ -801,7 +798,7 @@ async function init() {
   console.log(`Dashboard:        ${server.info.uri}`);
   console.log(`WebSocket:        ws://localhost:${wsPort}`);
   console.log(`Broker URL:       ${brokerUrl}`);
-  console.log(`Reasoning:        ${useClaudeCodeCLI ? 'Claude Code CLI' : 'Anthropic API'}`);
+  console.log(`Reasoning:        ${reasoningLabel}`);
   console.log('');
   console.log('Open your browser to the Dashboard URL above');
   console.log('='.repeat(60));

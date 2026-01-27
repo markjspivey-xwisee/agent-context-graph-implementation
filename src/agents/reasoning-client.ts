@@ -70,12 +70,17 @@ export interface AgentSystemPrompt {
  */
 export interface ReasoningClientConfig {
   /**
-   * Type of client: 'api' for Anthropic API, 'cli' for Claude Code CLI
+   * Type of client: 'api' for API-based reasoning, 'cli' for CLI-based reasoning
    */
   type: 'api' | 'cli';
 
   /**
-   * API key for Anthropic API (required for 'api' type)
+   * Provider to use (defaults: api->anthropic, cli->claude-cli)
+   */
+  provider?: 'anthropic' | 'openai' | 'claude-cli' | 'codex-cli';
+
+  /**
+   * API key for API-based providers
    */
   apiKey?: string;
 
@@ -83,6 +88,11 @@ export interface ReasoningClientConfig {
    * Model to use
    */
   model?: string;
+
+  /**
+   * Base URL for API-based providers
+   */
+  baseUrl?: string;
 
   /**
    * Path to Claude CLI executable (for 'cli' type)
@@ -98,6 +108,16 @@ export interface ReasoningClientConfig {
    * Timeout in milliseconds
    */
   timeout?: number;
+
+  /**
+   * Additional CLI flags
+   */
+  additionalFlags?: string[];
+
+  /**
+   * Sandbox mode for CLI providers
+   */
+  sandbox?: string;
 }
 
 /**
@@ -106,16 +126,35 @@ export interface ReasoningClientConfig {
 export async function createReasoningClient(
   config: ReasoningClientConfig
 ): Promise<IReasoningClient> {
+  const provider = (config.provider ?? (config.type === 'cli' ? 'claude-cli' : 'anthropic')).toLowerCase();
+
   if (config.type === 'cli') {
+    if (provider === 'codex-cli' || provider === 'codex') {
+      const { CodexCLIClient } = await import('./codex-cli-client.js');
+      return new CodexCLIClient({
+        cliPath: config.cliPath,
+        workingDirectory: config.workingDirectory,
+        timeout: config.timeout,
+        model: config.model,
+        additionalFlags: config.additionalFlags,
+        sandbox: config.sandbox
+      });
+    }
     const { ClaudeCodeClient } = await import('./claude-code-client.js');
     return new ClaudeCodeClient({
       cliPath: config.cliPath,
       workingDirectory: config.workingDirectory,
       timeout: config.timeout,
-      model: config.model
+      model: config.model,
+      additionalFlags: config.additionalFlags
     });
-  } else {
-    const { LLMClient } = await import('./llm-client.js');
-    return new LLMClient(config.apiKey, config.model);
   }
+
+  if (provider === 'openai') {
+    const { OpenAIClient } = await import('./openai-client.js');
+    return new OpenAIClient(config.apiKey, config.model, config.baseUrl);
+  }
+
+  const { LLMClient } = await import('./llm-client.js');
+  return new LLMClient(config.apiKey, config.model);
 }

@@ -12,6 +12,11 @@ export interface OrchestratorConfig {
   defaultCredentials?: unknown[];
 
   /**
+   * Prebuilt reasoning client (overrides other settings)
+   */
+  reasoningClient?: IReasoningClient;
+
+  /**
    * Anthropic API key (for API-based reasoning)
    */
   anthropicApiKey?: string;
@@ -76,7 +81,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.taskManager = new TaskManager();
 
     // Create reasoning client based on configuration
-    if (config.useClaudeCodeCLI) {
+    if (config.reasoningClient) {
+      this.reasoningClient = config.reasoningClient;
+      console.log('Orchestrator using custom reasoning client');
+    } else if (config.useClaudeCodeCLI) {
       this.reasoningClient = new ClaudeCodeClient(config.cliConfig);
       console.log('Orchestrator using Claude Code CLI for agent reasoning');
     } else {

@@ -47,6 +47,27 @@ npm install
 npm run build
 npm run dashboard
 
+## Reasoning backends
+
+The orchestrator and dashboard can use multiple reasoning backends:
+
+- `REASONING_BACKEND=anthropic` (default) — Anthropic API (`ANTHROPIC_API_KEY`)
+- `REASONING_BACKEND=openai` — OpenAI API (`OPENAI_API_KEY`)
+- `REASONING_BACKEND=claude-cli` — Claude Code CLI (`CLAUDE_CLI_PATH`)
+- `REASONING_BACKEND=codex-cli` — OpenAI Codex CLI (`CODEX_CLI_PATH`)
+
+Optional model/env overrides:
+- `ANTHROPIC_MODEL`
+- `OPENAI_MODEL` (default `gpt-5`)
+- `CLAUDE_CLI_MODEL`
+- `CODEX_CLI_MODEL`
+
+CLI flags can be passed via:
+- `CLAUDE_CLI_FLAGS` (comma-separated)
+- `CODEX_CLI_FLAGS` (comma-separated)
+
+Codex CLI can also set a sandbox with `CODEX_CLI_SANDBOX`.
+
 ## CI note (foundations spec)
 
 CI clones the foundations repo and sets `ACG_SPEC_DIR` so tests and schema validation can locate the spec files when this repo is checked out alone.

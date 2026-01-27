@@ -1,32 +1,29 @@
 import Hapi from '@hapi/hapi';
 import { Orchestrator } from './agents/orchestrator.js';
+import { createReasoningClient } from './agents/reasoning-client.js';
+import { resolveReasoningConfigFromEnv } from './utils/reasoning-env.js';
 
 async function init() {
   // Get configuration from environment
   const brokerUrl = process.env.BROKER_URL ?? 'http://localhost:3000';
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const port = process.env.ORCHESTRATOR_PORT ?? 3001;
-  const useClaudeCodeCLI = process.env.USE_CLAUDE_CLI === 'true';
-  const claudeCliPath = process.env.CLAUDE_CLI_PATH ?? 'claude';
-
-  // Validate configuration based on backend
-  if (!useClaudeCodeCLI && !anthropicApiKey) {
-    console.error('ANTHROPIC_API_KEY environment variable is required when not using Claude Code CLI');
-    console.error('Set USE_CLAUDE_CLI=true to use Claude Code CLI instead');
+  let reasoningLabel = 'Anthropic API';
+  let reasoningClient;
+  try {
+    const resolved = resolveReasoningConfigFromEnv();
+    reasoningLabel = resolved.label;
+    reasoningClient = await createReasoningClient(resolved.clientConfig);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
     process.exit(1);
   }
 
   // Create orchestrator with appropriate backend
   const orchestrator = new Orchestrator({
     brokerUrl,
-    anthropicApiKey,
     maxConcurrentAgents: 5,
-    useClaudeCodeCLI,
-    cliConfig: useClaudeCodeCLI ? {
-      cliPath: claudeCliPath,
-      workingDirectory: process.cwd(),
-      timeout: 120000
-    } : undefined
+    reasoningClient
   });
 
   // Set up event logging
@@ -159,7 +156,7 @@ async function init() {
   console.log('='.repeat(60));
   console.log(`Server running at: ${server.info.uri}`);
   console.log(`Broker URL: ${brokerUrl}`);
-  console.log(`Reasoning Backend: ${useClaudeCodeCLI ? 'Claude Code CLI' : 'Anthropic API'}`);
+  console.log(`Reasoning Backend: ${reasoningLabel}`);
   console.log('');
   console.log('Endpoints:');
   console.log('  POST /goals          - Submit a goal for agents to achieve');
