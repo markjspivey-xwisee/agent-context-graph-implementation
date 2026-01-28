@@ -909,16 +909,43 @@ async function init() {
     wsClients.add(ws);
     log('info', 'websocket', `Client connected (${wsClients.size} total)`);
 
-    // Send current state on connection
-    ws.send(JSON.stringify({
-      type: 'init',
-      payload: {
-        workflows: orchestrator.getAllWorkflows(),
-        agents: orchestrator.getAgents(),
-        stats: orchestrator.getStats(),
-        logs: logHistory.slice(-50)
+    const sendInitPayload = async () => {
+      try {
+        const [workflowsRes, agentsRes, statsRes, logsRes] = await Promise.all([
+          fetch(`${backendUrl}/workflows`),
+          fetch(`${backendUrl}/agents`),
+          fetch(`${backendUrl}/stats`),
+          fetch(`${backendUrl}/logs?limit=50`)
+        ]);
+
+        const workflowsJson = workflowsRes.ok ? await workflowsRes.json() : { workflows: orchestrator.getAllWorkflows() };
+        const agentsJson = agentsRes.ok ? await agentsRes.json() : { agents: orchestrator.getAgents() };
+        const statsJson = statsRes.ok ? await statsRes.json() : orchestrator.getStats();
+        const logsJson = logsRes.ok ? await logsRes.json() : { logs: logHistory.slice(-50) };
+
+        ws.send(JSON.stringify({
+          type: 'init',
+          payload: {
+            workflows: workflowsJson.workflows ?? [],
+            agents: agentsJson.agents ?? [],
+            stats: statsJson,
+            logs: logsJson.logs ?? []
+          }
+        }));
+      } catch (err) {
+        ws.send(JSON.stringify({
+          type: 'init',
+          payload: {
+            workflows: orchestrator.getAllWorkflows(),
+            agents: orchestrator.getAgents(),
+            stats: orchestrator.getStats(),
+            logs: logHistory.slice(-50)
+          }
+        }));
       }
-    }));
+    };
+
+    void sendInitPayload();
 
     ws.on('close', () => {
       wsClients.delete(ws);
