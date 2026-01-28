@@ -27,6 +27,7 @@ import { resolveSpecPath } from './utils/spec-path.js';
 import { DatabricksIntrospector, type DatabricksIntrospectionOptions, type DatabricksIntrospectionResult } from './services/databricks-introspector.js';
 import { generateR2RmlMapping, type MappingGenerationResult } from './services/r2rml-mapping-generator.js';
 import { buildSemanticCatalogBundle, type SemanticCatalogBundle } from './services/semantic-layer-runtime.js';
+import { DataSourceRegistry, type DataSourceRegistration, type DataSourceType } from './services/data-source-registry.js';
 
 /**
  * Load all Turtle files from a directory and concatenate them
@@ -422,6 +423,190 @@ async function init() {
     dataProductIndex = buildIndex(getHydraMembers(dataProductsDoc));
   };
 
+  const registryPath = resolveRepoPath(process.env.DATA_SOURCE_REGISTRY_PATH ?? 'data/data-sources.json');
+  ensureDir(dirname(registryPath));
+  const dataSourceRegistry = new DataSourceRegistry(registryPath);
+
+  const sanitizeDataSource = (source: DataSourceRegistration): DataSourceRegistration => {
+    if (!source.databricks) return source;
+
+    const jdbcUrl = source.databricks.jdbcUrl
+      ? source.databricks.jdbcUrl.replace(/PWD=[^;]*/i, 'PWD=***')
+      : source.databricks.jdbcUrl;
+
+    return {
+      ...source,
+      databricks: {
+        ...source.databricks,
+        token: source.databricks.token ? '***' : source.databricks.token,
+        jdbcUrl
+      }
+    };
+  };
+
+  const toArray = (value: unknown): JsonObject[] => {
+    if (Array.isArray(value)) return value.filter(v => typeof v === 'object' && v !== null) as JsonObject[];
+    if (value && typeof value === 'object') return [value as JsonObject];
+    return [];
+  };
+
+  const uniqueById = (items: JsonObject[]): JsonObject[] => {
+    const seen = new Set<string>();
+    const out: JsonObject[] = [];
+    for (const item of items) {
+      const id = typeof item['@id'] === 'string' ? item['@id'] : undefined;
+      if (!id) continue;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(item);
+    }
+    return out;
+  };
+
+  const loadCatalogDoc = (path: string): JsonObject | null => {
+    if (!existsSync(path)) return null;
+    try {
+      return JSON.parse(readFileSync(path, 'utf-8')) as JsonObject;
+    } catch {
+      return null;
+    }
+  };
+
+  const rebuildRuntimeCatalog = () => {
+    const baseCatalog = catalogDoc;
+    const baseProducts = dataProductsDoc;
+
+    const extraCatalogs: JsonObject[] = [];
+    const extraProducts: JsonObject[] = [];
+
+    for (const source of dataSourceRegistry.list()) {
+      if (source.paths?.catalogPath) {
+        const doc = loadCatalogDoc(source.paths.catalogPath);
+        if (doc) extraCatalogs.push(doc);
+      }
+      if (source.paths?.productsPath) {
+        const doc = loadCatalogDoc(source.paths.productsPath);
+        if (doc) extraProducts.push(doc);
+      }
+    }
+
+    const mergedCatalog: JsonObject = { ...baseCatalog };
+    const baseDatasets = toArray(baseCatalog['dcat:dataset']);
+    const baseServices = toArray(baseCatalog['dcat:service']);
+    const baseProductsRefs = toArray(baseCatalog['sl:hasDataProduct']);
+
+    const extraDatasets = extraCatalogs.flatMap(doc => toArray(doc['dcat:dataset']));
+    const extraServices = extraCatalogs.flatMap(doc => toArray(doc['dcat:service']));
+    const extraProductRefs = extraCatalogs.flatMap(doc => toArray(doc['sl:hasDataProduct']));
+
+    mergedCatalog['dcat:dataset'] = uniqueById([...baseDatasets, ...extraDatasets]);
+    mergedCatalog['dcat:service'] = uniqueById([...baseServices, ...extraServices]);
+    mergedCatalog['sl:hasDataProduct'] = uniqueById([...baseProductsRefs, ...extraProductRefs]);
+
+    catalogDoc = mergedCatalog;
+
+    const mergedProducts: JsonObject = { ...baseProducts };
+    const baseMembers = toArray(baseProducts['hydra:member']);
+    const extraMembers = extraProducts.flatMap(doc => toArray(doc['hydra:member']));
+    mergedProducts['hydra:member'] = uniqueById([...baseMembers, ...extraMembers]);
+    mergedProducts['hydra:totalItems'] = (mergedProducts['hydra:member'] as JsonObject[]).length;
+    dataProductsDoc = mergedProducts;
+    refreshDataProductIndex();
+  };
+
+  rebuildRuntimeCatalog();
+
+  const writeSourceStubDocs = (source: DataSourceRegistration) => {
+    const runtimeBase = resolveRuntimePath();
+    const sourceDir = join(runtimeBase, 'sources', source.id);
+    ensureDir(sourceDir);
+
+    const baseIri = source.semanticLayer?.baseIri ?? `urn:acg:${source.id}:`;
+    const datasetId = `${baseIri}dataset:${source.id}`;
+    const productId = `${baseIri}data-product:${source.id}`;
+    const sparqlEndpoint = source.semanticLayer?.sparqlEndpoint ?? process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? defaultSparqlEndpoint;
+
+    const catalog = {
+      '@context': {
+        dcat: 'http://www.w3.org/ns/dcat#',
+        dcterms: 'http://purl.org/dc/terms/',
+        dprod: 'https://ekgf.github.io/data-product-spec/dprod#',
+        hydra: 'http://www.w3.org/ns/hydra/core#',
+        hyprcat: 'https://hyprcat.io/vocab#',
+        sl: 'https://agentcontextgraph.dev/semantic-layer#'
+      },
+      '@id': `/data/catalog`,
+      '@type': ['dcat:Catalog', 'hyprcat:Catalog', 'sl:SemanticCatalog'],
+      'dcterms:title': `${source.name} Catalog`,
+      'dcterms:description': source.description ?? `Runtime catalog for ${source.name}.`,
+      'dcat:dataset': [{ '@id': datasetId }],
+      'dcat:service': [
+        {
+          '@id': `${baseIri}service:semantic-layer`,
+          '@type': 'dcat:DataService',
+          'dcterms:title': `${source.name} Semantic Layer`,
+          'dcat:endpointURL': sparqlEndpoint,
+          'dcat:servesDataset': [{ '@id': datasetId }],
+          'sl:servesProduct': [{ '@id': productId }]
+        }
+      ],
+      'sl:hasDataProduct': [{ '@id': productId }]
+    };
+
+    const products = {
+      '@context': {
+        dcat: 'http://www.w3.org/ns/dcat#',
+        dcterms: 'http://purl.org/dc/terms/',
+        dprod: 'https://ekgf.github.io/data-product-spec/dprod#',
+        hydra: 'http://www.w3.org/ns/hydra/core#',
+        hyprcat: 'https://hyprcat.io/vocab#',
+        sl: 'https://agentcontextgraph.dev/semantic-layer#'
+      },
+      '@id': '/data/products',
+      '@type': 'hydra:Collection',
+      'hydra:member': [
+        {
+          '@id': productId,
+          '@type': ['dprod:DataProduct', 'hyprcat:DataProduct', 'sl:DataProduct'],
+          'dcterms:title': source.name,
+          'dcterms:description': source.description ?? `Data product for ${source.name}.`,
+          'dprod:domain': source.type,
+          'dprod:hasPort': [
+            {
+              '@type': 'dprod:OutputPort',
+              'dcterms:title': 'SPARQL Output',
+              'dprod:protocol': 'SPARQL',
+              'dcat:dataset': { '@id': datasetId }
+            }
+          ],
+          'sl:hasDataContract': [],
+          'hydra:operation': [
+            {
+              '@type': 'hydra:Operation',
+              'hydra:method': 'POST',
+              'hydra:title': 'Query data product',
+              'hydra:entrypoint': '/data/query',
+              'hydra:expects': 'application/sparql-query',
+              'hydra:returns': 'application/sparql-results+json'
+            }
+          ]
+        }
+      ],
+      'hydra:totalItems': 1
+    };
+
+    const catalogPath = join(sourceDir, 'catalog.jsonld');
+    const productsPath = join(sourceDir, 'data-products.jsonld');
+    writeFileSync(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8');
+    writeFileSync(productsPath, JSON.stringify(products, null, 2), 'utf-8');
+
+    return {
+      runtimeDir: sourceDir,
+      catalogPath,
+      productsPath
+    };
+  };
+
   const normalizeProductId = (id: string): string => {
     if (id.startsWith('urn:')) return id;
     return `urn:acg:data-product:${id}`;
@@ -554,6 +739,7 @@ async function init() {
     catalogDoc = catalogBundle.catalog;
     dataProductsDoc = catalogBundle.products;
     refreshDataProductIndex();
+    rebuildRuntimeCatalog();
 
     return {
       mappingPath,
@@ -561,6 +747,86 @@ async function init() {
       tablesMapped: mapping.tablesMapped,
       warnings: [...introspection.warnings, ...mapping.warnings],
       refreshedAt: semanticLayerLastRefreshAt
+    };
+  };
+
+  const refreshDataSource = async (
+    source: DataSourceRegistration,
+    options: DatabricksIntrospectionOptions & { baseIri?: string } = {}
+  ) => {
+    if (!source.databricks) {
+      throw new Error('Databricks configuration missing for this data source.');
+    }
+
+    const runtimeBase = resolveRuntimePath();
+    const sourceDir = join(runtimeBase, 'sources', source.id);
+    ensureDir(sourceDir);
+
+    const client = new DatabricksSqlClient({
+      host: source.databricks.host,
+      token: source.databricks.token,
+      warehouseId: source.databricks.warehouseId,
+      defaultCatalog: source.databricks.catalog,
+      defaultSchema: source.databricks.schema,
+      userAgent: 'agent-context-graph'
+    });
+
+    const introspector = new DatabricksIntrospector(client);
+    const introspection = await introspector.introspect({
+      catalog: options.catalog ?? source.databricks.catalog,
+      schema: options.schema ?? source.databricks.schema,
+      tables: options.tables,
+      maxTables: options.maxTables
+    });
+
+    const baseIri = options.baseIri ?? source.semanticLayer?.baseIri ?? `urn:acg:${source.id}:`;
+    const mapping = generateR2RmlMapping(introspection, {
+      baseIri,
+      includeGenericColumns: true
+    });
+
+    const mappingPath = source.semanticLayer?.mappingPath
+      ? resolveRepoPath(source.semanticLayer.mappingPath)
+      : join(sourceDir, 'mapping.ttl');
+    writeFileSync(mappingPath, mapping.ttl, 'utf-8');
+
+    const catalogBundle = buildSemanticCatalogBundle(introspection, {
+      semanticEndpoint: source.semanticLayer?.sparqlEndpoint ??
+        process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ??
+        defaultSparqlEndpoint,
+      baseIri
+    });
+
+    const catalogPath = join(sourceDir, 'catalog.jsonld');
+    const productsPath = join(sourceDir, 'data-products.jsonld');
+    const introspectionPath = join(sourceDir, 'introspection.json');
+
+    writeFileSync(catalogPath, JSON.stringify(catalogBundle.catalog, null, 2), 'utf-8');
+    writeFileSync(productsPath, JSON.stringify(catalogBundle.products, null, 2), 'utf-8');
+    writeFileSync(introspectionPath, JSON.stringify(introspection, null, 2), 'utf-8');
+
+    const updated = dataSourceRegistry.update(source.id, {
+      paths: {
+        runtimeDir: sourceDir,
+        catalogPath,
+        productsPath,
+        introspectionPath,
+        mappingPath
+      },
+      status: {
+        lastRefreshAt: new Date().toISOString(),
+        lastError: undefined,
+        tablesMapped: mapping.tablesMapped,
+        warnings: [...introspection.warnings, ...mapping.warnings]
+      }
+    });
+
+    rebuildRuntimeCatalog();
+
+    return {
+      source: updated,
+      tablesMapped: mapping.tablesMapped,
+      warnings: [...introspection.warnings, ...mapping.warnings]
     };
   };
 
@@ -612,6 +878,127 @@ async function init() {
     path: '/workflows',
     handler: () => {
       return { workflows: orchestrator.getAllWorkflows() };
+    }
+  });
+
+  // ===========================================
+  // Data Source Registry Endpoints
+  // ===========================================
+
+  server.route({
+    method: 'GET',
+    path: '/data-sources',
+    handler: () => {
+      return { sources: dataSourceRegistry.list().map(sanitizeDataSource) };
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/data-sources/{id}',
+    handler: (request, h) => {
+      const source = dataSourceRegistry.get(request.params.id);
+      if (!source) {
+        return h.response({ error: 'Data source not found' }).code(404);
+      }
+      return h.response(sanitizeDataSource(source)).code(200);
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/data-sources',
+    handler: (request, h) => {
+      try {
+        const payload = request.payload as Partial<DataSourceRegistration>;
+        if (!payload?.name) {
+          return h.response({ error: 'name is required' }).code(400);
+        }
+        const id = payload.id ?? payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const type = (payload.type ?? 'custom') as DataSourceType;
+
+        const source = dataSourceRegistry.register({
+          id,
+          name: payload.name,
+          type,
+          description: payload.description,
+          databricks: payload.databricks,
+          semanticLayer: payload.semanticLayer,
+          paths: payload.paths,
+          status: payload.status
+        });
+
+        const stubPaths = writeSourceStubDocs(source);
+        dataSourceRegistry.update(source.id, {
+          paths: {
+            ...source.paths,
+            ...stubPaths
+          }
+        });
+
+        rebuildRuntimeCatalog();
+        const saved = dataSourceRegistry.get(source.id);
+        return h.response(saved ? sanitizeDataSource(saved) : saved).code(201);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return h.response({ error: message }).code(400);
+      }
+    }
+  });
+
+  server.route({
+    method: 'DELETE',
+    path: '/data-sources/{id}',
+    handler: (request, h) => {
+      const removed = dataSourceRegistry.remove(request.params.id);
+      if (!removed) {
+        return h.response({ error: 'Data source not found' }).code(404);
+      }
+      rebuildRuntimeCatalog();
+      return h.response({ ok: true }).code(200);
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/data-sources/{id}/refresh',
+    handler: async (request, h) => {
+      try {
+        const source = dataSourceRegistry.get(request.params.id);
+        if (!source) {
+          return h.response({ error: 'Data source not found' }).code(404);
+        }
+        if (source.type !== 'databricks') {
+          return h.response({ error: 'Refresh is only supported for databricks sources today.' }).code(400);
+        }
+        const payload = (request.payload ?? {}) as DatabricksIntrospectionOptions & { baseIri?: string };
+        const result = await refreshDataSource(source, payload);
+        return h.response({
+          ok: true,
+          ...result,
+          source: result.source ? sanitizeDataSource(result.source) : result.source
+        }).code(200);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return h.response({ ok: false, error: message }).code(500);
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/data-sources/{id}/mapping',
+    handler: (request, h) => {
+      const source = dataSourceRegistry.get(request.params.id);
+      if (!source?.paths?.mappingPath) {
+        return h.response({ error: 'Mapping not found. Refresh the data source first.' }).code(404);
+      }
+      if (!existsSync(source.paths.mappingPath)) {
+        return h.response({ error: 'Mapping file missing on disk.' }).code(404);
+      }
+      return h.response(readFileSync(source.paths.mappingPath, 'utf-8'))
+        .type('text/turtle')
+        .code(200);
     }
   });
 
@@ -2380,6 +2767,7 @@ async function init() {
         'dataProducts': '/data/products',
         'dataContracts': '/data/contracts',
         'dataQuery': '/data/query',
+        'dataSources': '/data-sources',
         'semanticLayer': {
           'status': '/semantic-layer/status',
           'refresh': '/semantic-layer/refresh',
@@ -2464,6 +2852,13 @@ async function init() {
   console.log('  GET  /data/contracts   - List data contracts');
   console.log('  GET  /data/contracts/{id} - Get data contract');
   console.log('  GET  /data/contracts/{id}/shape - Get contract SHACL shape');
+  console.log('\nData Source Registry:');
+  console.log('  GET  /data-sources      - List registered sources');
+  console.log('  POST /data-sources      - Register a new source');
+  console.log('  GET  /data-sources/{id} - Get a source');
+  console.log('  POST /data-sources/{id}/refresh - Refresh source introspection');
+  console.log('  GET  /data-sources/{id}/mapping - Get generated mapping');
+  console.log('  DELETE /data-sources/{id} - Remove a source');
   console.log('\nSemantic Layer Runtime:');
   console.log('  GET  /semantic-layer/status - Runtime semantic layer status');
   console.log('  POST /semantic-layer/refresh - Introspect + regenerate mapping');

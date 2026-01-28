@@ -66,6 +66,35 @@ curl -X POST http://localhost:3000/semantic-layer/refresh
 Ontop still needs to read the mapping file you generated, but **the mapping content is now runtime-derived**
 instead of hardcoded.
 
+### Register additional sources at runtime
+
+Register a second Databricks source (or other system) without changing code:
+
+```bash
+curl -X POST http://localhost:3000/data-sources \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "databricks-secondary",
+    "type": "databricks",
+    "databricks": {
+      "host": "dbc-....cloud.databricks.com",
+      "token": "dapi....",
+      "warehouseId": "abc123",
+      "catalog": "samples",
+      "schema": "tpch"
+    },
+    "semanticLayer": {
+      "sparqlEndpoint": "http://localhost:8080/sparql"
+    }
+  }'
+```
+
+Then:
+
+```bash
+curl -X POST http://localhost:3000/data-sources/databricks-secondary/refresh
+```
+
 ### Zero-copy guarantee
 
 The semantic layer is a **virtual RDF overlay**. Databricks remains the source of truth, and

@@ -105,6 +105,18 @@ Then restart Ontop so it picks up the updated mapping:
 docker compose --profile semantic-layer restart ontop
 ```
 
+### Multiple data sources
+
+Each Databricks source can generate its own mapping under:
+
+```
+data/semantic-layer/sources/<source-id>/mapping.ttl
+```
+
+Ontop loads **one mapping per container**, so for multiple sources you can either:
+- Run multiple Ontop instances (one per source), or
+- Merge mappings into a single file and point Ontop to that combined mapping.
+
 ## Quick SPARQL test
 
 ```

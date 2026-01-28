@@ -73,6 +73,43 @@ curl -X POST http://localhost:3000/chat \
   -d '{"message":"Summarize top 5 orders by revenue"}'
 ```
 
+## Register data sources at runtime
+
+You can register additional data sources (Databricks, SPARQL services, LRS) without code changes.
+
+Register:
+
+```bash
+curl -X POST http://localhost:3000/data-sources \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "databricks-secondary",
+    "type": "databricks",
+    "databricks": {
+      "host": "dbc-....cloud.databricks.com",
+      "token": "dapi....",
+      "warehouseId": "abc123",
+      "catalog": "samples",
+      "schema": "tpch"
+    },
+    "semanticLayer": {
+      "sparqlEndpoint": "http://localhost:8080/sparql"
+    }
+  }'
+```
+
+Refresh (introspect + mapping):
+
+```bash
+curl -X POST http://localhost:3000/data-sources/databricks-secondary/refresh
+```
+
+The refresh will:
+- Introspect the source tables
+- Generate an R2RML mapping
+- Emit Hydra/HyprCat catalog + data products
+- Merge into `/data/catalog` and `/data/products`
+
 ## Codespaces helper
 
 In Codespaces, you can run:

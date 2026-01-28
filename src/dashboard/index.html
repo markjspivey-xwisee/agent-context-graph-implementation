@@ -1686,6 +1686,91 @@
       border-color: var(--accent-blue);
     }
 
+    /* Data Sources */
+    .data-source-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1rem;
+      height: 100%;
+    }
+
+    .data-source-list {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-primary);
+      padding: 0.75rem;
+      max-height: 540px;
+      overflow-y: auto;
+    }
+
+    .data-source-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.6rem;
+      background: var(--bg-secondary);
+    }
+
+    .data-source-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .data-source-card .title {
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .data-source-card .meta {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .data-source-card .actions {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .data-source-form {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-primary);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 540px;
+      overflow-y: auto;
+    }
+
+    .data-source-form label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-source-form input,
+    .data-source-form select,
+    .data-source-form textarea {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: 6px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .data-source-form textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
     .chat-input button {
       background: linear-gradient(135deg, #22d3ee, #3b82f6);
       color: #0f172a;
@@ -1862,6 +1947,9 @@
         <button class="tab-btn" data-tab="chat">
           <span>&#128172;</span> Chat
         </button>
+        <button class="tab-btn" data-tab="data-sources">
+          <span>&#128187;</span> Data Sources
+        </button>
         <button class="tab-btn" data-tab="context-graph">
           <span>&#127760;</span> Context Graph
         </button>
@@ -1917,6 +2005,58 @@
           <div class="chat-input">
             <textarea id="chatInput" placeholder="Ask about your Databricks data..."></textarea>
             <button id="chatSend" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Sources Tab -->
+      <div class="tab-content" id="tab-data-sources">
+        <div class="panel-content">
+          <div class="data-source-layout">
+            <div class="data-source-list" id="dataSourceList">
+              <div class="empty-state">
+                <div class="empty-state-icon">&#128187;</div>
+                <div>No data sources registered</div>
+                <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                  Register a new source to add it to the semantic catalog.
+                </p>
+              </div>
+            </div>
+            <div class="data-source-form">
+              <div class="detail-section" style="margin-bottom: 0;">
+                <h4>Register Source</h4>
+              </div>
+              <label for="dataSourceName">Name</label>
+              <input id="dataSourceName" placeholder="databricks-secondary" />
+              <label for="dataSourceType">Type</label>
+              <select id="dataSourceType">
+                <option value="databricks">Databricks</option>
+                <option value="sparql">SPARQL Service</option>
+                <option value="lrs">xAPI LRS</option>
+                <option value="custom">Custom</option>
+              </select>
+              <label for="dataSourceDescription">Description</label>
+              <textarea id="dataSourceDescription" placeholder="Short description"></textarea>
+
+              <label for="dataSourceHost">Host / Base URL</label>
+              <input id="dataSourceHost" placeholder="dbc-xxx.cloud.databricks.com" />
+              <label for="dataSourceToken">Token</label>
+              <input id="dataSourceToken" type="password" placeholder="dapi..." />
+              <label for="dataSourceWarehouse">Warehouse ID</label>
+              <input id="dataSourceWarehouse" placeholder="warehouse-id" />
+              <label for="dataSourceCatalog">Catalog</label>
+              <input id="dataSourceCatalog" placeholder="samples" />
+              <label for="dataSourceSchema">Schema</label>
+              <input id="dataSourceSchema" placeholder="tpch" />
+
+              <label for="dataSourceSparql">Semantic Layer SPARQL Endpoint</label>
+              <input id="dataSourceSparql" placeholder="http://localhost:8080/sparql" />
+              <label for="dataSourcePlan">Semantic Layer Plan Endpoint (optional)</label>
+              <input id="dataSourcePlan" placeholder="http://localhost:8080/sparql?query=EXPLAIN..." />
+              <label for="dataSourceBaseIri">Base IRI (optional)</label>
+              <input id="dataSourceBaseIri" placeholder="urn:acg:source:" />
+              <button class="template-btn" id="dataSourceRegister">Register Source</button>
+            </div>
           </div>
         </div>
       </div>
@@ -2287,6 +2427,7 @@
     let currentWorkflowDetail = null;
     let chatConversationId = null;
     let chatMessages = [];
+    let dataSources = [];
 
     // AAT Descriptions - from spec/aat/*.json
     const AAT_INFO = {
@@ -2410,6 +2551,19 @@
     const chatMessagesEl = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const chatSendBtn = document.getElementById('chatSend');
+    const dataSourceList = document.getElementById('dataSourceList');
+    const dataSourceRegisterBtn = document.getElementById('dataSourceRegister');
+    const dataSourceName = document.getElementById('dataSourceName');
+    const dataSourceType = document.getElementById('dataSourceType');
+    const dataSourceDescription = document.getElementById('dataSourceDescription');
+    const dataSourceHost = document.getElementById('dataSourceHost');
+    const dataSourceToken = document.getElementById('dataSourceToken');
+    const dataSourceWarehouse = document.getElementById('dataSourceWarehouse');
+    const dataSourceCatalog = document.getElementById('dataSourceCatalog');
+    const dataSourceSchema = document.getElementById('dataSourceSchema');
+    const dataSourceSparql = document.getElementById('dataSourceSparql');
+    const dataSourcePlan = document.getElementById('dataSourcePlan');
+    const dataSourceBaseIri = document.getElementById('dataSourceBaseIri');
     const agentList = document.getElementById('agentList');
     const activityLog = document.getElementById('activityLog');
     const modalOverlay = document.getElementById('modalOverlay');
@@ -3168,6 +3322,150 @@
       }
     }
 
+    async function fetchDataSources() {
+      if (!dataSourceList) return;
+      try {
+        const res = await fetch(`${API_BASE}/data-sources`);
+        if (!res.ok) return;
+        const data = await res.json();
+        dataSources = data.sources || [];
+        renderDataSources();
+      } catch (err) {
+        console.error('Error fetching data sources:', err);
+      }
+    }
+
+    function renderDataSources() {
+      if (!dataSourceList) return;
+      if (!dataSources.length) {
+        dataSourceList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128187;</div>
+            <div>No data sources registered</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              Register a new source to add it to the semantic catalog.
+            </p>
+          </div>`;
+        return;
+      }
+
+      dataSourceList.innerHTML = dataSources.map(source => {
+        const lastRefresh = source.status?.lastRefreshAt ? new Date(source.status.lastRefreshAt).toLocaleString() : 'never';
+        const lastError = source.status?.lastError ? `Error: ${source.status.lastError}` : 'OK';
+        return `
+          <div class="data-source-card">
+            <div class="title">${escapeHtml(source.name)}</div>
+            <div class="meta">
+              <span>Type: ${escapeHtml(source.type)}</span>
+              <span>ID: ${escapeHtml(source.id)}</span>
+              <span>Last refresh: ${escapeHtml(lastRefresh)}</span>
+            </div>
+            <div class="meta">
+              <span>${escapeHtml(lastError)}</span>
+            </div>
+            <div class="actions">
+              <button class="chat-result-btn" onclick="refreshDataSource('${source.id}')">Refresh</button>
+              <button class="chat-result-btn" onclick="viewDataSourceMapping('${source.id}')">View Mapping</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function registerDataSource() {
+      const name = dataSourceName?.value?.trim();
+      if (!name) {
+        showNotification('Name is required.', 'warning');
+        return;
+      }
+
+      const type = dataSourceType?.value ?? 'custom';
+      const payload = {
+        name,
+        type,
+        description: dataSourceDescription?.value?.trim() || undefined,
+        databricks: {
+          host: dataSourceHost?.value?.trim() || undefined,
+          token: dataSourceToken?.value?.trim() || undefined,
+          warehouseId: dataSourceWarehouse?.value?.trim() || undefined,
+          catalog: dataSourceCatalog?.value?.trim() || undefined,
+          schema: dataSourceSchema?.value?.trim() || undefined
+        },
+        semanticLayer: {
+          sparqlEndpoint: dataSourceSparql?.value?.trim() || undefined,
+          planEndpoint: dataSourcePlan?.value?.trim() || undefined,
+          baseIri: dataSourceBaseIri?.value?.trim() || undefined
+        }
+      };
+
+      if (type === 'databricks') {
+        if (!payload.databricks.host || !payload.databricks.token || !payload.databricks.warehouseId) {
+          showNotification('Databricks host, token, and warehouse ID are required.', 'warning');
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/data-sources`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to register data source');
+        }
+        showNotification('Data source registered.', 'success');
+        dataSourceName.value = '';
+        dataSourceDescription.value = '';
+        dataSourceHost.value = '';
+        dataSourceToken.value = '';
+        dataSourceWarehouse.value = '';
+        dataSourceCatalog.value = '';
+        dataSourceSchema.value = '';
+        dataSourceSparql.value = '';
+        dataSourcePlan.value = '';
+        dataSourceBaseIri.value = '';
+        await fetchDataSources();
+      } catch (err) {
+        showNotification(`Register failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function refreshDataSource(id) {
+      try {
+        const res = await fetch(`${API_BASE}/data-sources/${id}/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Refresh failed');
+        }
+        showNotification('Data source refreshed.', 'success');
+        await fetchDataSources();
+      } catch (err) {
+        showNotification(`Refresh failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function viewDataSourceMapping(id) {
+      try {
+        const res = await fetch(`${API_BASE}/data-sources/${id}/mapping`);
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Mapping not available');
+        }
+        const mapping = await res.text();
+        modalTitle.textContent = `Mapping: ${id}`;
+        modalContent.innerHTML = `<pre>${escapeHtml(mapping)}</pre>`;
+        modalOverlay.classList.add('active');
+      } catch (err) {
+        showNotification(`Mapping error: ${err.message}`, 'error');
+      }
+    }
+
     async function sendChatMessage() {
       const message = chatInput?.value.trim();
       if (!message) return;
@@ -3209,6 +3507,7 @@
     });
 
     chatSendBtn?.addEventListener('click', sendChatMessage);
+    dataSourceRegisterBtn?.addEventListener('click', registerDataSource);
     chatInput?.addEventListener('input', () => {
       chatSendBtn.disabled = !connected || !chatInput.value.trim();
     });
@@ -3238,6 +3537,7 @@
       await fetchWorkflows();
       await fetchAgents();
       await fetchChatConversation();
+      await fetchDataSources();
 
       // Fetch all tasks and log status changes
       try {
