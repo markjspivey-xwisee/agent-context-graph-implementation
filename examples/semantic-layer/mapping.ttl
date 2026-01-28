@@ -6,7 +6,7 @@
 <urn:acg:mapping:sales-orders>
     a rr:TriplesMap ;
     rr:logicalTable [
-        rr:tableName "sales_orders"
+        rr:sqlQuery "SELECT o_orderkey AS order_id, o_orderpriority AS order_name FROM samples.tpch.orders"
     ] ;
     rr:subjectMap [
         rr:template "urn:acg:order/{order_id}" ;
@@ -23,6 +23,6 @@
 
 <urn:acg:dataset:sales-orders>
     a dcat:Dataset ;
-    dcterms:title "Sales Orders Dataset"@en ;
-    dcterms:description "Example dataset mapped via R2RML."@en ;
+    dcterms:title "TPCH Orders Dataset"@en ;
+    dcterms:description "Example dataset mapped via R2RML from samples.tpch.orders."@en ;
     sl:hasMapping <urn:acg:mapping:sales-orders> .

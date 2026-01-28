@@ -99,8 +99,8 @@ If you see errors like `Undefined procedure DB.DBA.R2RML_MAKE_QM_FROM_G`, instal
 
 ## Attach Databricks tables in Virtuoso
 
-The R2RML mapping references `sales_orders`. Attach the Databricks table into Virtuoso
-using the Conductor so that a table named `sales_orders` exists in Virtuoso's SQL schema.
+The default R2RML mapping uses a SQL query over `samples.tpch.orders`. If you attach a different
+Databricks table into Virtuoso, update the mapping to match your attached table or schema.
 
 Suggested flow:
 
@@ -108,7 +108,7 @@ Suggested flow:
 2) Navigate to **Database → External Data Sources**.
 3) Create a new data source using the DSN name from `DATABRICKS_ODBC_DSN`.
 4) Test the connection, then **attach** the target table(s) into `DB.DBA`.
-5) Confirm that `sales_orders` is visible in Virtuoso SQL, then reload the R2RML mapping.
+5) Confirm the attached table is visible in Virtuoso SQL, then reload the R2RML mapping.
 
 ## R2RML mappings (Virtuoso)
 
@@ -140,7 +140,7 @@ DB.DBA.TTLP('
 
 <urn:acg:mapping:sales-orders>
   a rr:TriplesMap ;
-  rr:logicalTable [ rr:tableName "sales_orders" ] ;
+  rr:logicalTable [ rr:sqlQuery "SELECT o_orderkey AS order_id, o_orderpriority AS order_name FROM samples.tpch.orders" ] ;
   rr:subjectMap [ rr:template "urn:acg:order/{order_id}" ; rr:class dcat:Dataset ] ;
   rr:predicateObjectMap [ rr:predicate dcterms:identifier ; rr:objectMap [ rr:column "order_id" ] ] .
 ',

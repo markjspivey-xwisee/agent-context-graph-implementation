@@ -46,13 +46,13 @@ PowerShell:
 .\scripts\ontop-build-jdbc-url.ps1
 ```
 
-Copy the printed `DATABRICKS_JDBC_URL='...'` into your `.env` (quotes are important if you `source .env`).
+Copy the printed `DATABRICKS_JDBC_URL='...'` into your `.env`. If you **do not** `source .env`,
+remove the outer quotes so the value is plain text.
 
 If you see `bash: UID: readonly variable` when sourcing `.env`, remove any `UID=...` line and use
 `DATABRICKS_JDBC_USER=token` instead.
 
-If `DATABRICKS_JDBC_URL` was added without quotes, delete that line and re-add the quoted output
-from the helper script.
+If you are only using Docker Compose, you do **not** need to `source .env` — Compose reads it automatically.
 
 ## Start Ontop
 
@@ -74,8 +74,13 @@ Ontop reads the mapping from:
 examples/semantic-layer/mapping.ttl
 ```
 
-If your Databricks table name is different from `sales_orders`, update that mapping file
-and restart the Ontop container.
+If you want a different Databricks table, update that mapping file
+and restart the Ontop container. The default mapping uses Databricks sample data:
+
+```
+SELECT o_orderkey AS order_id, o_orderpriority AS order_name
+FROM samples.tpch.orders
+```
 
 ## Quick SPARQL test
 
