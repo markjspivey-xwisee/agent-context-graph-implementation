@@ -345,6 +345,28 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
         // Strip 'aat:' prefix if present (AAT spec uses prefixed URIs, affordances use unprefixed)
         const requiredAction = requiredActionRaw?.replace(/^aat:/, '');
 
+        if (this.config.agentType === 'planner' && requiredAction) {
+          const selected = decision.selectedAffordance
+            ? context.affordances.find(a => a.id === decision.selectedAffordance)
+            : undefined;
+          if (!selected || selected.actionType !== requiredAction) {
+            const requiredAff = context.affordances.find(
+              a => a.actionType === requiredAction && a.enabled
+            );
+            if (requiredAff && decision.reasoning) {
+              console.log(`[${this.state.agentType}] Enforcing required output action ${requiredAction} for planner`);
+              if (requiredAction === 'EmitPlan') {
+                const planSteps = this.extractPlanStepsFromReasoning(decision.reasoning, task);
+                decision.parameters = { goal: task, steps: planSteps };
+              } else {
+                decision.parameters = { task, reasoning: decision.reasoning };
+              }
+              decision.selectedAffordance = requiredAff.id;
+              decision.shouldContinue = true;
+            }
+          }
+        }
+
         if (!decision.shouldContinue || !decision.selectedAffordance) {
           // Check if AAT requires an output action that wasn't traversed
           if (!hasTraversedAction && requiredAction) {
@@ -402,6 +424,15 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
           }
           if (this.taskContext.target && !finalParameters.target) {
             finalParameters.target = this.taskContext.target;
+          }
+        }
+
+        if (selectedAffordance?.actionType === 'QueryData') {
+          if (!finalParameters.query) {
+            finalParameters.query = this.buildFallbackSparql(task);
+          }
+          if (!finalParameters.queryLanguage) {
+            finalParameters.queryLanguage = 'sparql';
           }
         }
 
