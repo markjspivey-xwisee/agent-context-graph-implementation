@@ -28,9 +28,21 @@ fi
 
 if ($deb) {
   $name = $deb.Name
+  $check = docker compose exec -T virtuoso sh -lc "test -f /drivers/databricks/$name"
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "Driver not found inside container. Recreate the Virtuoso container to pick up the bind mount."
+    Write-Host "Try: docker compose --profile semantic-layer up -d --force-recreate virtuoso"
+    exit 1
+  }
   docker compose exec -T -u root virtuoso sh -lc "dpkg -i /drivers/databricks/$name || apt-get -f install -y"
 } else {
   $name = $rpm.Name
+  $check = docker compose exec -T virtuoso sh -lc "test -f /drivers/databricks/$name"
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "Driver not found inside container. Recreate the Virtuoso container to pick up the bind mount."
+    Write-Host "Try: docker compose --profile semantic-layer up -d --force-recreate virtuoso"
+    exit 1
+  }
   docker compose exec -T -u root virtuoso sh -lc "rpm -i /drivers/databricks/$name || yum install -y /drivers/databricks/$name"
 }
 

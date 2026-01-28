@@ -30,6 +30,12 @@ SEMANTIC_LAYER_SPARQL_ENDPOINT=http://localhost:8890/sparql
 docker compose --profile semantic-layer up -d virtuoso
 ```
 
+If you added the driver mount after Virtuoso was already running, recreate the container:
+
+```
+docker compose --profile semantic-layer up -d --force-recreate virtuoso
+```
+
 3) Confirm SPARQL endpoint:
 
 ```
