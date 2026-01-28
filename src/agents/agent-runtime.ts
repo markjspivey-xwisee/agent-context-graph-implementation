@@ -699,7 +699,11 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
     const lastQuery = queryActions[queryActions.length - 1];
     const output = lastQuery.output as Record<string, unknown> | undefined;
     const results = (output?.results as any) ?? output?.data?.results;
-    const bindings = results?.bindings ?? results?.results ?? results;
+    const bindings =
+      results?.bindings ??
+      results?.results?.bindings ??
+      results?.results ??
+      results;
     const count = Array.isArray(bindings) ? bindings.length : 0;
     const queryId = (output?.queryId as string) ?? (output?.data?.queryId as string) ?? 'query:unknown';
 
