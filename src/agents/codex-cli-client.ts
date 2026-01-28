@@ -103,7 +103,7 @@ CRITICAL RULES:
 - ONLY output the JSON, nothing else`;
 
     const response = await this.runCLI(prompt);
-    return this.parseJSONResponse(response);
+    return this.parseDecisionResponse(response);
   }
 
   async generatePlan(
@@ -284,6 +284,21 @@ IMPORTANT: Actually use the tools to complete the task - do not just describe wh
       return JSON.parse(jsonMatch[0]) as T;
     } catch (e) {
       throw new Error(`Failed to parse CLI response as JSON: ${response}`);
+    }
+  }
+
+  private parseDecisionResponse(response: string): LLMResponse {
+    try {
+      return this.parseJSONResponse<LLMResponse>(response);
+    } catch (error) {
+      const fallback = response.trim();
+      return {
+        reasoning: fallback || 'No structured response returned from CLI.',
+        selectedAffordance: null,
+        parameters: {},
+        shouldContinue: false,
+        message: fallback || undefined
+      };
     }
   }
 
