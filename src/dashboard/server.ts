@@ -65,6 +65,13 @@ function log(level: LogLevel, component: string, message: string, data?: Record<
 // ============================================================
 let wss: WebSocketServer | null = null;
 const wsClients = new Set<WebSocket>();
+let backendSyncTimer: NodeJS.Timeout | null = null;
+
+const backendSyncState = {
+  workflows: new Map<string, string>(),
+  agents: new Map<string, string>(),
+  logs: new Set<string>()
+};
 
 function broadcastLog(entry: LogEntry) {
   broadcast({ type: 'log', payload: entry });
@@ -76,6 +83,78 @@ function broadcast(message: { type: string; payload: unknown }) {
     if (client.readyState === WebSocket.OPEN) {
       client.send(data);
     }
+  }
+}
+
+async function pollBackendForUpdates(backendUrl: string) {
+  try {
+    const [workflowsRes, agentsRes, logsRes] = await Promise.all([
+      fetch(`${backendUrl}/workflows`),
+      fetch(`${backendUrl}/agents`),
+      fetch(`${backendUrl}/logs?limit=100`)
+    ]);
+
+    if (workflowsRes.ok) {
+      const workflowsJson = await workflowsRes.json();
+      const workflows = workflowsJson.workflows ?? [];
+      for (const workflow of workflows) {
+        const previous = backendSyncState.workflows.get(workflow.id);
+        if (!previous) {
+          backendSyncState.workflows.set(workflow.id, workflow.status);
+          broadcast({
+            type: 'workflow-started',
+            payload: { id: workflow.id, goal: workflow.goal, timestamp: new Date().toISOString() }
+          });
+        } else if (previous !== workflow.status) {
+          backendSyncState.workflows.set(workflow.id, workflow.status);
+          if (workflow.status === 'completed') {
+            broadcast({ type: 'workflow-completed', payload: { id: workflow.id, timestamp: new Date().toISOString() } });
+          } else if (workflow.status === 'failed') {
+            broadcast({ type: 'workflow-failed', payload: { id: workflow.id, error: workflow.error, timestamp: new Date().toISOString() } });
+          }
+        }
+      }
+    }
+
+    if (agentsRes.ok) {
+      const agentsJson = await agentsRes.json();
+      const agents = agentsJson.agents ?? [];
+      for (const agent of agents) {
+        if (!backendSyncState.agents.has(agent.id)) {
+          backendSyncState.agents.set(agent.id, agent.type);
+          broadcast({
+            type: 'agent-spawned',
+            payload: { agentId: agent.id, agentType: agent.type, timestamp: new Date().toISOString() }
+          });
+        }
+      }
+    }
+
+    if (logsRes.ok) {
+      const logsJson = await logsRes.json();
+      const logs = logsJson.logs ?? [];
+      for (const entry of logs) {
+        const key = `${entry.taskId ?? ''}:${entry.timestamp ?? ''}:${entry.message ?? ''}`;
+        if (backendSyncState.logs.has(key)) continue;
+        backendSyncState.logs.add(key);
+        const logEntry: LogEntry = {
+          timestamp: entry.timestamp ?? new Date().toISOString(),
+          level: entry.level ?? 'info',
+          component: entry.component ?? 'backend',
+          message: entry.message ?? 'Log entry'
+        };
+        logHistory.push(logEntry);
+        if (logHistory.length > MAX_LOG_HISTORY) {
+          logHistory.shift();
+        }
+        broadcast({ type: 'log', payload: logEntry });
+      }
+      if (backendSyncState.logs.size > 2000) {
+        backendSyncState.logs.clear();
+      }
+    }
+  } catch (err) {
+    // ignore backend sync errors
   }
 }
 
@@ -886,6 +965,10 @@ async function init() {
   process.on('SIGINT', () => {
     log('info', 'server', 'Shutting down...');
     orchestrator.stop();
+    if (backendSyncTimer) {
+      clearInterval(backendSyncTimer);
+      backendSyncTimer = null;
+    }
     if (wss) wss.close();
     process.exit(0);
   });
@@ -893,6 +976,10 @@ async function init() {
   process.on('SIGTERM', () => {
     log('info', 'server', 'Shutting down...');
     orchestrator.stop();
+    if (backendSyncTimer) {
+      clearInterval(backendSyncTimer);
+      backendSyncTimer = null;
+    }
     if (wss) wss.close();
     process.exit(0);
   });
@@ -957,6 +1044,13 @@ async function init() {
       wsClients.delete(ws);
     });
   });
+
+  if (!backendSyncTimer) {
+    backendSyncTimer = setInterval(() => {
+      void pollBackendForUpdates(backendUrl);
+    }, 2000);
+    void pollBackendForUpdates(backendUrl);
+  }
 
   log('info', 'server', 'Server started', { httpPort: port, wsPort });
 
