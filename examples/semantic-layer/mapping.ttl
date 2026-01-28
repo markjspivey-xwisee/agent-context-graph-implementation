@@ -2,11 +2,12 @@
 @prefix dcat: <http://www.w3.org/ns/dcat#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix sl: <https://agentcontextgraph.dev/semantic-layer#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <urn:acg:mapping:sales-orders>
     a rr:TriplesMap ;
     rr:logicalTable [
-        rr:sqlQuery "SELECT o_orderkey AS order_id, o_orderpriority AS order_name FROM samples.tpch.orders"
+        rr:sqlQuery "SELECT o_orderkey AS order_id, o_orderpriority AS order_name, o_totalprice AS order_revenue FROM samples.tpch.orders"
     ] ;
     rr:subjectMap [
         rr:template "urn:acg:order/{order_id}" ;
@@ -19,6 +20,13 @@
     rr:predicateObjectMap [
         rr:predicate dcterms:title ;
         rr:objectMap [ rr:column "order_name" ]
+    ] ;
+    rr:predicateObjectMap [
+        rr:predicate sl:revenue ;
+        rr:objectMap [
+            rr:column "order_revenue" ;
+            rr:datatype xsd:decimal
+        ]
     ] .
 
 <urn:acg:dataset:sales-orders>
