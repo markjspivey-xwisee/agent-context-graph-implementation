@@ -5,7 +5,7 @@ and does **not** require Databricks.
 
 ## Preferred Path: Zero-Copy Semantic Layer
 
-Configure a **virtual zero-copy semantic layer** (e.g., Virtuoso with R2RML VAD, Ontop, Stardog, GraphDB) that:
+Configure a **virtual zero-copy semantic layer** (e.g., Ontop, Stardog, GraphDB; Virtuoso requires commercial edition for external DBs) that:
 
 - Exposes a **SPARQL endpoint**
 - Uses **R2RML/OBDA** mappings over Databricks
@@ -19,6 +19,7 @@ Set:
 Then use `QueryData` with `queryLanguage: "sparql"`.
 
 For Virtuoso setup, see `guides/SEMANTIC_LAYER_VIRTUOSO.md`.
+For Ontop setup, see `guides/SEMANTIC_LAYER_ONTOP.md`.
 
 ### Zero-copy guarantee
 

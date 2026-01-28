@@ -1,7 +1,8 @@
 # Virtuoso Semantic Layer (Zero-copy SPARQL)
 
-This guide adds a **real semantic layer service** using Virtuoso Open Source. ACG stays SPARQL-first,
-and Databricks remains the source of truth via zero-copy federation.
+This guide documents a Virtuoso-based semantic layer. **Virtuoso Open Source cannot attach
+external databases**, so zero-copy federation to Databricks requires the commercial edition.
+For open-source zero-copy, use Ontop (`SEMANTIC_LAYER_ONTOP.md`).
 
 ## Architecture (Mermaid)
 
@@ -27,13 +28,13 @@ SEMANTIC_LAYER_SPARQL_ENDPOINT=http://localhost:8890/sparql
 2) Start Virtuoso:
 
 ```
-docker compose --profile semantic-layer up -d virtuoso
+docker compose --profile semantic-layer-virtuoso up -d virtuoso
 ```
 
 If you added the driver mount after Virtuoso was already running, recreate the container:
 
 ```
-docker compose --profile semantic-layer up -d --force-recreate virtuoso
+docker compose --profile semantic-layer-virtuoso up -d --force-recreate virtuoso
 ```
 
 3) Confirm SPARQL endpoint:

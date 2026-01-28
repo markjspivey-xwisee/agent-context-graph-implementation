@@ -4,6 +4,7 @@ This example shows how a Databricks source is accessed via the generalized `Quer
 affordance and a **virtual zero-copy semantic layer**. Databricks is an adapter example, not a protocol primitive.
 The semantic layer publishes HyprCat-aligned DCAT/DPROD metadata, Hydra catalog affordances,
 and SHACL data contracts, with **R2RML/OBDA mappings** that translate SPARQL to Databricks SQL at query time.
+Ontop is the recommended open-source runtime for this zero-copy mapping.
 No data is copied into the ACG runtime.
 
 ## Prereqs

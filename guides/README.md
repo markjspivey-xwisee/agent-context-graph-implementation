@@ -6,3 +6,4 @@ Build and usage guides.
 - 00-HOW-TO-BUILD.md
 - REPO_SPLIT.md
 - SEMANTIC_LAYER_VIRTUOSO.md
+- SEMANTIC_LAYER_ONTOP.md

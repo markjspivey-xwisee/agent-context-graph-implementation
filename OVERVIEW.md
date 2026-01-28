@@ -8,7 +8,7 @@ ACG exposes an ephemeral Context Graph to agents at runtime and references a per
 
 ## Zero-copy semantic layer (Databricks example)
 
-When a data source like Databricks is used, ACG treats it as an **adapter example**, not a protocol primitive. The canonical path is a **virtual zero-copy semantic layer** that:
+When a data source like Databricks is used, ACG treats it as an **adapter example**, not a protocol primitive. The canonical path is a **virtual zero-copy semantic layer** (e.g., Ontop) that:
 - Exposes a SPARQL endpoint over the source
 - Uses R2RML/OBDA mappings to translate SPARQL to Databricks SQL at query time
 - Publishes HyprCat-aligned DCAT/DPROD metadata, Hydra affordances, and SHACL contracts

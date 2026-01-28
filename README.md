@@ -102,6 +102,10 @@ Examples live in examples/golden-path/.
 
 Use Virtuoso as a real zero-copy semantic layer. See `guides/SEMANTIC_LAYER_VIRTUOSO.md`.
 
+## Semantic layer (Ontop)
+
+Use Ontop for an open-source zero-copy semantic layer. See `guides/SEMANTIC_LAYER_ONTOP.md`.
+
 ## Related repositories
 
 - Foundations: https://github.com/markjspivey-xwisee/agent-context-graph-foundations

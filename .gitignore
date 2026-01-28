@@ -35,6 +35,13 @@ agent_content.txt
 drivers/databricks/*
 !drivers/databricks/README.md
 
+# JDBC drivers (local only)
+drivers/databricks-jdbc/*
+!drivers/databricks-jdbc/README.md
+
+# Ontop local config
+ontop/ontop.properties
+
 # Original documents (not needed in repo)
 *.docx
 *.rtf

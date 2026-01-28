@@ -4,10 +4,11 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [3000, 3001, 8890, 1111],
+  "forwardPorts": [3000, 3001, 8080, 8890, 1111],
   "portsAttributes": {
     "3000": { "label": "ACG API" },
     "3001": { "label": "ACG Dashboard" },
+    "8080": { "label": "Ontop SPARQL" },
     "8890": { "label": "Virtuoso SPARQL" },
     "1111": { "label": "Virtuoso ISQL" }
   },

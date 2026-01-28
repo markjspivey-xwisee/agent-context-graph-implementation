@@ -40,7 +40,24 @@ services:
     profiles:
       - dev
 
-  # Virtuoso semantic layer (SPARQL endpoint)
+  # Ontop semantic layer (SPARQL endpoint, zero-copy)
+  ontop:
+    image: ontop/ontop:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ONTOP_MAPPING_FILE=/opt/ontop/mapping.ttl
+      - ONTOP_DB_URL=${DATABRICKS_JDBC_URL:-}
+      - ONTOP_DB_DRIVER=${DATABRICKS_JDBC_DRIVER_CLASS:-com.databricks.client.jdbc.Driver}
+      - ONTOP_DB_USER=${DATABRICKS_JDBC_USER:-token}
+      - ONTOP_DB_PASSWORD=${DATABRICKS_TOKEN:-}
+    volumes:
+      - ./examples/semantic-layer/mapping.ttl:/opt/ontop/mapping.ttl:ro
+      - ./drivers/databricks-jdbc:/opt/ontop/jdbc:ro
+    profiles:
+      - semantic-layer
+
+  # Virtuoso semantic layer (SPARQL endpoint) - open-source cannot attach external DBs
   virtuoso:
     image: openlink/virtuoso-opensource-7:latest
     ports:
@@ -57,7 +74,7 @@ services:
       - ./examples/semantic-layer:/database/mappings:ro
       - ./drivers/databricks:/drivers/databricks:ro
     profiles:
-      - semantic-layer
+      - semantic-layer-virtuoso
 
   # Multi-broker setup for federation testing
   broker-alice:
