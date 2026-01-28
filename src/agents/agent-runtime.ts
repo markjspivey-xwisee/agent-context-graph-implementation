@@ -320,6 +320,23 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
           previousActions
         );
 
+        // Analyst fallback: if model refuses or doesn't choose an affordance, auto-select QueryData
+        if (this.config.agentType === 'analyst') {
+          const refusal = this.isRefusalDecision(decision);
+          if (refusal || !decision.selectedAffordance) {
+            const queryAffordance = enabledAffordances.find(a => a.actionType === 'QueryData');
+            if (queryAffordance) {
+              decision.selectedAffordance = queryAffordance.id;
+              decision.parameters = {
+                query: this.buildFallbackSparql(task),
+                queryLanguage: 'sparql'
+              };
+              decision.shouldContinue = true;
+              decision.message = decision.message ?? 'Auto-selected QueryData to retrieve data.';
+            }
+          }
+        }
+
         // 4. Check if we should continue
         // IMPORTANT: Enforce structural requirements from AAT behavioral invariants
         // The requiredOutputAction comes from the AAT spec, not hardcoded
@@ -516,6 +533,37 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
     }
 
     return response.json() as Promise<ContextGraph>;
+  }
+
+  private isRefusalDecision(decision: { reasoning?: string; message?: string } | null): boolean {
+    if (!decision) return false;
+    const text = `${decision.reasoning ?? ''} ${decision.message ?? ''}`.toLowerCase();
+    if (!text) return false;
+    return [
+      "can't", "cannot", 'cant', "unable", "won't", "not able", 'refuse',
+      'i can’t', 'i cannot', "i'm unable", 'cannot traverse', "can't traverse"
+    ].some(token => text.includes(token));
+  }
+
+  private buildFallbackSparql(task: string): string {
+    const lower = task.toLowerCase();
+    if (lower.includes('top') && (lower.includes('revenue') || lower.includes('sales'))) {
+      return [
+        'PREFIX dcat: <http://www.w3.org/ns/dcat#>',
+        'PREFIX dcterms: <http://purl.org/dc/terms/>',
+        'PREFIX sl: <https://agentcontextgraph.dev/semantic-layer#>',
+        'SELECT ?order ?id ?title ?revenue WHERE {',
+        '  ?order a dcat:Dataset ;',
+        '         dcterms:identifier ?id ;',
+        '         dcterms:title ?title .',
+        '  OPTIONAL { ?order sl:revenue ?revenue }',
+        '}',
+        'ORDER BY DESC(?revenue)',
+        'LIMIT 5'
+      ].join('\\n');
+    }
+
+    return 'SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5';
   }
 
   /**
