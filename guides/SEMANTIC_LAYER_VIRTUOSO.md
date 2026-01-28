@@ -48,13 +48,20 @@ PowerShell:
 .\scripts\virtuoso-load-r2rml.ps1
 ```
 
+If you see errors like `Undefined procedure DB.DBA.R2RML_MAKE_QM_FROM_G`, install the
+**R2RML VAD package** in Virtuoso Conductor, then re-run the loader.
+
 ## R2RML mappings (Virtuoso)
 
 Virtuoso supports **R2RML** via the VAD package and can materialize virtual mappings to queryable RDF.
 In practice, teams keep **R2RML as the canonical mapping** and apply it in Virtuoso using the built-in
 R2RML loader.
 
-If the R2RML VAD package is not present, install it via the Virtuoso Conductor before proceeding.
+If the R2RML VAD package is not present, install it via Virtuoso Conductor:
+
+1) Open the Conductor (`/conductor`) and log in as `dba`.
+2) Go to **System Admin → Packages** and install the `r2rml` package.
+3) Restart the Virtuoso container.
 
 Minimal flow (interactive):
 
