@@ -1300,7 +1300,9 @@ export class ContextBroker {
               queryId: result.queryId,
               status: { state: 'SUCCEEDED' },
               results: result.results,
-              contentType: result.contentType
+              contentType: result.contentType,
+              query,
+              endpoint: parameters.semanticLayerRef ?? this.getSemanticQueryClient().endpoint
             },
             eventsEmitted: [
               { eventType: 'DataQueryExecuted', eventId: result.queryId, timestamp: now }
