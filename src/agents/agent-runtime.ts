@@ -706,9 +706,12 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
       results;
     const count = Array.isArray(bindings) ? bindings.length : 0;
     const queryId = (output?.queryId as string) ?? (output?.data?.queryId as string) ?? 'query:unknown';
+    const vars = (results?.head?.vars as string[] | undefined) ?? [];
+    const rows = Array.isArray(bindings) ? bindings : [];
+    const rowPreview = this.formatSparqlBindings(rows, vars, 5);
 
     const description = count > 0
-      ? `Query returned ${count} rows. See source reference for details.`
+      ? `Query returned ${count} rows.\nTop ${Math.min(5, count)}:\n${rowPreview}`
       : 'Query completed; no rows were returned.';
 
     return {
@@ -725,6 +728,22 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
       shouldContinue: true,
       message: description
     };
+  }
+
+  private formatSparqlBindings(
+    bindings: Array<Record<string, { value?: string }>>,
+    vars: string[],
+    limit: number
+  ): string {
+    if (!bindings.length) return '(no rows)';
+    const rows = bindings.slice(0, limit).map((row, idx) => {
+      const cells = (vars.length ? vars : Object.keys(row)).map((key) => {
+        const value = row[key]?.value ?? '';
+        return `${key}=${value || 'NULL'}`;
+      });
+      return `${idx + 1}) ${cells.join(', ')}`;
+    });
+    return rows.join('\n');
   }
 
   /**
