@@ -5,7 +5,7 @@ and does **not** require Databricks.
 
 ## Preferred Path: Zero-Copy Semantic Layer
 
-Configure a **virtual zero-copy semantic layer** (e.g., Ontop, Stardog, GraphDB, or similar) that:
+Configure a **virtual zero-copy semantic layer** (e.g., Virtuoso with R2RML VAD, Ontop, Stardog, GraphDB) that:
 
 - Exposes a **SPARQL endpoint**
 - Uses **R2RML/OBDA** mappings over Databricks
@@ -18,6 +18,8 @@ Set:
 
 Then use `QueryData` with `queryLanguage: "sparql"`.
 
+For Virtuoso setup, see `guides/SEMANTIC_LAYER_VIRTUOSO.md`.
+
 ### Zero-copy guarantee
 
 The semantic layer is a **virtual RDF overlay**. Databricks remains the source of truth, and
@@ -28,6 +30,29 @@ No data is copied or persisted into the ACG runtime.
 
 Below is the **intended multi-agent flow** when a human chats about Databricks-backed data.
 This is the same ACG runtime pattern used for any source; Databricks is only the adapter example.
+
+```mermaid
+sequenceDiagram
+  participant Human
+  participant Agent as Agent Team
+  participant Broker as ACG Broker
+  participant Catalog as Hydra/HyprCat Catalog
+  participant Semantic as Semantic Layer (Virtuoso)
+  participant DB as Databricks SQL
+
+  Human->>Agent: Ask question about data
+  Agent->>Broker: POST /context
+  Broker-->>Agent: Context Graph + QueryData affordance
+  Agent->>Catalog: Browse /data/catalog + /data/products
+  Agent->>Catalog: Inspect /data/contracts + SHACL shapes
+  Agent->>Broker: POST /traverse (QueryData, SPARQL)
+  Broker->>Semantic: SPARQL query
+  Semantic->>DB: SPARQL -> SQL via R2RML/OBDA
+  DB-->>Semantic: SQL results
+  Semantic-->>Broker: SPARQL results
+  Broker-->>Agent: Results + PROV trace
+  Agent-->>Human: Response + rationale
+```
 
 1) **Human prompt** (e.g., “Show revenue trends by region for Q3”).
 2) **Planner/Analyst agent requests context** via `POST /context`.

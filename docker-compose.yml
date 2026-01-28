@@ -42,6 +42,19 @@ services:
     profiles:
       - dev
 
+  # Virtuoso semantic layer (SPARQL endpoint)
+  virtuoso:
+    image: openlink/virtuoso-opensource-7:latest
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    environment:
+      - DBA_PASSWORD=${VIRTUOSO_DBA_PASSWORD:-dba}
+    volumes:
+      - virtuoso-data:/database
+    profiles:
+      - semantic-layer
+
   # Multi-broker setup for federation testing
   broker-alice:
     build:
@@ -100,3 +113,4 @@ volumes:
   broker-alice-data:
   broker-bob-data:
   broker-carol-data:
+  virtuoso-data:

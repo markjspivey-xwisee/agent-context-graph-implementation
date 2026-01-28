@@ -98,6 +98,10 @@ npm run cli validate-all
 
 Examples live in examples/golden-path/.
 
+## Semantic layer (Virtuoso)
+
+Use Virtuoso as a real zero-copy semantic layer. See `guides/SEMANTIC_LAYER_VIRTUOSO.md`.
+
 ## Related repositories
 
 - Foundations: https://github.com/markjspivey-xwisee/agent-context-graph-foundations
