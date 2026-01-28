@@ -89,10 +89,10 @@ DB.DBA.TTLP('
 'urn:acg:r2rml:databricks');
 ```
 
-If you mounted the mappings (default compose setup), the file is at:
+The loader scripts read the mapping from:
 
 ```
-/database/mappings/mapping.ttl
+examples/semantic-layer/mapping.ttl
 ```
 
 3) Generate a quad map from the R2RML graph:
