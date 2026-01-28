@@ -529,6 +529,24 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
           return result;
         }
 
+        if (this.config.agentType === 'analyst' &&
+            traverseResult.success &&
+            (traverseResult.actionType === 'EmitInsight' ||
+             traverseResult.actionType === 'GenerateReport' ||
+             traverseResult.actionType === 'DetectAnomaly')) {
+          this.state.status = 'completed';
+          this.emitStateChange();
+          const taskOutput = this.extractTaskOutput(decision);
+          const result: TaskResult = {
+            success: true,
+            output: taskOutput,
+            actions: this.state.actionHistory,
+            traces
+          };
+          this.emit('task-complete', result);
+          return result;
+        }
+
         // 7. Check if action failed
         if (!traverseResult.success) {
           this.state.status = 'failed';
