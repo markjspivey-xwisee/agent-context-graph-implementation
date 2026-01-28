@@ -10,16 +10,16 @@ if [[ ! -f "$MAPPING_PATH" ]]; then
 fi
 
 tmp_sql="$(mktemp)"
-python - <<'PY' > "$tmp_sql"
-from pathlib import Path
+node - <<'NODE' > "$tmp_sql"
+const fs = require('fs');
 
-mapping = Path("examples/semantic-layer/mapping.ttl").read_text()
-mapping = mapping.replace("'", "''")
+let mapping = fs.readFileSync('examples/semantic-layer/mapping.ttl', 'utf8');
+mapping = mapping.replace(/'/g, "''");
 
-print("SPARQL CLEAR GRAPH <urn:acg:r2rml:databricks>;")
-print(f"DB.DBA.TTLP('{mapping}', '', 'urn:acg:r2rml:databricks');")
-print("EXEC ('SPARQL ' || DB.DBA.R2RML_MAKE_QM_FROM_G('urn:acg:r2rml:databricks'));")
-PY
+console.log('SPARQL CLEAR GRAPH <urn:acg:r2rml:databricks>;');
+console.log(`DB.DBA.TTLP('${mapping}', '', 'urn:acg:r2rml:databricks');`);
+console.log("EXEC ('SPARQL ' || DB.DBA.R2RML_MAKE_QM_FROM_G('urn:acg:r2rml:databricks'));");
+NODE
 
 docker compose exec -T virtuoso isql 1111 dba "${VIRTUOSO_PASSWORD}" < "$tmp_sql"
 rm -f "$tmp_sql"
