@@ -57,13 +57,16 @@ and uses `QueryData` (SPARQL) against the semantic layer.
    - `SEMANTIC_LAYER_SPARQL_ENDPOINT`
 2) Start the core API (for full dashboard functionality):
    - `npm run dev` (port 3000)
-3) Start the dashboard + orchestrator:
+3) Start the dashboard server:
    - `npm run dashboard` (port 3001)
+
+All workflows (goals, chat, CLI) run through the core API on port 3000; the dashboard server
+serves the UI and proxies workflow/chat requests so every interface uses the same orchestration pipeline.
 
 Open the dashboard and use the **Chat** tab, or call the API directly:
 
 ```bash
-curl -X POST http://localhost:3001/chat \
+curl -X POST http://localhost:3000/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"Summarize top 5 orders by revenue"}'
 ```

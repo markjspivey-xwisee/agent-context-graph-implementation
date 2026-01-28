@@ -2208,7 +2208,7 @@
 
     const DASHBOARD_PORT = parseInt(window.location.port || '3001', 10);
     const API_BASE = buildHttpBase(3000);
-    const CHAT_API_BASE = buildHttpBase(DASHBOARD_PORT);
+    const CHAT_API_BASE = API_BASE;
     const REALTIME_WS_BASE = buildWsBase(DASHBOARD_PORT + 1);
     const FEDERATION_WS_BASE = `${buildWsBase(3000)}/ws`;
     let connected = false;

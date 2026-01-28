@@ -1,4 +1,4 @@
-import Hapi from '@hapi/hapi';
+import Hapi, { type Request, type ResponseToolkit } from '@hapi/hapi';
 import inert from '@hapi/inert';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -245,6 +245,7 @@ async function init() {
   // Get configuration from environment
   // Default broker URL is the dashboard server itself (self-contained)
   const brokerUrl = process.env.BROKER_URL ?? `http://localhost:${process.env.DASHBOARD_PORT ?? 3001}`;
+  const backendUrl = process.env.ACG_BACKEND_URL ?? 'http://localhost:3000';
   const port = process.env.DASHBOARD_PORT ?? 3001;
   let reasoningLabel = 'Anthropic API';
   let reasoningClient;
@@ -401,6 +402,44 @@ async function init() {
   // Start orchestrator
   orchestrator.start();
 
+  const proxyToBackend = async (request: Request, h: ResponseToolkit, pathOverride?: string) => {
+    const target = new URL(pathOverride ?? request.path, backendUrl);
+    for (const [key, value] of Object.entries(request.query ?? {})) {
+      if (Array.isArray(value)) {
+        value.forEach(item => target.searchParams.append(key, String(item)));
+      } else if (value !== undefined) {
+        target.searchParams.append(key, String(value));
+      }
+    }
+
+    const method = request.method.toUpperCase();
+    const headers: Record<string, string> = {};
+    const contentType = request.headers['content-type'];
+    if (contentType) {
+      headers['content-type'] = contentType;
+    }
+
+    let body: string | Buffer | undefined;
+    if (!['GET', 'HEAD'].includes(method)) {
+      if (typeof request.payload === 'string' || Buffer.isBuffer(request.payload)) {
+        body = request.payload as string | Buffer;
+      } else if (request.payload !== null && request.payload !== undefined) {
+        body = JSON.stringify(request.payload);
+        headers['content-type'] = 'application/json';
+      }
+    }
+
+    const response = await fetch(target.toString(), {
+      method,
+      headers,
+      body
+    });
+
+    const text = await response.text();
+    const responseType = response.headers.get('content-type') ?? 'application/json';
+    return h.response(text).type(responseType).code(response.status);
+  };
+
   // Create Hapi server
   const server = Hapi.server({
     port,
@@ -495,28 +534,7 @@ async function init() {
     path: '/goals',
     handler: async (request, h) => {
       try {
-        const payload = request.payload as {
-          goal: string;
-          priority?: 'low' | 'normal' | 'high' | 'critical';
-          constraints?: string[];
-          requiresApproval?: boolean;
-        };
-
-        if (!payload.goal) {
-          return h.response({ error: 'goal is required' }).code(400);
-        }
-
-        const workflowId = await orchestrator.submitGoal(payload.goal, {
-          priority: payload.priority,
-          constraints: payload.constraints,
-          requiresApproval: payload.requiresApproval
-        });
-
-        return h.response({
-          workflowId,
-          message: 'Goal submitted successfully'
-        }).code(201);
-
+        return await proxyToBackend(request, h, '/goals');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         return h.response({ error: message }).code(500);
@@ -524,50 +542,21 @@ async function init() {
     }
   });
 
-  // Conversational chat (routes through agent team)
+  // Conversational chat (proxy to unified backend)
   server.route({
     method: 'POST',
     path: '/chat',
     handler: async (request, h) => {
       try {
-        const payload = request.payload as {
-          message?: string;
-          conversationId?: string;
-          priority?: 'low' | 'normal' | 'high' | 'critical';
-        };
-
-        const message = payload?.message?.trim();
-        if (!message) {
-          return h.response({ error: 'message is required' }).code(400);
-        }
-
-        const conversation = getOrCreateConversation(payload.conversationId);
-        const now = new Date().toISOString();
-
-        const userMessage: ChatMessage = {
-          id: uuidv4(),
-          role: 'user',
-          content: message,
-          createdAt: now
-        };
-
-        conversation.messages.push(userMessage);
-        conversation.updatedAt = now;
-
-        const workflowId = await orchestrator.submitChat(message, {
-          priority: payload.priority ?? 'normal'
+        const payload = request.payload ?? {};
+        const response = await fetch(`${backendUrl}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
-
-        chatWorkflowIndex.set(workflowId, {
-          conversationId: conversation.id,
-          userMessageId: userMessage.id
-        });
-
-        return h.response({
-          conversationId: conversation.id,
-          messageId: userMessage.id,
-          workflowId
-        }).code(202);
+        const text = await response.text();
+        const contentType = response.headers.get('content-type') ?? 'application/json';
+        return h.response(text).type(contentType).code(response.status);
 
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -576,23 +565,21 @@ async function init() {
     }
   });
 
-  // Get conversation messages
+  // Get conversation messages (proxy to unified backend)
   server.route({
     method: 'GET',
     path: '/chat/{id}',
-    handler: (request, h) => {
-      const conversationId = request.params.id;
-      const conversation = chatConversations.get(conversationId);
-      if (!conversation) {
-        return h.response({ error: 'Conversation not found' }).code(404);
+    handler: async (request, h) => {
+      try {
+        const conversationId = request.params.id;
+        const response = await fetch(`${backendUrl}/chat/${encodeURIComponent(conversationId)}`);
+        const text = await response.text();
+        const contentType = response.headers.get('content-type') ?? 'application/json';
+        return h.response(text).type(contentType).code(response.status);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
       }
-
-      return h.response({
-        id: conversation.id,
-        messages: conversation.messages,
-        createdAt: conversation.createdAt,
-        updatedAt: conversation.updatedAt
-      }).code(200);
     }
   });
 
@@ -600,12 +587,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/workflows/{id}',
-    handler: (request, h) => {
-      const workflow = orchestrator.getWorkflowStatus(request.params.id);
-      if (!workflow) {
-        return h.response({ error: 'Workflow not found' }).code(404);
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
       }
-      return h.response(workflow).code(200);
     }
   });
 
@@ -613,8 +601,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/workflows',
-    handler: () => {
-      return { workflows: orchestrator.getAllWorkflows() };
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
+      }
     }
   });
 
@@ -622,8 +615,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/stats',
-    handler: () => {
-      return orchestrator.getStats();
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
+      }
     }
   });
 
@@ -631,12 +629,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/workflows/{id}/detail',
-    handler: (request, h) => {
-      const detail = orchestrator.getWorkflowDetail(request.params.id);
-      if (!detail) {
-        return h.response({ error: 'Workflow not found' }).code(404);
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
       }
-      return h.response(detail).code(200);
     }
   });
 
@@ -644,8 +643,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/agents',
-    handler: () => {
-      return { agents: orchestrator.getAgents() };
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
+      }
     }
   });
 
@@ -653,8 +657,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/tasks',
-    handler: () => {
-      return { tasks: orchestrator.getAllTasks() };
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
+      }
     }
   });
 
@@ -805,21 +814,13 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/logs',
-    handler: (request) => {
-      const query = request.query as { level?: string; component?: string; limit?: string };
-      let logs = [...logHistory];
-
-      if (query.level) {
-        logs = logs.filter(l => l.level === query.level);
+    handler: async (request, h) => {
+      try {
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
       }
-      if (query.component) {
-        logs = logs.filter(l => l.component === query.component);
-      }
-
-      const limit = parseInt(query.limit ?? '100', 10);
-      logs = logs.slice(-limit);
-
-      return { logs, total: logHistory.length };
     }
   });
 
@@ -830,24 +831,10 @@ async function init() {
     method: 'POST',
     path: '/workflows/{id}/cancel',
     handler: async (request, h) => {
-      const workflowId = request.params.id;
-      const workflow = orchestrator.getWorkflowStatus(workflowId);
-
-      if (!workflow) {
-        return h.response({ error: 'Workflow not found' }).code(404);
-      }
-
-      if (workflow.status === 'completed' || workflow.status === 'failed') {
-        return h.response({ error: 'Workflow already finished' }).code(400);
-      }
-
       try {
-        // Mark workflow as cancelled (would need orchestrator support)
-        log('warn', 'workflow', `Workflow cancellation requested`, { workflowId });
-        broadcast({ type: 'workflow-cancelled', payload: { id: workflowId, timestamp: new Date().toISOString() } });
-        return { cancelled: true, workflowId };
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        return await proxyToBackend(request, h);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
         return h.response({ error: message }).code(500);
       }
     }
@@ -859,64 +846,14 @@ async function init() {
   server.route({
     method: 'GET',
     path: '/workflows/{id}/graph',
-    handler: (request, h) => {
-      const workflowId = request.params.id;
-      const workflow = orchestrator.getWorkflowStatus(workflowId);
-
-      if (!workflow) {
-        return h.response({ error: 'Workflow not found' }).code(404);
+    handler: async (request, h) => {
+      try {
+        const workflowId = request.params.id;
+        return await proxyToBackend(request, h, `/workflow/${encodeURIComponent(workflowId)}/graph`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
       }
-
-      // Build graph data for visualization
-      const tasks = orchestrator.getAllTasks().filter(t => t.metadata?.workflowId === workflowId);
-      const agents = orchestrator.getAgents();
-
-      // Create nodes for tasks
-      const nodes: Array<{ id: string; type: string; label: string; status: string }> = [];
-      const edges: Array<{ from: string; to: string; label?: string }> = [];
-
-      // Add workflow node
-      nodes.push({
-        id: workflowId,
-        type: 'workflow',
-        label: workflow.goal.slice(0, 30) + (workflow.goal.length > 30 ? '...' : ''),
-        status: workflow.status
-      });
-
-      // Add task nodes and edges
-      for (const task of tasks) {
-        nodes.push({
-          id: task.id,
-          type: task.type,
-          label: `${task.type}: ${task.description.slice(0, 20)}...`,
-          status: task.status
-        });
-
-        // Edge from workflow to task
-        edges.push({ from: workflowId, to: task.id, label: 'spawned' });
-
-        // Edge from task to dependent tasks
-        if (task.dependencies && task.dependencies.length > 0) {
-          for (const depId of task.dependencies) {
-            edges.push({ from: depId, to: task.id, label: 'depends' });
-          }
-        }
-      }
-
-      return {
-        workflowId,
-        nodes,
-        edges,
-        stats: {
-          totalTasks: tasks.length,
-          byStatus: {
-            pending: tasks.filter(t => t.status === 'pending').length,
-            running: tasks.filter(t => t.status === 'running').length,
-            completed: tasks.filter(t => t.status === 'completed').length,
-            failed: tasks.filter(t => t.status === 'failed').length
-          }
-        }
-      };
     }
   });
 
@@ -998,7 +935,7 @@ async function init() {
 
   console.log('');
   console.log('='.repeat(60));
-  console.log('Agent Context Graph - Dashboard + Orchestrator');
+  console.log('Agent Context Graph - Dashboard Server');
   console.log('='.repeat(60));
   console.log(`Dashboard:        ${server.info.uri}`);
   console.log(`WebSocket:        ws://localhost:${wsPort}`);

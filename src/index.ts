@@ -10,6 +10,9 @@ import { InMemoryTraceStore } from './services/trace-store.js';
 import { RDFStore } from './services/rdf-store.js';
 import type { ITraceStore, StoreResult, TraceQuery, ProvTrace } from './interfaces/index.js';
 import { SPARQLEndpoint, sparqlToJson, type SPARQLResponse } from './services/sparql-endpoint.js';
+import { Orchestrator } from './agents/orchestrator.js';
+import { createReasoningClient } from './agents/reasoning-client.js';
+import { resolveReasoningConfigFromEnv } from './utils/reasoning-env.js';
 import { PersonalBroker, PersonalBrokerRegistry, type PersonalBrokerConfig, type MessageRole } from './services/personal-broker.js';
 import { ChannelBridgeService, PLATFORMS } from './services/channel-bridge.js';
 import { SocialFederationService, type ProfileVisibility, type ConnectionState, type GroupRole } from './services/social-federation.js';
@@ -52,6 +55,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function init() {
   // Initialize services
+  const port = parseInt(String(process.env.PORT ?? 3000), 10);
   const aatRegistry = new AATRegistry();
 
   // Load AAT specs from the spec directory
@@ -125,40 +129,152 @@ async function init() {
     knowledgeGraphService
   );
 
-  // In-memory workflow store for dashboard demo
-  interface WorkflowTask {
-    id: string;
-    type: 'plan' | 'approve' | 'analyze' | 'execute' | 'observe' | 'archive';
-    status: 'pending' | 'running' | 'completed' | 'failed';
-    description: string;
-    startTime?: string;
-    endTime?: string;
+  // Orchestrator (single workflow implementation for all interfaces)
+  const brokerUrl = process.env.BROKER_URL ?? `http://localhost:${port}`;
+  let reasoningLabel = 'Anthropic API';
+  let reasoningClient;
+  try {
+    const resolved = resolveReasoningConfigFromEnv();
+    reasoningLabel = resolved.label;
+    reasoningClient = await createReasoningClient(resolved.clientConfig);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    process.exit(1);
   }
 
-  interface Workflow {
-    id: string;
-    goal: string;
-    priority: string;
-    status: 'pending' | 'running' | 'completed' | 'failed';
-    timing: {
-      startTime: string;
-      durationMs: number;
-    };
-    taskDetails: WorkflowTask[];
-    tasks: WorkflowTask[]; // Alias for dashboard compatibility
-  }
+  const orchestrator = new Orchestrator({
+    brokerUrl,
+    maxConcurrentAgents: 5,
+    reasoningClient
+  });
 
-  interface Agent {
+  orchestrator.start();
+
+  interface ChatMessage {
     id: string;
-    did: string;
-    type: string;
-    status: 'active' | 'idle' | 'terminated';
-    workflowId: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
     createdAt: string;
+    workflowId?: string;
   }
 
-  const workflows: Map<string, Workflow> = new Map();
-  const agents: Map<string, Agent> = new Map();
+  interface ChatConversation {
+    id: string;
+    messages: ChatMessage[];
+    createdAt: string;
+    updatedAt: string;
+  }
+
+  const chatConversations = new Map<string, ChatConversation>();
+  const chatWorkflowIndex = new Map<string, { conversationId: string; userMessageId: string }>();
+
+  function getOrCreateConversation(conversationId?: string): ChatConversation {
+    if (conversationId && chatConversations.has(conversationId)) {
+      return chatConversations.get(conversationId)!;
+    }
+
+    const id = `conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const now = new Date().toISOString();
+    const convo: ChatConversation = {
+      id,
+      messages: [],
+      createdAt: now,
+      updatedAt: now
+    };
+    chatConversations.set(id, convo);
+    return convo;
+  }
+
+  function extractChatResponse(result: unknown): string {
+    if (!result || typeof result !== 'object') {
+      return 'Completed. (No structured response found)';
+    }
+
+    const tasks = (result as { tasks?: Array<{ type?: string; output?: unknown }> }).tasks ?? [];
+    const taskByType = (type: string) => tasks.filter(t => t.type === type);
+
+    const analyzeTask = taskByType('analyze').slice(-1)[0];
+    const observeTask = taskByType('observe').slice(-1)[0];
+    const archiveTask = taskByType('archive').slice(-1)[0];
+    const candidate = analyzeTask?.output ?? observeTask?.output ?? archiveTask?.output;
+
+    if (candidate && typeof candidate === 'object') {
+      const obj = candidate as Record<string, unknown>;
+      const insight = obj.insight as Record<string, unknown> | undefined;
+      const report = obj.report as Record<string, unknown> | undefined;
+      const message = obj.message as string | undefined;
+      const reasoning = obj.reasoning as string | undefined;
+
+      const insightText =
+        (insight?.summary as string | undefined) ??
+        (insight?.message as string | undefined) ??
+        (insight?.content as string | undefined);
+
+      if (insightText) return insightText;
+
+      const reportText =
+        (report?.summary as string | undefined) ??
+        (report?.message as string | undefined) ??
+        (report?.content as string | undefined);
+
+      if (reportText) return reportText;
+
+      if (message) return message;
+      if (reasoning) return reasoning;
+
+      const queries = obj.queries as Array<{ output?: unknown }> | undefined;
+      if (queries && queries.length > 0) {
+        const results = queries[0]?.output as Record<string, unknown> | undefined;
+        if (results?.results) {
+          return `Query returned ${Array.isArray(results.results) ? results.results.length : 'results'}. See raw output.`;
+        }
+      }
+    }
+
+    return 'Completed. (No conversational summary available)';
+  }
+
+  orchestrator.on('workflow-completed', (id, result) => {
+    const chatMeta = chatWorkflowIndex.get(id);
+    if (!chatMeta) return;
+
+    const convo = chatConversations.get(chatMeta.conversationId);
+    if (!convo) return;
+
+    const responseText = extractChatResponse(result);
+    const message: ChatMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      role: 'assistant',
+      content: responseText,
+      createdAt: new Date().toISOString(),
+      workflowId: id
+    };
+
+    convo.messages.push(message);
+    convo.updatedAt = message.createdAt;
+    chatWorkflowIndex.delete(id);
+  });
+
+  orchestrator.on('workflow-failed', (id, error) => {
+    const chatMeta = chatWorkflowIndex.get(id);
+    if (!chatMeta) return;
+
+    const convo = chatConversations.get(chatMeta.conversationId);
+    if (!convo) return;
+
+    const message: ChatMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      role: 'assistant',
+      content: `Workflow failed: ${error}`,
+      createdAt: new Date().toISOString(),
+      workflowId: id
+    };
+
+    convo.messages.push(message);
+    convo.updatedAt = message.createdAt;
+    chatWorkflowIndex.delete(id);
+  });
 
   // Initialize SHACL validator
   const shaclDir = resolveSpecPath('shacl');
@@ -248,14 +364,14 @@ async function init() {
 
   // Create Hapi server
   const server = Hapi.server({
-    port: process.env.PORT ?? 3000,
+    port,
     host: '0.0.0.0',
     routes: {
       cors: true
     }
   });
 
-  const defaultSparqlEndpoint = `http://localhost:${process.env.PORT ?? 3000}/sparql`;
+  const defaultSparqlEndpoint = `http://localhost:${port}/sparql`;
   let semanticQueryClient: SemanticQueryClient | null = null;
   const getSemanticQueryClient = (overrideEndpoint?: string) => {
     const endpoint =
@@ -310,27 +426,15 @@ async function init() {
     path: '/stats',
     handler: () => {
       const rdfStats = rdfStore.getStats();
-      const workflowList = Array.from(workflows.values());
-      const allTasks = workflowList.flatMap(w => w.taskDetails);
+      const orchestrationStats = orchestrator.getStats();
       return {
         connected: true,
         uptime: process.uptime(),
         traces: rdfStats.traces,
         quads: rdfStats.quads,
-        workflows: {
-          total: workflowList.length,
-          active: workflowList.filter(w => w.status === 'running').length,
-          completed: workflowList.filter(w => w.status === 'completed').length
-        },
-        tasks: {
-          total: allTasks.length,
-          pending: allTasks.filter(t => t.status === 'pending').length,
-          completed: allTasks.filter(t => t.status === 'completed').length
-        },
-        agents: {
-          total: agents.size,
-          active: Array.from(agents.values()).filter(a => a.status === 'active').length
-        },
+        workflows: orchestrationStats.workflows,
+        tasks: orchestrationStats.tasks,
+        agents: orchestrationStats.agents,
         timestamp: new Date().toISOString()
       };
     }
@@ -341,7 +445,7 @@ async function init() {
     method: 'GET',
     path: '/agents',
     handler: () => {
-      return { agents: Array.from(agents.values()) };
+      return { agents: orchestrator.getAgents() };
     }
   });
 
@@ -350,7 +454,7 @@ async function init() {
     method: 'GET',
     path: '/workflows',
     handler: () => {
-      return { workflows: Array.from(workflows.values()) };
+      return { workflows: orchestrator.getAllWorkflows() };
     }
   });
 
@@ -359,54 +463,95 @@ async function init() {
     method: 'POST',
     path: '/goals',
     handler: async (request, h) => {
-      const { goal, priority } = request.payload as { goal: string; priority: string };
-      const workflowId = `wf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const startTime = new Date().toISOString();
-
-      // Create initial workflow with AAT pipeline tasks
-      const taskDetails: WorkflowTask[] = [
-        { id: `${workflowId}-plan`, type: 'plan', status: 'running', description: 'Planning goal execution strategy', startTime },
-        { id: `${workflowId}-approve`, type: 'approve', status: 'pending', description: 'Awaiting plan approval' },
-        { id: `${workflowId}-analyze`, type: 'analyze', status: 'pending', description: 'Analyzing data and requirements' },
-        { id: `${workflowId}-execute`, type: 'execute', status: 'pending', description: 'Execute approved plan' },
-        { id: `${workflowId}-observe`, type: 'observe', status: 'pending', description: 'Monitor execution progress' },
-        { id: `${workflowId}-archive`, type: 'archive', status: 'pending', description: 'Archive results and traces' }
-      ];
-
-      const workflow: Workflow = {
-        id: workflowId,
-        goal,
-        priority: priority || 'normal',
-        status: 'running',
-        timing: {
-          startTime,
-          durationMs: 0
-        },
-        taskDetails,
-        tasks: taskDetails // Alias for dashboard compatibility
+      const payload = request.payload as {
+        goal: string;
+        priority?: 'low' | 'normal' | 'high' | 'critical';
+        constraints?: string[];
+        requiresApproval?: boolean;
       };
 
-      workflows.set(workflowId, workflow);
+      if (!payload.goal) {
+        return h.response({ error: 'goal is required' }).code(400);
+      }
 
-      // Create agents for the AAT pipeline
-      const agentTypes = ['planner', 'arbiter', 'analyst', 'executor', 'observer', 'archivist'];
-      agentTypes.forEach((type, idx) => {
-        const agentId = `agent-${workflowId}-${type}`;
-        const agent: Agent = {
-          id: agentId,
-          did: `did:web:acg.example/${type}/${workflowId.slice(3, 11)}`,
-          type,
-          status: idx === 0 ? 'active' : 'idle',
-          workflowId,
-          createdAt: startTime
-        };
-        agents.set(agentId, agent);
+      const workflowId = await orchestrator.submitGoal(payload.goal, {
+        priority: payload.priority,
+        constraints: payload.constraints,
+        requiresApproval: payload.requiresApproval
       });
 
-      // Simulate async workflow progression
-      simulateWorkflow(workflowId);
+      return h.response({ workflowId, status: 'created' }).code(201);
+    }
+  });
 
-      return { workflowId, status: 'created' };
+  // POST /chat - Conversational chat (routes through agent team)
+  server.route({
+    method: 'POST',
+    path: '/chat',
+    handler: async (request, h) => {
+      try {
+        const payload = request.payload as {
+          message?: string;
+          conversationId?: string;
+          priority?: 'low' | 'normal' | 'high' | 'critical';
+        };
+
+        const message = payload?.message?.trim();
+        if (!message) {
+          return h.response({ error: 'message is required' }).code(400);
+        }
+
+        const conversation = getOrCreateConversation(payload.conversationId);
+        const now = new Date().toISOString();
+
+        const userMessage: ChatMessage = {
+          id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: 'user',
+          content: message,
+          createdAt: now
+        };
+
+        conversation.messages.push(userMessage);
+        conversation.updatedAt = now;
+
+        const workflowId = await orchestrator.submitChat(message, {
+          priority: payload.priority ?? 'normal'
+        });
+
+        chatWorkflowIndex.set(workflowId, {
+          conversationId: conversation.id,
+          userMessageId: userMessage.id
+        });
+
+        return h.response({
+          conversationId: conversation.id,
+          messageId: userMessage.id,
+          workflowId
+        }).code(202);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
+      }
+    }
+  });
+
+  // GET /chat/{id} - Get conversation messages
+  server.route({
+    method: 'GET',
+    path: '/chat/{id}',
+    handler: (request, h) => {
+      const conversationId = request.params.id;
+      const conversation = chatConversations.get(conversationId);
+      if (!conversation) {
+        return h.response({ error: 'Conversation not found' }).code(404);
+      }
+
+      return h.response({
+        id: conversation.id,
+        messages: conversation.messages,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt
+      }).code(200);
     }
   });
 
@@ -415,90 +560,20 @@ async function init() {
     method: 'GET',
     path: '/workflows/{id}/detail',
     handler: (request, h) => {
-      const workflow = workflows.get(request.params.id);
-      if (!workflow) {
+      const detail = orchestrator.getWorkflowDetail(request.params.id);
+      if (!detail) {
         return h.response({ error: 'Workflow not found' }).code(404);
       }
-      // Update duration
-      workflow.timing.durationMs = Date.now() - new Date(workflow.timing.startTime).getTime();
-      return workflow;
+      return detail;
     }
   });
-
-  // Simulate workflow progression through AAT pipeline
-  function simulateWorkflow(workflowId: string) {
-    const stages = ['plan', 'approve', 'analyze', 'execute', 'observe', 'archive'] as const;
-    const agentTypes = ['planner', 'arbiter', 'analyst', 'executor', 'observer', 'archivist'];
-    let currentStage = 0;
-
-    const advanceStage = () => {
-      const workflow = workflows.get(workflowId);
-      if (!workflow) return;
-
-      // Complete current stage and update agent
-      const currentTask = workflow.taskDetails.find(t => t.type === stages[currentStage]);
-      if (currentTask) {
-        currentTask.status = 'completed';
-        currentTask.endTime = new Date().toISOString();
-      }
-
-      // Update current agent to idle
-      const currentAgentId = `agent-${workflowId}-${agentTypes[currentStage]}`;
-      const currentAgent = agents.get(currentAgentId);
-      if (currentAgent) {
-        currentAgent.status = 'idle';
-      }
-
-      currentStage++;
-
-      if (currentStage < stages.length) {
-        // Start next stage
-        const nextTask = workflow.taskDetails.find(t => t.type === stages[currentStage]);
-        if (nextTask) {
-          nextTask.status = 'running';
-          nextTask.startTime = new Date().toISOString();
-        }
-
-        // Activate next agent
-        const nextAgentId = `agent-${workflowId}-${agentTypes[currentStage]}`;
-        const nextAgent = agents.get(nextAgentId);
-        if (nextAgent) {
-          nextAgent.status = 'active';
-        }
-
-        // Schedule next advancement (1-3 seconds per stage for demo)
-        setTimeout(advanceStage, 1000 + Math.random() * 2000);
-      } else {
-        // Workflow complete - terminate all agents
-        workflow.status = 'completed';
-        workflow.timing.durationMs = Date.now() - new Date(workflow.timing.startTime).getTime();
-
-        agentTypes.forEach(type => {
-          const agentId = `agent-${workflowId}-${type}`;
-          const agent = agents.get(agentId);
-          if (agent) {
-            agent.status = 'terminated';
-          }
-        });
-      }
-
-      // Keep tasks array in sync
-      workflow.tasks = workflow.taskDetails;
-    };
-
-    // Start first stage after a short delay
-    setTimeout(advanceStage, 1500);
-  }
 
   // GET /tasks - List tasks
   server.route({
     method: 'GET',
     path: '/tasks',
     handler: () => {
-      const allTasks = Array.from(workflows.values()).flatMap(w =>
-        w.taskDetails.map(t => ({ ...t, workflowId: w.id, goal: w.goal }))
-      );
-      return { tasks: allTasks };
+      return { tasks: orchestrator.getAllTasks() };
     }
   });
 
@@ -520,21 +595,27 @@ async function init() {
     method: 'GET',
     path: '/credentials',
     handler: () => {
-      // Return simulated credentials for demo
-      const workflowList = Array.from(workflows.values());
-      const credentials = workflowList.flatMap(w => {
-        return [
+      const now = new Date().toISOString();
+      return {
+        credentials: [
           {
-            id: `cred-${w.id}-planner`,
+            id: 'cred-demo-planner',
             type: 'PlannerCapability',
             issuer: 'did:web:authority.example.com',
-            subject: `did:web:acg.example/planner/${w.id.slice(3, 11)}`,
-            issuedAt: w.timing.startTime,
+            subject: 'did:web:acg.example/planner/demo',
+            issuedAt: now,
+            expiresAt: new Date(Date.now() + 3600000).toISOString()
+          },
+          {
+            id: 'cred-demo-analyst',
+            type: 'AnalystCapability',
+            issuer: 'did:web:authority.example.com',
+            subject: 'did:web:acg.example/analyst/demo',
+            issuedAt: now,
             expiresAt: new Date(Date.now() + 3600000).toISOString()
           }
-        ];
-      });
-      return { credentials };
+        ]
+      };
     }
   });
 
@@ -543,23 +624,22 @@ async function init() {
     method: 'GET',
     path: '/workflow/{id}/graph',
     handler: (request, h) => {
-      const workflow = workflows.get(request.params.id);
-      if (!workflow) {
+      const detail = orchestrator.getWorkflowDetail(request.params.id);
+      if (!detail) {
         return h.response({ error: 'Workflow not found' }).code(404);
       }
-      // Return DAG representation of workflow
-      const nodes = workflow.taskDetails.map((t, idx) => ({
+      const nodes = detail.taskDetails.map((t, idx) => ({
         id: t.id,
         label: t.type,
         status: t.status,
         x: 100 + idx * 150,
         y: 200
       }));
-      const edges = workflow.taskDetails.slice(0, -1).map((t, idx) => ({
+      const edges = detail.taskDetails.slice(0, -1).map((t, idx) => ({
         source: t.id,
-        target: workflow.taskDetails[idx + 1].id
+        target: detail.taskDetails[idx + 1].id
       }));
-      return { nodes, edges, workflowId: workflow.id, goal: workflow.goal };
+      return { nodes, edges, workflowId: detail.id, goal: detail.goal };
     }
   });
 
@@ -568,20 +648,16 @@ async function init() {
     method: 'GET',
     path: '/logs',
     handler: () => {
-      const workflowList = Array.from(workflows.values());
-      const logs = workflowList.flatMap(w => {
-        return w.taskDetails
-          .filter(t => t.startTime)
-          .map(t => ({
-            timestamp: t.startTime,
-            level: 'info',
-            message: `Task ${t.type} ${t.status}`,
-            workflowId: w.id,
-            taskId: t.id
-          }));
-      });
-      // Sort by timestamp descending
-      logs.sort((a, b) => new Date(b.timestamp!).getTime() - new Date(a.timestamp!).getTime());
+      const tasks = orchestrator.getAllTasks();
+      const logs = tasks
+        .filter(t => t.startedAt || t.createdAt)
+        .map(t => ({
+          timestamp: t.startedAt ?? t.createdAt,
+          level: t.status === 'failed' ? 'error' : 'info',
+          message: `Task ${t.type} ${t.status}`,
+          taskId: t.id
+        }));
+      logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       return { logs: logs.slice(0, 100) };
     }
   });
