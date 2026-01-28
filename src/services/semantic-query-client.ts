@@ -20,6 +20,12 @@ export interface SemanticQueryResult {
   contentType?: string;
 }
 
+export interface SemanticQueryPlanResult {
+  endpoint: string;
+  contentType?: string;
+  plan: string;
+}
+
 export class SemanticQueryClient {
   readonly endpoint: string;
   private readonly defaultAccept: string;
@@ -74,6 +80,53 @@ export class SemanticQueryClient {
         queryId: `urn:uuid:${randomUUID()}`,
         results,
         contentType
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async fetchPlan(request: SemanticQueryRequest): Promise<SemanticQueryPlanResult> {
+    const query = request.query?.trim();
+    if (!query) {
+      throw new Error('SPARQL query is required');
+    }
+
+    const endpoint = (request.endpoint ?? this.endpoint).trim();
+    if (!endpoint) {
+      throw new Error('SPARQL endpoint is required');
+    }
+
+    const accept = request.resultFormat ?? 'text/plain';
+    const timeoutMs = Math.max(1, (request.timeoutSeconds ?? 60) * 1000);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/sparql-query',
+          'Accept': accept,
+          'User-Agent': this.userAgent
+        },
+        body: query,
+        signal: controller.signal
+      });
+
+      const contentType = response.headers.get('content-type') ?? undefined;
+      const raw = await response.text();
+
+      if (!response.ok) {
+        const detail = raw ? `: ${raw}` : '';
+        throw new Error(`SPARQL plan request failed (${response.status})${detail}`);
+      }
+
+      return {
+        endpoint,
+        contentType,
+        plan: raw
       };
     } finally {
       clearTimeout(timeoutId);

@@ -1285,12 +1285,38 @@ export class ContextBroker {
         }
         if (queryLanguage === 'sparql') {
           const semanticClient = this.getSemanticQueryClient(parameters.semanticLayerRef as string | undefined);
+          const planEndpoint = process.env.SEMANTIC_LAYER_PLAN_ENDPOINT;
+          const planAccept = process.env.SEMANTIC_LAYER_PLAN_ACCEPT;
+          const planTimeoutSeconds = process.env.SEMANTIC_LAYER_PLAN_TIMEOUT_SECONDS
+            ? Number(process.env.SEMANTIC_LAYER_PLAN_TIMEOUT_SECONDS)
+            : undefined;
+
+          let plan: { text?: string; contentType?: string; endpoint?: string; error?: string } | undefined;
           const result = await semanticClient.query({
             query,
             endpoint: parameters.semanticLayerRef as string | undefined,
             resultFormat: parameters.resultFormat as string | undefined,
             timeoutSeconds: parameters.timeoutSeconds as number | undefined
           });
+
+          if (planEndpoint) {
+            try {
+              const planResult = await semanticClient.fetchPlan({
+                query,
+                endpoint: planEndpoint,
+                resultFormat: planAccept,
+                timeoutSeconds: planTimeoutSeconds ?? (parameters.timeoutSeconds as number | undefined)
+              });
+              plan = {
+                text: planResult.plan,
+                contentType: planResult.contentType,
+                endpoint: planResult.endpoint
+              };
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              plan = { error: message, endpoint: planEndpoint };
+            }
+          }
 
           return {
             success: true,
@@ -1302,7 +1328,8 @@ export class ContextBroker {
               results: result.results,
               contentType: result.contentType,
               query,
-              endpoint: parameters.semanticLayerRef ?? this.getSemanticQueryClient().endpoint
+              endpoint: parameters.semanticLayerRef ?? this.getSemanticQueryClient().endpoint,
+              plan
             },
             eventsEmitted: [
               { eventType: 'DataQueryExecuted', eventId: result.queryId, timestamp: now }

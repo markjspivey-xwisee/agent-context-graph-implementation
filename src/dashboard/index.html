@@ -1656,6 +1656,12 @@
       word-break: break-word;
     }
 
+    .modal-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
     .chat-input {
       display: flex;
       gap: 0.5rem;
@@ -2595,6 +2601,7 @@
 
       workflowList.innerHTML = workflows.map(w => `
         <div class="workflow-card ${w.id === selectedWorkflowId ? 'selected' : ''}"
+             data-workflow-id="${w.id}"
              onclick="selectWorkflow('${w.id}')">
           <div class="goal">${escapeHtml(w.goal)}</div>
           <div class="meta">
@@ -2965,9 +2972,11 @@
       const rows = chatMessages.map(msg => {
         const time = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : '';
         const hasResults = Array.isArray(msg.data?.queryResults) && msg.data.queryResults.length > 0;
-        const actions = hasResults
+        const hasWorkflow = Boolean(msg.workflowId);
+        const actions = (hasResults || hasWorkflow)
           ? `<div class="chat-actions">
-              <button class="chat-result-btn" onclick="showChatResults('${msg.id}')">View results</button>
+              ${hasResults ? `<button class="chat-result-btn" onclick="showChatResults('${msg.id}')">View results</button>` : ''}
+              ${hasWorkflow ? `<button class="chat-result-btn" onclick="showChatWorkflow('${msg.workflowId}')">View workflow</button>` : ''}
             </div>`
           : '';
 
@@ -2997,6 +3006,29 @@
       return String(value);
     }
 
+    function escapeCsvValue(value) {
+      const stringValue = value === null || value === undefined ? '' : String(value);
+      if (/[",\n]/.test(stringValue)) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    }
+
+    function buildCsvFromResults(resultSet) {
+      const vars = resultSet?.head?.vars;
+      const bindings = resultSet?.results?.bindings;
+      if (!Array.isArray(vars) || vars.length === 0) return '';
+      if (!Array.isArray(bindings) || bindings.length === 0) return vars.join(',');
+
+      const header = vars.join(',');
+      const rows = bindings.map(binding => {
+        const values = vars.map(v => escapeCsvValue(binding?.[v]?.value ?? ''));
+        return values.join(',');
+      }).join('\n');
+
+      return `${header}\n${rows}`;
+    }
+
     function renderSparqlResultsTable(resultSet) {
       const vars = resultSet?.head?.vars;
       const bindings = resultSet?.results?.bindings;
@@ -3023,6 +3055,47 @@
       `;
     }
 
+    function downloadChatResultsCsv(messageId) {
+      const msg = chatMessages.find(m => m.id === messageId);
+      const results = msg?.data?.queryResults;
+      if (!Array.isArray(results) || results.length === 0) {
+        showNotification('No query results attached to this message.', 'warning');
+        return;
+      }
+
+      const first = results[0];
+      const csv = buildCsvFromResults(first.results);
+      if (!csv) {
+        showNotification('No rows to export.', 'warning');
+        return;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `chat-results-${messageId}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function showChatWorkflow(workflowId) {
+      if (!workflowId) {
+        showNotification('Workflow id missing for this message.', 'warning');
+        return;
+      }
+
+      const tasksTab = document.querySelector('.tab-btn[data-tab="tasks"]');
+      tasksTab?.click();
+      selectWorkflow(workflowId);
+      setTimeout(() => {
+        const card = document.querySelector(`[data-workflow-id="${workflowId}"]`);
+        card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+
     function showChatResults(messageId) {
       const msg = chatMessages.find(m => m.id === messageId);
       const results = msg?.data?.queryResults;
@@ -3035,8 +3108,12 @@
       const query = msg.data?.query ?? first.query ?? '';
       const endpoint = msg.data?.endpoint ?? first.endpoint ?? '';
       const status = first?.status?.state ?? 'unknown';
+      const plan = msg.data?.queryPlan ?? first.plan ?? null;
+      const planText = typeof plan === 'string' ? plan : (plan?.text ?? plan?.plan ?? '');
+      const planError = typeof plan === 'object' && plan?.error ? plan.error : '';
       const resultTable = renderSparqlResultsTable(first.results);
       const rawJson = JSON.stringify(first, null, 2);
+      const workflowId = msg.workflowId ?? '';
 
       modalTitle.textContent = 'Chat Query Results';
       modalContent.innerHTML = `
@@ -3049,8 +3126,21 @@
           <div class="inline-code">${escapeHtml(status)}</div>
         </div>
         <div class="detail-section">
+          <h4>Actions</h4>
+          <div class="modal-actions">
+            <button class="chat-result-btn" onclick="downloadChatResultsCsv('${msg.id}')">Download CSV</button>
+            ${workflowId ? `<button class="chat-result-btn" onclick="showChatWorkflow('${workflowId}')">Open Workflow</button>` : ''}
+          </div>
+        </div>
+        <div class="detail-section">
           <h4>Query</h4>
           <pre>${escapeHtml(query || 'Not provided')}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Query Plan</h4>
+          ${planText ? `<pre>${escapeHtml(planText)}</pre>` : ''}
+          ${planError ? `<div class="inline-code">${escapeHtml(planError)}</div>` : ''}
+          ${!planText && !planError ? `<div class="inline-code">Query plan unavailable. Set SEMANTIC_LAYER_PLAN_ENDPOINT.</div>` : ''}
         </div>
         <div class="detail-section">
           <h4>Results</h4>

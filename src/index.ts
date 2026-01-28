@@ -162,6 +162,12 @@ async function init() {
       queryId?: string;
       query?: string;
       endpoint?: string;
+      queryPlan?: {
+        text?: string;
+        contentType?: string;
+        endpoint?: string;
+        error?: string;
+      };
     };
   }
 
@@ -214,12 +220,29 @@ async function init() {
 
       const queryResults = obj.queryResults as Array<Record<string, unknown>> | undefined;
       const firstQuery = queryResults?.[0];
+      let queryPlan: ChatMessage['data']['queryPlan'] | undefined;
+      const planRaw = firstQuery?.plan as
+        | { text?: string; contentType?: string; endpoint?: string; error?: string }
+        | string
+        | undefined;
+      if (typeof planRaw === 'string') {
+        queryPlan = { text: planRaw };
+      } else if (planRaw && typeof planRaw === 'object') {
+        queryPlan = {
+          text: planRaw.text,
+          contentType: planRaw.contentType,
+          endpoint: planRaw.endpoint,
+          error: planRaw.error
+        };
+      }
+
       const data = firstQuery
         ? {
           queryResults,
           queryId: firstQuery.queryId as string | undefined,
           query: firstQuery.query as string | undefined,
-          endpoint: firstQuery.endpoint as string | undefined
+          endpoint: firstQuery.endpoint as string | undefined,
+          queryPlan
         }
         : undefined;
 
