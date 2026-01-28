@@ -1594,6 +1594,68 @@
       color: var(--text-muted);
     }
 
+    .chat-actions {
+      margin-top: 0.4rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .chat-result-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      cursor: pointer;
+    }
+
+    .chat-result-btn:hover {
+      border-color: var(--accent-blue);
+    }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+    }
+
+    .result-table th,
+    .result-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 0.35rem 0.4rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .result-table th {
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.6rem;
+    }
+
+    .result-table-container {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      overflow-x: auto;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .inline-code {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      word-break: break-word;
+    }
+
     .chat-input {
       display: flex;
       gap: 0.5rem;
@@ -2902,9 +2964,17 @@
 
       const rows = chatMessages.map(msg => {
         const time = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : '';
+        const hasResults = Array.isArray(msg.data?.queryResults) && msg.data.queryResults.length > 0;
+        const actions = hasResults
+          ? `<div class="chat-actions">
+              <button class="chat-result-btn" onclick="showChatResults('${msg.id}')">View results</button>
+            </div>`
+          : '';
+
         return `
           <div class="chat-message ${msg.role}">
             <div>${escapeHtml(msg.content)}</div>
+            ${actions}
             <div class="meta">${msg.role === 'user' ? 'You' : 'Agent Team'} • ${time}</div>
           </div>
         `;
@@ -2916,6 +2986,83 @@
 
       chatMessagesEl.innerHTML = rows + waiting;
       chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+
+    function formatBindingValue(binding) {
+      if (!binding || typeof binding !== 'object') return '';
+      const value = binding.value ?? '';
+      if (binding.type === 'uri') return String(value);
+      if (binding['xml:lang']) return `${value} (${binding['xml:lang']})`;
+      if (binding.datatype) return `${value}^^${binding.datatype}`;
+      return String(value);
+    }
+
+    function renderSparqlResultsTable(resultSet) {
+      const vars = resultSet?.head?.vars;
+      const bindings = resultSet?.results?.bindings;
+      if (!Array.isArray(vars) || !Array.isArray(bindings) || bindings.length === 0) {
+        return '<div class="empty-state"><div>No rows returned.</div></div>';
+      }
+
+      const header = vars.map(v => `<th>${escapeHtml(v)}</th>`).join('');
+      const rows = bindings.map(binding => {
+        const cells = vars.map(v => {
+          const value = formatBindingValue(binding[v]);
+          return `<td>${escapeHtml(value)}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+
+      return `
+        <div class="result-table-container">
+          <table class="result-table">
+            <thead><tr>${header}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function showChatResults(messageId) {
+      const msg = chatMessages.find(m => m.id === messageId);
+      const results = msg?.data?.queryResults;
+      if (!Array.isArray(results) || results.length === 0) {
+        showNotification('No query results attached to this message.', 'warning');
+        return;
+      }
+
+      const first = results[0];
+      const query = msg.data?.query ?? first.query ?? '';
+      const endpoint = msg.data?.endpoint ?? first.endpoint ?? '';
+      const status = first?.status?.state ?? 'unknown';
+      const resultTable = renderSparqlResultsTable(first.results);
+      const rawJson = JSON.stringify(first, null, 2);
+
+      modalTitle.textContent = 'Chat Query Results';
+      modalContent.innerHTML = `
+        <div class="detail-section">
+          <h4>Endpoint</h4>
+          <div class="inline-code">${escapeHtml(endpoint || 'unknown')}</div>
+        </div>
+        <div class="detail-section">
+          <h4>Status</h4>
+          <div class="inline-code">${escapeHtml(status)}</div>
+        </div>
+        <div class="detail-section">
+          <h4>Query</h4>
+          <pre>${escapeHtml(query || 'Not provided')}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Results</h4>
+          ${resultTable}
+        </div>
+        <div class="detail-section">
+          <h4>Raw JSON</h4>
+          <pre>${escapeHtml(rawJson)}</pre>
+        </div>
+      `;
+
+      modalOverlay.classList.add('active');
     }
 
     async function fetchChatConversation() {

@@ -157,6 +157,12 @@ async function init() {
     content: string;
     createdAt: string;
     workflowId?: string;
+    data?: {
+      queryResults?: unknown;
+      queryId?: string;
+      query?: string;
+      endpoint?: string;
+    };
   }
 
   interface ChatConversation {
@@ -186,9 +192,9 @@ async function init() {
     return convo;
   }
 
-  function extractChatResponse(result: unknown): string {
+  function extractChatResponse(result: unknown): { text: string; data?: ChatMessage['data'] } {
     if (!result || typeof result !== 'object') {
-      return 'Completed. (No structured response found)';
+      return { text: 'Completed. (No structured response found)' };
     }
 
     const tasks = (result as { tasks?: Array<{ type?: string; output?: unknown }> }).tasks ?? [];
@@ -206,33 +212,44 @@ async function init() {
       const message = obj.message as string | undefined;
       const reasoning = obj.reasoning as string | undefined;
 
+      const queryResults = obj.queryResults as Array<Record<string, unknown>> | undefined;
+      const firstQuery = queryResults?.[0];
+      const data = firstQuery
+        ? {
+          queryResults,
+          queryId: firstQuery.queryId as string | undefined,
+          query: firstQuery.query as string | undefined,
+          endpoint: firstQuery.endpoint as string | undefined
+        }
+        : undefined;
+
       const insightText =
         (insight?.summary as string | undefined) ??
         (insight?.message as string | undefined) ??
         (insight?.content as string | undefined);
 
-      if (insightText) return insightText;
+      if (insightText) return { text: insightText, data };
 
       const reportText =
         (report?.summary as string | undefined) ??
         (report?.message as string | undefined) ??
         (report?.content as string | undefined);
 
-      if (reportText) return reportText;
+      if (reportText) return { text: reportText, data };
 
-      if (message) return message;
-      if (reasoning) return reasoning;
+      if (message) return { text: message, data };
+      if (reasoning) return { text: reasoning, data };
 
       const queries = obj.queries as Array<{ output?: unknown }> | undefined;
       if (queries && queries.length > 0) {
         const results = queries[0]?.output as Record<string, unknown> | undefined;
         if (results?.results) {
-          return `Query returned ${Array.isArray(results.results) ? results.results.length : 'results'}. See raw output.`;
+          return { text: `Query returned ${Array.isArray(results.results) ? results.results.length : 'results'}. See raw output.`, data };
         }
       }
     }
 
-    return 'Completed. (No conversational summary available)';
+    return { text: 'Completed. (No conversational summary available)' };
   }
 
   orchestrator.on('workflow-completed', (id, result) => {
@@ -242,13 +259,14 @@ async function init() {
     const convo = chatConversations.get(chatMeta.conversationId);
     if (!convo) return;
 
-    const responseText = extractChatResponse(result);
+    const response = extractChatResponse(result);
     const message: ChatMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       role: 'assistant',
-      content: responseText,
+      content: response.text,
       createdAt: new Date().toISOString(),
-      workflowId: id
+      workflowId: id,
+      data: response.data
     };
 
     convo.messages.push(message);
