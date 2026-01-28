@@ -128,7 +128,7 @@ async function init() {
   // In-memory workflow store for dashboard demo
   interface WorkflowTask {
     id: string;
-    type: 'plan' | 'approve' | 'execute' | 'observe' | 'archive';
+    type: 'plan' | 'approve' | 'analyze' | 'execute' | 'observe' | 'archive';
     status: 'pending' | 'running' | 'completed' | 'failed';
     description: string;
     startTime?: string;
@@ -367,6 +367,7 @@ async function init() {
       const taskDetails: WorkflowTask[] = [
         { id: `${workflowId}-plan`, type: 'plan', status: 'running', description: 'Planning goal execution strategy', startTime },
         { id: `${workflowId}-approve`, type: 'approve', status: 'pending', description: 'Awaiting plan approval' },
+        { id: `${workflowId}-analyze`, type: 'analyze', status: 'pending', description: 'Analyzing data and requirements' },
         { id: `${workflowId}-execute`, type: 'execute', status: 'pending', description: 'Execute approved plan' },
         { id: `${workflowId}-observe`, type: 'observe', status: 'pending', description: 'Monitor execution progress' },
         { id: `${workflowId}-archive`, type: 'archive', status: 'pending', description: 'Archive results and traces' }
@@ -388,7 +389,7 @@ async function init() {
       workflows.set(workflowId, workflow);
 
       // Create agents for the AAT pipeline
-      const agentTypes = ['planner', 'arbiter', 'executor', 'observer', 'archivist'];
+      const agentTypes = ['planner', 'arbiter', 'analyst', 'executor', 'observer', 'archivist'];
       agentTypes.forEach((type, idx) => {
         const agentId = `agent-${workflowId}-${type}`;
         const agent: Agent = {
@@ -426,8 +427,8 @@ async function init() {
 
   // Simulate workflow progression through AAT pipeline
   function simulateWorkflow(workflowId: string) {
-    const stages = ['plan', 'approve', 'execute', 'observe', 'archive'] as const;
-    const agentTypes = ['planner', 'arbiter', 'executor', 'observer', 'archivist'];
+    const stages = ['plan', 'approve', 'analyze', 'execute', 'observe', 'archive'] as const;
+    const agentTypes = ['planner', 'arbiter', 'analyst', 'executor', 'observer', 'archivist'];
     let currentStage = 0;
 
     const advanceStage = () => {

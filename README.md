@@ -48,6 +48,26 @@ npm install
 npm run build
 npm run dashboard
 
+## Conversational agent team (chat with Databricks)
+
+The chat flow routes through the agent team (Planner → Arbiter → Analyst → Observer → Archivist)
+and uses `QueryData` (SPARQL) against the semantic layer.
+
+1) Ensure a SPARQL endpoint is running (Ontop or Virtuoso) and set:
+   - `SEMANTIC_LAYER_SPARQL_ENDPOINT`
+2) Start the core API (for full dashboard functionality):
+   - `npm run dev` (port 3000)
+3) Start the dashboard + orchestrator:
+   - `npm run dashboard` (port 3001)
+
+Open the dashboard and use the **Chat** tab, or call the API directly:
+
+```bash
+curl -X POST http://localhost:3001/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Summarize top 5 orders by revenue"}'
+```
+
 ## Codespaces helper
 
 In Codespaces, you can run:

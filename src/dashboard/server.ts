@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, existsSync, appendFileSync } from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
+import { v4 as uuidv4 } from 'uuid';
 import { Orchestrator } from '../agents/orchestrator.js';
 import { ContextBroker } from '../broker/context-broker.js';
 import { AATRegistry } from '../services/aat-registry.js';
@@ -112,6 +113,14 @@ function initCredentialStore() {
       credentialSubject: { capability: 'ExecutorCapability', scope: 'file:*,api:*' }
     },
     {
+      id: 'urn:uuid:cred-analyst-001',
+      type: ['VerifiableCredential', 'AnalystCapability'],
+      issuer: 'did:web:authority.example.com',
+      issuanceDate: new Date().toISOString(),
+      expirationDate: '2030-01-01T00:00:00Z',
+      credentialSubject: { capability: 'AnalystCapability', scope: 'data:read' }
+    },
+    {
       id: 'urn:uuid:cred-observer-001',
       type: ['VerifiableCredential', 'ObserverCapability'],
       issuer: 'did:web:authority.example.com',
@@ -140,6 +149,93 @@ function initCredentialStore() {
   for (const cred of demoCredentials) {
     credentialStore.set(cred.id, cred);
   }
+}
+
+// ============================================================
+// Conversational Chat (in-memory)
+// ============================================================
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  workflowId?: string;
+}
+
+interface ChatConversation {
+  id: string;
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+const chatConversations = new Map<string, ChatConversation>();
+const chatWorkflowIndex = new Map<string, { conversationId: string; userMessageId: string }>();
+
+function getOrCreateConversation(conversationId?: string): ChatConversation {
+  if (conversationId && chatConversations.has(conversationId)) {
+    return chatConversations.get(conversationId)!;
+  }
+
+  const id = conversationId ?? uuidv4();
+  const now = new Date().toISOString();
+  const convo: ChatConversation = {
+    id,
+    messages: [],
+    createdAt: now,
+    updatedAt: now
+  };
+  chatConversations.set(id, convo);
+  return convo;
+}
+
+function extractChatResponse(result: unknown): string {
+  if (!result || typeof result !== 'object') {
+    return 'Completed. (No structured response found)';
+  }
+
+  const tasks = (result as { tasks?: Array<{ type?: string; output?: unknown }> }).tasks ?? [];
+  const taskByType = (type: string) => tasks.filter(t => t.type === type);
+
+  const analyzeTask = taskByType('analyze').slice(-1)[0];
+  const observeTask = taskByType('observe').slice(-1)[0];
+  const archiveTask = taskByType('archive').slice(-1)[0];
+  const candidate = analyzeTask?.output ?? observeTask?.output ?? archiveTask?.output;
+
+  if (candidate && typeof candidate === 'object') {
+    const obj = candidate as Record<string, unknown>;
+    const insight = obj.insight as Record<string, unknown> | undefined;
+    const report = obj.report as Record<string, unknown> | undefined;
+    const message = obj.message as string | undefined;
+    const reasoning = obj.reasoning as string | undefined;
+
+    const insightText =
+      (insight?.summary as string | undefined) ??
+      (insight?.message as string | undefined) ??
+      (insight?.content as string | undefined);
+
+    if (insightText) return insightText;
+
+    const reportText =
+      (report?.summary as string | undefined) ??
+      (report?.message as string | undefined) ??
+      (report?.content as string | undefined);
+
+    if (reportText) return reportText;
+
+    if (message) return message;
+    if (reasoning) return reasoning;
+
+    const queries = obj.queries as Array<{ output?: unknown }> | undefined;
+    if (queries && queries.length > 0) {
+      const results = queries[0]?.output as Record<string, unknown> | undefined;
+      if (results?.results) {
+        return `Query returned ${Array.isArray(results.results) ? results.results.length : 'results'}. See raw output.`;
+      }
+    }
+  }
+
+  return 'Completed. (No conversational summary available)';
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -182,11 +278,48 @@ async function init() {
   orchestrator.on('workflow-completed', (id, result) => {
     log('info', 'workflow', `Workflow completed`, { workflowId: id });
     broadcast({ type: 'workflow-completed', payload: { id, result, timestamp: new Date().toISOString() } });
+
+    const chatMeta = chatWorkflowIndex.get(id);
+    if (chatMeta) {
+      const convo = chatConversations.get(chatMeta.conversationId);
+      if (convo) {
+        const responseText = extractChatResponse(result);
+        const message: ChatMessage = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: responseText,
+          createdAt: new Date().toISOString(),
+          workflowId: id
+        };
+        convo.messages.push(message);
+        convo.updatedAt = message.createdAt;
+        broadcast({ type: 'chat-update', payload: { conversationId: convo.id, message } });
+      }
+      chatWorkflowIndex.delete(id);
+    }
   });
 
   orchestrator.on('workflow-failed', (id, error) => {
     log('error', 'workflow', `Workflow failed: ${error}`, { workflowId: id, error });
     broadcast({ type: 'workflow-failed', payload: { id, error, timestamp: new Date().toISOString() } });
+
+    const chatMeta = chatWorkflowIndex.get(id);
+    if (chatMeta) {
+      const convo = chatConversations.get(chatMeta.conversationId);
+      if (convo) {
+        const message: ChatMessage = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: `Workflow failed: ${error}`,
+          createdAt: new Date().toISOString(),
+          workflowId: id
+        };
+        convo.messages.push(message);
+        convo.updatedAt = message.createdAt;
+        broadcast({ type: 'chat-update', payload: { conversationId: convo.id, message } });
+      }
+      chatWorkflowIndex.delete(id);
+    }
   });
 
   orchestrator.on('agent-spawned', (agentId, type) => {
@@ -388,6 +521,78 @@ async function init() {
         const message = error instanceof Error ? error.message : 'Unknown error';
         return h.response({ error: message }).code(500);
       }
+    }
+  });
+
+  // Conversational chat (routes through agent team)
+  server.route({
+    method: 'POST',
+    path: '/chat',
+    handler: async (request, h) => {
+      try {
+        const payload = request.payload as {
+          message?: string;
+          conversationId?: string;
+          priority?: 'low' | 'normal' | 'high' | 'critical';
+        };
+
+        const message = payload?.message?.trim();
+        if (!message) {
+          return h.response({ error: 'message is required' }).code(400);
+        }
+
+        const conversation = getOrCreateConversation(payload.conversationId);
+        const now = new Date().toISOString();
+
+        const userMessage: ChatMessage = {
+          id: uuidv4(),
+          role: 'user',
+          content: message,
+          createdAt: now
+        };
+
+        conversation.messages.push(userMessage);
+        conversation.updatedAt = now;
+
+        const workflowId = await orchestrator.submitChat(message, {
+          priority: payload.priority ?? 'normal'
+        });
+
+        chatWorkflowIndex.set(workflowId, {
+          conversationId: conversation.id,
+          userMessageId: userMessage.id
+        });
+
+        return h.response({
+          conversationId: conversation.id,
+          messageId: userMessage.id,
+          workflowId
+        }).code(202);
+
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return h.response({ error: message }).code(500);
+      }
+    }
+  });
+
+  // Get conversation messages
+  server.route({
+    method: 'GET',
+    path: '/chat/{id}',
+    handler: (request, h) => {
+      const conversationId = request.params.id;
+      const conversation = chatConversations.get(conversationId);
+      if (!conversation) {
+        return h.response({ error: 'Conversation not found' }).code(404);
+      }
+
+      return h.response({
+        id: conversation.id,
+        messages: conversation.messages,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt
+      }).code(200);
     }
   });
 

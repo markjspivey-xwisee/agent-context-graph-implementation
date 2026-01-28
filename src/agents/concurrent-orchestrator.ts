@@ -328,7 +328,7 @@ export class ConcurrentOrchestrator extends EventEmitter<ConcurrentOrchestratorE
    */
   private async assignTasksWithConcurrencyControl(): Promise<void> {
     const agentTypes: Array<AgentConfig['agentType']> = [
-      'planner', 'executor', 'observer', 'arbiter', 'archivist'
+      'planner', 'executor', 'observer', 'arbiter', 'archivist', 'analyst'
     ];
 
     for (const agentType of agentTypes) {
@@ -858,7 +858,8 @@ export class ConcurrentOrchestrator extends EventEmitter<ConcurrentOrchestratorE
       executor: 'aat:ExecutorAgentType',
       observer: 'aat:ObserverAgentType',
       arbiter: 'aat:ArbiterAgentType',
-      archivist: 'aat:ArchivistAgentType'
+      archivist: 'aat:ArchivistAgentType',
+      analyst: 'aat:AnalystAgentType'
     };
     return mapping[agentType];
   }
@@ -872,7 +873,8 @@ export class ConcurrentOrchestrator extends EventEmitter<ConcurrentOrchestratorE
       executor: 'ExecutorCapability',
       observer: 'ObserverCapability',
       arbiter: 'ArbiterCapability',
-      archivist: 'ArchivistCapability'
+      archivist: 'ArchivistCapability',
+      analyst: 'AnalystCapability'
     };
 
     const capability = capabilityMap[agentType];
@@ -897,6 +899,7 @@ export class ConcurrentOrchestrator extends EventEmitter<ConcurrentOrchestratorE
       maxPerType: {
         'aat:PlannerAgentType': 3,
         'aat:ExecutorAgentType': 5,
+        'aat:AnalystAgentType': 3,
         'aat:ObserverAgentType': 5,
         'aat:ArbiterAgentType': 1,
         'aat:ArchivistAgentType': 2

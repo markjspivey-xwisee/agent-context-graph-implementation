@@ -122,6 +122,12 @@ export class AATRegistry implements IAATRegistry {
         conflictsWith: [],
         preferredEnclaveScope: 'file:*,api:read,api:write'
       },
+      'aat:AnalystAgentType': {
+        parallelizable: true,
+        maxConcurrent: 5,
+        requiresIsolation: false,
+        conflictsWith: []
+      },
       'aat:ArbiterAgentType': {
         parallelizable: false,
         maxConcurrent: 1,

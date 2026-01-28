@@ -426,6 +426,7 @@ export class PolicyEngine implements IPolicyEngine {
       maxPerType: {
         'aat:PlannerAgentType': 3,
         'aat:ExecutorAgentType': 20,
+        'aat:AnalystAgentType': 5,
         'aat:ObserverAgentType': 10,
         'aat:ArbiterAgentType': 1,
         'aat:ArchivistAgentType': 2

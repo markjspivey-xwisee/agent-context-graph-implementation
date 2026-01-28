@@ -571,6 +571,7 @@
 
     .aat-step.planner { background: rgba(254, 243, 199, 0.2); color: #fcd34d; border-color: rgba(254, 243, 199, 0.3); }
     .aat-step.arbiter { background: rgba(243, 232, 255, 0.2); color: #c4b5fd; border-color: rgba(243, 232, 255, 0.3); }
+    .aat-step.analyst { background: rgba(34, 211, 238, 0.15); color: #67e8f9; border-color: rgba(34, 211, 238, 0.3); }
     .aat-step.executor { background: rgba(219, 234, 254, 0.2); color: #93c5fd; border-color: rgba(219, 234, 254, 0.3); }
     .aat-step.observer { background: rgba(220, 252, 231, 0.2); color: #86efac; border-color: rgba(220, 252, 231, 0.3); }
     .aat-step.archivist { background: rgba(241, 245, 249, 0.2); color: #cbd5e1; border-color: rgba(241, 245, 249, 0.3); }
@@ -657,6 +658,7 @@
 
     .task-type-badge.plan { background: #fef3c7; color: #92400e; }
     .task-type-badge.approve { background: #f3e8ff; color: #6b21a8; }
+    .task-type-badge.analyze { background: rgba(34, 211, 238, 0.2); color: #0e7490; }
     .task-type-badge.execute { background: #dbeafe; color: #1e40af; }
     .task-type-badge.observe { background: #dcfce7; color: #166534; }
     .task-type-badge.archive { background: #f1f5f9; color: #475569; }
@@ -719,6 +721,7 @@
 
     .agent-icon.planner { background: #fef3c7; }
     .agent-icon.arbiter { background: #f3e8ff; }
+    .agent-icon.analyst { background: rgba(34, 211, 238, 0.2); }
     .agent-icon.executor { background: #dbeafe; }
     .agent-icon.observer { background: #dcfce7; }
     .agent-icon.archivist { background: #f1f5f9; }
@@ -1544,6 +1547,92 @@
     .graph-info-row:last-child {
       border-bottom: none;
     }
+
+    /* Chat Panel */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      height: 100%;
+    }
+
+    .chat-messages {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .chat-message {
+      max-width: 85%;
+      padding: 0.5rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .chat-message.user {
+      align-self: flex-end;
+      background: rgba(96, 165, 250, 0.15);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .chat-message.assistant {
+      align-self: flex-start;
+      background: rgba(167, 139, 250, 0.15);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+
+    .chat-message .meta {
+      margin-top: 0.35rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+
+    .chat-input textarea {
+      flex: 1;
+      min-height: 60px;
+      max-height: 140px;
+      resize: vertical;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+    }
+
+    .chat-input textarea:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .chat-input button {
+      background: linear-gradient(135deg, #22d3ee, #3b82f6);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .chat-input button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -1702,6 +1791,9 @@
         <button class="tab-btn active" data-tab="tasks">
           <span>&#128203;</span> Tasks <span class="badge" id="taskCount">0</span>
         </button>
+        <button class="tab-btn" data-tab="chat">
+          <span>&#128172;</span> Chat
+        </button>
         <button class="tab-btn" data-tab="context-graph">
           <span>&#127760;</span> Context Graph
         </button>
@@ -1736,8 +1828,27 @@
             <div class="empty-state-icon">&#128203;</div>
             <div>Select a workflow to view its tasks</div>
             <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
-              Tasks follow the AAT pipeline: Planner &#8594; Arbiter &#8594; Executor &#8594; Observer &#8594; Archivist
+              Tasks follow the AAT pipeline: Planner &#8594; Arbiter &#8594; Analyst &#8594; Executor &#8594; Observer &#8594; Archivist
             </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Tab -->
+      <div class="tab-content" id="tab-chat">
+        <div class="panel-content chat-container">
+          <div class="chat-messages" id="chatMessages">
+            <div class="empty-state">
+              <div class="empty-state-icon">&#128172;</div>
+              <div>Start a conversation with the agent team</div>
+              <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                Ask about Databricks data and the Analyst agent will query via the semantic layer
+              </p>
+            </div>
+          </div>
+          <div class="chat-input">
+            <textarea id="chatInput" placeholder="Ask about your Databricks data..."></textarea>
+            <button id="chatSend" disabled>Send</button>
           </div>
         </div>
       </div>
@@ -2097,6 +2208,7 @@
 
     const DASHBOARD_PORT = parseInt(window.location.port || '3001', 10);
     const API_BASE = buildHttpBase(3000);
+    const CHAT_API_BASE = buildHttpBase(DASHBOARD_PORT);
     const REALTIME_WS_BASE = buildWsBase(DASHBOARD_PORT + 1);
     const FEDERATION_WS_BASE = `${buildWsBase(3000)}/ws`;
     let connected = false;
@@ -2105,6 +2217,8 @@
     let agents = [];
     let stats = null;
     let currentWorkflowDetail = null;
+    let chatConversationId = null;
+    let chatMessages = [];
 
     // AAT Descriptions - from spec/aat/*.json
     const AAT_INFO = {
@@ -2186,6 +2300,12 @@
         icon: '&#9989;',
         contextGraph: 'Evaluates proposed action against policy constraints'
       },
+      analyze: {
+        aat: 'aat:AnalystAgentType',
+        desc: 'Analyst agent queries data and emits insights',
+        icon: '&#129504;',
+        contextGraph: 'Uses QueryData affordance to access semantic layer'
+      },
       execute: {
         aat: 'aat:ExecutorAgentType',
         desc: 'Executor agent performs the authorized action',
@@ -2219,6 +2339,9 @@
     const prioritySelect = document.getElementById('prioritySelect');
     const workflowList = document.getElementById('workflowList');
     const taskPanel = document.getElementById('taskPanel');
+    const chatMessagesEl = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSend');
     const agentList = document.getElementById('agentList');
     const activityLog = document.getElementById('activityLog');
     const modalOverlay = document.getElementById('modalOverlay');
@@ -2237,6 +2360,9 @@
       connectionDot.className = `status-dot ${isConnected ? 'connected' : ''}`;
       connectionText.textContent = isConnected ? 'Connected' : 'Disconnected';
       submitBtn.disabled = !isConnected || !goalInput.value.trim();
+      if (chatSendBtn && chatInput) {
+        chatSendBtn.disabled = !isConnected || !chatInput.value.trim();
+      }
     }
 
     // Activity log
@@ -2291,7 +2417,7 @@
         const newAgents = data.agents || [];
 
         // Log new agents being spawned
-        const icons = { planner: '📋', executor: '⚡', observer: '👁', arbiter: '✅', archivist: '📦' };
+        const icons = { planner: '📋', analyst: '🧠', executor: '⚡', observer: '👁', arbiter: '✅', archivist: '📦' };
         for (const a of newAgents) {
           if (!seenAgents.has(a.id)) {
             seenAgents.add(a.id);
@@ -2323,7 +2449,7 @@
         return;
       }
 
-      const icons = { planner: '&#128203;', executor: '&#9889;', observer: '&#128065;', arbiter: '&#9989;', archivist: '&#128230;' };
+      const icons = { planner: '&#128203;', analyst: '&#129504;', executor: '&#9889;', observer: '&#128065;', arbiter: '&#9989;', archivist: '&#128230;' };
 
       agentList.innerHTML = agents.map(a => {
         const info = AAT_INFO[a.type] || {};
@@ -2443,12 +2569,13 @@
       const steps = {
         planner: { status: 'pending', count: 0 },
         arbiter: { status: 'pending', count: 0 },
+        analyst: { status: 'pending', count: 0 },
         executor: { status: 'pending', count: 0 },
         observer: { status: 'pending', count: 0 },
         archivist: { status: 'pending', count: 0 }
       };
 
-      const typeToAAT = { plan: 'planner', approve: 'arbiter', execute: 'executor', observe: 'observer', archive: 'archivist' };
+      const typeToAAT = { plan: 'planner', approve: 'arbiter', analyze: 'analyst', execute: 'executor', observe: 'observer', archive: 'archivist' };
 
       for (const task of tasks) {
         const aat = typeToAAT[task.type];
@@ -2472,7 +2599,7 @@
             <div class="empty-state-icon">&#128203;</div>
             <div>Select a workflow to view its tasks</div>
             <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
-              Tasks follow the AAT pipeline: Planner &#8594; Arbiter &#8594; Executor &#8594; Observer &#8594; Archivist
+              Tasks follow the AAT pipeline: Planner &#8594; Arbiter &#8594; Analyst &#8594; Executor &#8594; Observer &#8594; Archivist
             </p>
           </div>`;
         return;
@@ -2512,6 +2639,11 @@
             <div class="aat-step arbiter ${aatSteps.arbiter.status}">
               <span>&#9989;</span> Arbiter
               ${aatSteps.arbiter.count > 0 ? `<span style="opacity:0.7">(${aatSteps.arbiter.count})</span>` : ''}
+            </div>
+            <span class="aat-arrow">&#8594;</span>
+            <div class="aat-step analyst ${aatSteps.analyst.status}">
+              <span>&#129504;</span> Analyst
+              ${aatSteps.analyst.count > 0 ? `<span style="opacity:0.7">(${aatSteps.analyst.count})</span>` : ''}
             </div>
             <span class="aat-arrow">&#8594;</span>
             <div class="aat-step executor ${aatSteps.executor.status}">
@@ -2567,7 +2699,12 @@
       if (!task) return;
 
       const info = TASK_TYPE_INFO[task.type] || {};
-      const agentType = task.type === 'plan' ? 'planner' : task.type === 'approve' ? 'arbiter' : task.type === 'execute' ? 'executor' : task.type === 'observe' ? 'observer' : 'archivist';
+      const agentType = task.type === 'plan' ? 'planner'
+        : task.type === 'approve' ? 'arbiter'
+        : task.type === 'analyze' ? 'analyst'
+        : task.type === 'execute' ? 'executor'
+        : task.type === 'observe' ? 'observer'
+        : 'archivist';
       const aatInfo = AAT_INFO[agentType] || {};
 
       modalTitle.innerHTML = `${info.icon || ''} ${task.type.charAt(0).toUpperCase() + task.type.slice(1)} Task`;
@@ -2745,6 +2882,86 @@
       }
     }
 
+    // =========================================================================
+    // Chat (Conversational Agent Team)
+    // =========================================================================
+    function renderChatMessages() {
+      if (!chatMessagesEl) return;
+
+      if (!chatMessages.length) {
+        chatMessagesEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128172;</div>
+            <div>Start a conversation with the agent team</div>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+              Ask about Databricks data and the Analyst agent will query via the semantic layer
+            </p>
+          </div>`;
+        return;
+      }
+
+      const rows = chatMessages.map(msg => {
+        const time = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : '';
+        return `
+          <div class="chat-message ${msg.role}">
+            <div>${escapeHtml(msg.content)}</div>
+            <div class="meta">${msg.role === 'user' ? 'You' : 'Agent Team'} • ${time}</div>
+          </div>
+        `;
+      }).join('');
+
+      const waiting = chatMessages[chatMessages.length - 1]?.role === 'user'
+        ? `<div class="chat-message assistant"><div>Agent team is working...</div><div class="meta">Planner → Arbiter → Analyst → Observer → Archivist</div></div>`
+        : '';
+
+      chatMessagesEl.innerHTML = rows + waiting;
+      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+
+    async function fetchChatConversation() {
+      if (!chatConversationId) return;
+      try {
+        const res = await fetch(`${CHAT_API_BASE}/chat/${chatConversationId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        chatMessages = data.messages || [];
+        renderChatMessages();
+      } catch (err) {
+        console.error('Error fetching chat conversation:', err);
+      }
+    }
+
+    async function sendChatMessage() {
+      const message = chatInput?.value.trim();
+      if (!message) return;
+
+      chatSendBtn.disabled = true;
+      chatSendBtn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch(`${CHAT_API_BASE}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            conversationId: chatConversationId
+          })
+        });
+
+        if (!res.ok) throw new Error('Failed to send chat message');
+
+        const data = await res.json();
+        chatConversationId = data.conversationId;
+        chatInput.value = '';
+        await fetchChatConversation();
+      } catch (err) {
+        showNotification(`Chat error: ${err.message}`, 'error');
+      } finally {
+        chatSendBtn.textContent = 'Send';
+        chatSendBtn.disabled = !connected || !chatInput.value.trim();
+      }
+    }
+
     // Event listeners
     submitBtn.addEventListener('click', submitGoal);
     goalInput.addEventListener('input', () => {
@@ -2752,6 +2969,14 @@
     });
     goalInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && e.ctrlKey) submitGoal();
+    });
+
+    chatSendBtn?.addEventListener('click', sendChatMessage);
+    chatInput?.addEventListener('input', () => {
+      chatSendBtn.disabled = !connected || !chatInput.value.trim();
+    });
+    chatInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendChatMessage();
     });
 
     document.querySelectorAll('.template-btn').forEach(btn => {
@@ -2775,6 +3000,7 @@
       await fetchStats();
       await fetchWorkflows();
       await fetchAgents();
+      await fetchChatConversation();
 
       // Fetch all tasks and log status changes
       try {
@@ -2782,7 +3008,7 @@
         if (res.ok) {
           const data = await res.json();
           const tasks = data.tasks || [];
-          const typeIcons = { plan: '📋', approve: '✅', execute: '⚡', observe: '👁', archive: '📦' };
+          const typeIcons = { plan: '📋', approve: '✅', analyze: '🧠', execute: '⚡', observe: '👁', archive: '📦' };
 
           for (const task of tasks) {
             const prevStatus = previousTaskStates[task.id];
@@ -2928,6 +3154,7 @@
         // Build credential based on agent type to get proper context graph
         const capabilityMap = {
           'planner': 'PlannerCapability',
+          'analyst': 'AnalystCapability',
           'executor': 'ExecutorCapability',
           'observer': 'ObserverCapability',
           'arbiter': 'ArbiterCapability',
@@ -3768,6 +3995,12 @@
         case 'task-failed':
           showNotification(`Task failed: ${data.payload.error}`, 'error');
           poll();
+          break;
+
+        case 'chat-update':
+          if (data.payload?.conversationId === chatConversationId) {
+            fetchChatConversation();
+          }
           break;
 
         case 'context-update':

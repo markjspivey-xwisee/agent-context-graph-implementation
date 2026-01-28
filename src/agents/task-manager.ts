@@ -6,7 +6,7 @@ export type TaskPriority = 'low' | 'normal' | 'high' | 'critical';
 
 export interface Task {
   id: string;
-  type: 'plan' | 'execute' | 'observe' | 'approve' | 'archive';
+  type: 'plan' | 'execute' | 'observe' | 'approve' | 'archive' | 'analyze';
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
@@ -157,7 +157,8 @@ export class TaskManager extends EventEmitter<TaskEvents> {
       executor: 'execute',
       observer: 'observe',
       arbiter: 'approve',
-      archivist: 'archive'
+      archivist: 'archive',
+      analyst: 'analyze'
     };
 
     const targetType = agentType ? taskTypeMap[agentType] : undefined;

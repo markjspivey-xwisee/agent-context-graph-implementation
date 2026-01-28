@@ -10,7 +10,7 @@ import type {
 
 export interface AgentConfig {
   did: string;
-  agentType: 'planner' | 'executor' | 'observer' | 'arbiter' | 'archivist';
+  agentType: 'planner' | 'executor' | 'observer' | 'arbiter' | 'archivist' | 'analyst';
   credentials: unknown[];
   maxIterations?: number;
   brokerUrl?: string;
@@ -176,6 +176,21 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
         'NEVER fabricate provenance',
         'Maintain append-only semantics',
         'Preserve data integrity'
+      ]
+    },
+    analyst: {
+      role: 'Analyst',
+      agentType: 'aat:AnalystAgentType',
+      capabilities: [
+        'Query data sources using QueryData (SPARQL canonical)',
+        'Analyze results and emit insights',
+        'Generate concise, conversational summaries grounded in data'
+      ],
+      constraints: [
+        'NEVER perform side effects or state changes',
+        'If data is required, first traverse QueryData with a SPARQL query',
+        'After querying, traverse EmitInsight or GenerateReport with a summary and references',
+        'Do not fabricate data; base outputs on QueryData results'
       ]
     }
   };
@@ -584,6 +599,9 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
     const approveAction = actions.find(a => a.actionType === 'Approve');
     const denyAction = actions.find(a => a.actionType === 'Deny');
     const storeAction = actions.find(a => a.actionType === 'Store');
+    const emitInsightAction = actions.find(a => a.actionType === 'EmitInsight');
+    const generateReportAction = actions.find(a => a.actionType === 'GenerateReport');
+    const queryActions = actions.filter(a => a.actionType === 'QueryData');
 
     // For Planner agents: extract plan from EmitPlan traversal
     if (emitPlanAction) {
@@ -636,6 +654,38 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
       return {
         stored: storeAction.parameters,
         reference: storeAction.output,
+        reasoning: decision.reasoning,
+        message: decision.message
+      };
+    }
+
+    // For Analyst agents: prefer insight/report, fall back to query results
+    if (emitInsightAction) {
+      return {
+        insight: emitInsightAction.parameters,
+        insightOutput: emitInsightAction.output,
+        queryResults: queryActions.map(a => a.output),
+        reasoning: decision.reasoning,
+        message: decision.message
+      };
+    }
+
+    if (generateReportAction) {
+      return {
+        report: generateReportAction.parameters,
+        reportOutput: generateReportAction.output,
+        queryResults: queryActions.map(a => a.output),
+        reasoning: decision.reasoning,
+        message: decision.message
+      };
+    }
+
+    if (queryActions.length > 0) {
+      return {
+        queries: queryActions.map(a => ({
+          parameters: a.parameters,
+          output: a.output
+        })),
         reasoning: decision.reasoning,
         message: decision.message
       };

@@ -118,6 +118,7 @@ export interface AuthSession {
 export type ACGCapability =
   | 'PlannerCapability'
   | 'ExecutorCapability'
+  | 'AnalystCapability'
   | 'ObserverCapability'
   | 'ArbiterCapability'
   | 'ArchivistCapability'

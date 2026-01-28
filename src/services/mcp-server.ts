@@ -245,8 +245,8 @@ export class MCPServer extends EventEmitter {
           },
           agentType: {
             type: 'string',
-            description: 'The type of agent (planner, executor, observer, arbiter, archivist)',
-            enum: ['planner', 'executor', 'observer', 'arbiter', 'archivist']
+            description: 'The type of agent (planner, analyst, executor, observer, arbiter, archivist)',
+            enum: ['planner', 'analyst', 'executor', 'observer', 'arbiter', 'archivist']
           },
           goal: {
             type: 'string',

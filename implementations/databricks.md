@@ -32,6 +32,8 @@ No data is copied or persisted into the ACG runtime.
 Below is the **intended multi-agent flow** when a human chats about Databricks-backed data.
 This is the same ACG runtime pattern used for any source; Databricks is only the adapter example.
 
+Use the dashboard **Chat** tab or call `POST /chat` on the dashboard server to invoke this flow.
+
 ```mermaid
 sequenceDiagram
   participant Human

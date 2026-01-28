@@ -40,7 +40,7 @@ export interface AgentPoolEntry {
 }
 
 export interface WorkflowStep {
-  type: 'plan' | 'execute' | 'observe' | 'approve' | 'archive';
+  type: 'plan' | 'execute' | 'observe' | 'approve' | 'archive' | 'analyze';
   description: string;
   input?: Record<string, unknown>;
   requiresApproval?: boolean;
@@ -133,8 +133,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     priority?: 'low' | 'normal' | 'high' | 'critical';
     constraints?: string[];
     requiresApproval?: boolean;
+    mode?: 'default' | 'chat';
   }): Promise<string> {
     const workflowId = uuidv4();
+    const mode = options?.mode ?? 'default';
 
     const workflow: Workflow = {
       id: workflowId,
@@ -143,7 +145,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       tasks: [],
       result: null,
       createdAt: new Date().toISOString(),
-      options: options ?? {}
+      options: {
+        ...options,
+        mode
+      }
     };
 
     this.workflows.set(workflowId, workflow);
@@ -164,6 +169,19 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     workflow.tasks.push(planTask.id);
 
     return workflowId;
+  }
+
+  /**
+   * Submit a chat-style goal that routes through the analyst pipeline
+   */
+  async submitChat(message: string, options?: {
+    priority?: 'low' | 'normal' | 'high' | 'critical';
+    constraints?: string[];
+  }): Promise<string> {
+    return this.submitGoal(message, {
+      ...options,
+      mode: 'chat'
+    });
   }
 
   /**
@@ -302,7 +320,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
    */
   private async assignTasks(): Promise<void> {
     const agentTypes: Array<AgentConfig['agentType']> = [
-      'planner', 'executor', 'observer', 'arbiter', 'archivist'
+      'planner', 'executor', 'observer', 'arbiter', 'archivist', 'analyst'
     ];
 
     for (const agentType of agentTypes) {
@@ -349,6 +367,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
           actionRef: task.input.actionRef as string,
           target: task.input.target as string
         };
+      } else if (task.type === 'analyze') {
+        if (task.input.plan) {
+          taskDescription += `\n\nPlan to follow:\n${JSON.stringify(task.input.plan, null, 2)}`;
+        }
       } else if (task.type === 'archive') {
         // Create task context with content and contentType for Store affordance
         taskContext = {
@@ -420,6 +442,11 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
       workflow.tasks.push(approvalTask.id);
       workflow.status = 'awaiting-approval';
+      return;
+    }
+
+    if (workflow.options.mode === 'chat') {
+      await this.createChatAnalysisTasks(workflow, planTask.id, output);
       return;
     }
 
@@ -520,6 +547,87 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
           completedAt: new Date().toISOString()
         }),
         contentType: 'trace' // One of: trace, knowledge, artifact, index
+      },
+      metadata: { workflowId: workflow.id }
+    });
+    workflow.tasks.push(archiveTask.id);
+  }
+
+  /**
+   * Create chat analysis tasks (Planner -> Arbiter -> Analyst -> Observer -> Archivist)
+   */
+  private async createChatAnalysisTasks(
+    workflow: Workflow,
+    planTaskId: string,
+    plan: PlanOutput
+  ): Promise<void> {
+    workflow.status = 'executing';
+
+    let previousTaskId = planTaskId;
+    const steps = plan.steps?.length ? plan.steps : [
+      { action: `Answer user message: ${workflow.goal}`, rationale: 'Respond conversationally using data' }
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const stepNum = i + 1;
+
+      const approveTask = this.taskManager.createTask({
+        type: 'approve',
+        description: `[Step ${stepNum}/${steps.length}] Approve: ${step.action}`,
+        priority: 'normal',
+        dependencies: [previousTaskId],
+        input: { step, stepNumber: stepNum, plan },
+        metadata: { workflowId: workflow.id, stepNumber: stepNum }
+      });
+      workflow.tasks.push(approveTask.id);
+
+      const analyzeTask = this.taskManager.createTask({
+        type: 'analyze',
+        description: `[Step ${stepNum}/${steps.length}] Analyze: ${step.action}\n\nUser message:\n${workflow.goal}\n\nGuidance:\n- Use QueryData (SPARQL) against the semantic layer.\n- Prefer dcterms:identifier and dcterms:title for order data.\n- After querying, emit EmitInsight with a concise conversational summary.`,
+        priority: 'normal',
+        dependencies: [approveTask.id],
+        input: {
+          step,
+          stepNumber: stepNum,
+          plan,
+          userMessage: workflow.goal,
+          queryHints: {
+            sparqlExample: 'SELECT ?order ?id ?title WHERE { ?order <http://purl.org/dc/terms/identifier> ?id ; <http://purl.org/dc/terms/title> ?title } LIMIT 5'
+          }
+        },
+        metadata: { workflowId: workflow.id, stepNumber: stepNum }
+      });
+      workflow.tasks.push(analyzeTask.id);
+
+      const observeTask = this.taskManager.createTask({
+        type: 'observe',
+        description: `[Step ${stepNum}/${steps.length}] Verify: ${step.action}`,
+        priority: 'normal',
+        dependencies: [analyzeTask.id],
+        input: { step, stepNumber: stepNum, expectedOutcome: step.rationale },
+        metadata: { workflowId: workflow.id, stepNumber: stepNum }
+      });
+      workflow.tasks.push(observeTask.id);
+
+      previousTaskId = observeTask.id;
+    }
+
+    const archiveTask = this.taskManager.createTask({
+      type: 'archive',
+      description: `Archive chat results for: ${workflow.goal}`,
+      priority: 'low',
+      dependencies: [previousTaskId],
+      input: {
+        workflowId: workflow.id,
+        plan,
+        totalSteps: steps.length,
+        content: JSON.stringify({
+          goal: workflow.goal,
+          plan,
+          completedAt: new Date().toISOString()
+        }),
+        contentType: 'trace'
       },
       metadata: { workflowId: workflow.id }
     });
@@ -638,7 +746,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       executor: 'ExecutorCapability',
       observer: 'ObserverCapability',
       arbiter: 'ArbiterCapability',
-      archivist: 'ArchivistCapability'
+      archivist: 'ArchivistCapability',
+      analyst: 'AnalystCapability'
     };
 
     const capability = capabilityMap[agentType];
@@ -681,6 +790,7 @@ interface Workflow {
     priority?: 'low' | 'normal' | 'high' | 'critical';
     constraints?: string[];
     requiresApproval?: boolean;
+    mode?: 'default' | 'chat';
   };
 }
 

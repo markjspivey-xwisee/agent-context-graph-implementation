@@ -15,6 +15,15 @@ When a data source like Databricks is used, ACG treats it as an **adapter exampl
 
 This preserves Databricks as the source of truth and keeps ACG runtime storage free of copied data.
 
+## Conversational agent workflow (team chat)
+
+The conversational path uses the agent team to answer questions grounded in the semantic layer:
+
+Planner → Arbiter → Analyst → Observer → Archivist
+
+The **Analyst** agent issues `QueryData` with SPARQL and emits insights (no side effects). This mode is
+optimized for “chat with your data” workflows and is implemented in the dashboard chat flow.
+
 ## Runtime shape (mermaid)
 
 ```mermaid
