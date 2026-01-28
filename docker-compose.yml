@@ -52,7 +52,7 @@ services:
       - ONTOP_DB_USER=${DATABRICKS_JDBC_USER:-token}
       - ONTOP_DB_PASSWORD=${DATABRICKS_TOKEN:-}
     volumes:
-      - ./examples/semantic-layer/mapping.ttl:/opt/ontop/mapping.ttl:ro
+      - ${SEMANTIC_LAYER_MAPPING_PATH:-./examples/semantic-layer/mapping.ttl}:/opt/ontop/mapping.ttl:ro
       - ./drivers/databricks-jdbc:/opt/ontop/jdbc:ro
     profiles:
       - semantic-layer

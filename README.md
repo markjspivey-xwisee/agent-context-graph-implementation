@@ -55,9 +55,11 @@ and uses `QueryData` (SPARQL) against the semantic layer.
 
 1) Ensure a SPARQL endpoint is running (Ontop or Virtuoso) and set:
    - `SEMANTIC_LAYER_SPARQL_ENDPOINT`
-2) Start the core API (for full dashboard functionality):
+2) (Recommended) Generate a runtime mapping + catalog from Databricks:
+   - `POST /semantic-layer/refresh`
+3) Start the core API (for full dashboard functionality):
    - `npm run dev` (port 3000)
-3) Start the dashboard server:
+4) Start the dashboard server:
    - `npm run dashboard` (port 3001)
 
 All workflows (goals, chat, CLI) run through the core API on port 3000; the dashboard server

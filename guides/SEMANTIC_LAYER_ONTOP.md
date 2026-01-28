@@ -71,15 +71,38 @@ http://localhost:8080/sparql
 Ontop reads the mapping from:
 
 ```
-examples/semantic-layer/mapping.ttl
+${SEMANTIC_LAYER_MAPPING_PATH:-examples/semantic-layer/mapping.ttl}
 ```
 
-If you want a different Databricks table, update that mapping file
-and restart the Ontop container. The default mapping uses Databricks sample data:
+If you want a different Databricks table, you can either edit the mapping file
+or generate one at runtime (recommended). The default mapping uses Databricks sample data:
 
 ```
-SELECT o_orderkey AS order_id, o_orderpriority AS order_name
+SELECT o_orderkey AS order_id, o_orderpriority AS order_name, o_totalprice AS order_revenue
 FROM samples.tpch.orders
+```
+
+### Runtime mapping refresh (recommended)
+
+The API can introspect Databricks and generate an R2RML mapping dynamically:
+
+```
+curl -X POST http://localhost:3000/semantic-layer/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"catalog":"samples","schema":"tpch","maxTables":20}'
+```
+
+Set these in `.env` so Ontop reads the generated mapping:
+
+```
+SEMANTIC_LAYER_RUNTIME_DIR=./data/semantic-layer
+SEMANTIC_LAYER_MAPPING_PATH=./data/semantic-layer/mapping.ttl
+```
+
+Then restart Ontop so it picks up the updated mapping:
+
+```
+docker compose --profile semantic-layer restart ontop
 ```
 
 ## Quick SPARQL test

@@ -1,5 +1,5 @@
 import Hapi from '@hapi/hapi';
-import { readFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { ContextBroker, type ContextRequest, type TraverseRequest } from './broker/context-broker.js';
 import { AATRegistry } from './services/aat-registry.js';
 import { StubVerifier, RealVerifier } from './services/verifier.js';
@@ -21,9 +21,12 @@ import { RealtimeSyncService } from './services/realtime-sync.js';
 import { KnowledgeGraphService } from './services/knowledge-graph-service.js';
 import { SemanticQueryClient } from './services/semantic-query-client.js';
 import { DatabricksSqlClient } from './services/databricks-sql-client.js';
-import { join, dirname } from 'path';
+import { join, dirname, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { resolveSpecPath } from './utils/spec-path.js';
+import { DatabricksIntrospector, type DatabricksIntrospectionOptions, type DatabricksIntrospectionResult } from './services/databricks-introspector.js';
+import { generateR2RmlMapping, type MappingGenerationResult } from './services/r2rml-mapping-generator.js';
+import { buildSemanticCatalogBundle, type SemanticCatalogBundle } from './services/semantic-layer-runtime.js';
 
 /**
  * Load all Turtle files from a directory and concatenate them
@@ -52,6 +55,18 @@ function loadTextFile(filePath: string): string {
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(__dirname, '..', '..');
+
+function resolveRepoPath(pathValue: string): string {
+  if (isAbsolute(pathValue)) return pathValue;
+  return join(repoRoot, pathValue);
+}
+
+function ensureDir(pathValue: string) {
+  if (!existsSync(pathValue)) {
+    mkdirSync(pathValue, { recursive: true });
+  }
+}
 
 async function init() {
   // Initialize services
@@ -355,18 +370,28 @@ async function init() {
   const hydraContent = loadTurtleFiles(hydraDir);
   const shaclContent = loadTurtleFiles(shaclDir);
 
-  const semanticExamplesDir = join(__dirname, '..', '..', 'examples', 'semantic-layer');
-  const catalogDoc = loadJsonFile(join(semanticExamplesDir, 'catalog.jsonld'), {
+  const semanticExamplesDir = join(repoRoot, 'examples', 'semantic-layer');
+  const semanticRuntimeDir = resolveRepoPath(process.env.SEMANTIC_LAYER_RUNTIME_DIR ?? 'data/semantic-layer');
+  const runtimeCatalogPath = join(semanticRuntimeDir, 'catalog.jsonld');
+  const runtimeProductsPath = join(semanticRuntimeDir, 'data-products.jsonld');
+  const runtimeIntrospectionPath = join(semanticRuntimeDir, 'introspection.json');
+  const runtimeMappingPath = join(semanticRuntimeDir, 'mapping.ttl');
+
+  const catalogFallback = loadJsonFile(join(semanticExamplesDir, 'catalog.jsonld'), {
     '@context': 'http://www.w3.org/ns/hydra/core',
     '@id': '/data/catalog',
     '@type': 'hydra:Resource'
   });
-  const dataProductsDoc = loadJsonFile(join(semanticExamplesDir, 'data-products.jsonld'), {
+  let catalogDoc = loadJsonFile(runtimeCatalogPath, catalogFallback);
+
+  const dataProductsFallback = loadJsonFile(join(semanticExamplesDir, 'data-products.jsonld'), {
     '@context': 'http://www.w3.org/ns/hydra/core',
     '@id': '/data/products',
     '@type': 'hydra:Collection',
     'hydra:member': []
   });
+  let dataProductsDoc = loadJsonFile(runtimeProductsPath, dataProductsFallback);
+
   const dataContractsDoc = loadJsonFile(join(semanticExamplesDir, 'contracts.jsonld'), {
     '@context': 'http://www.w3.org/ns/hydra/core',
     '@id': '/data/contracts',
@@ -390,8 +415,12 @@ async function init() {
     return index;
   };
 
-  const dataProductIndex = buildIndex(getHydraMembers(dataProductsDoc));
+  let dataProductIndex = buildIndex(getHydraMembers(dataProductsDoc));
   const dataContractIndex = buildIndex(getHydraMembers(dataContractsDoc));
+
+  const refreshDataProductIndex = () => {
+    dataProductIndex = buildIndex(getHydraMembers(dataProductsDoc));
+  };
 
   const normalizeProductId = (id: string): string => {
     if (id.startsWith('urn:')) return id;
@@ -446,6 +475,93 @@ async function init() {
     });
 
     return databricksClient;
+  };
+
+  const resolveMappingPath = (override?: string) => {
+    const candidate = override ?? process.env.SEMANTIC_LAYER_MAPPING_PATH ?? 'examples/semantic-layer/mapping.ttl';
+    return resolveRepoPath(candidate);
+  };
+
+  const resolveRuntimePath = (override?: string) => {
+    const candidate = override ?? process.env.SEMANTIC_LAYER_RUNTIME_DIR ?? 'data/semantic-layer';
+    return resolveRepoPath(candidate);
+  };
+
+  let semanticLayerIntrospection: DatabricksIntrospectionResult | null = null;
+  let semanticLayerMapping: MappingGenerationResult | null = null;
+  let semanticLayerCatalog: SemanticCatalogBundle | null = null;
+  let semanticLayerLastError: string | null = null;
+  let semanticLayerLastRefreshAt: string | null = null;
+  let semanticLayerMappingPath: string | null = resolveMappingPath();
+
+  const refreshSemanticLayer = async (options: DatabricksIntrospectionOptions & {
+    mappingPath?: string;
+    baseIri?: string;
+  } = {}) => {
+    const tablesFromEnv = process.env.SEMANTIC_LAYER_MAPPING_TABLES
+      ? process.env.SEMANTIC_LAYER_MAPPING_TABLES.split(',').map(v => v.trim()).filter(Boolean)
+      : undefined;
+
+    const maxTablesFromEnv = process.env.SEMANTIC_LAYER_MAPPING_MAX_TABLES
+      ? Number(process.env.SEMANTIC_LAYER_MAPPING_MAX_TABLES)
+      : undefined;
+
+    const effectiveOptions: DatabricksIntrospectionOptions = {
+      catalog: options.catalog ?? process.env.SEMANTIC_LAYER_MAPPING_CATALOG,
+      schema: options.schema ?? process.env.SEMANTIC_LAYER_MAPPING_SCHEMA,
+      tables: options.tables ?? tablesFromEnv,
+      maxTables: options.maxTables ?? maxTablesFromEnv,
+      includeViews: options.includeViews
+    };
+
+    const client = getDatabricksClient();
+    const introspector = new DatabricksIntrospector(client);
+    const introspection = await introspector.introspect(effectiveOptions);
+
+    const baseIri = options.baseIri ?? process.env.SEMANTIC_LAYER_MAPPING_BASE_IRI;
+    const mapping = generateR2RmlMapping(introspection, {
+      baseIri,
+      includeGenericColumns: true
+    });
+
+    const runtimeDir = resolveRuntimePath();
+    ensureDir(runtimeDir);
+
+    const mappingPathCandidate = options.mappingPath ??
+      process.env.SEMANTIC_LAYER_MAPPING_PATH ??
+      runtimeMappingPath;
+    const mappingPath = resolveRepoPath(mappingPathCandidate);
+    ensureDir(dirname(mappingPath));
+    writeFileSync(mappingPath, mapping.ttl, 'utf-8');
+
+    const semanticEndpoint = process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ?? defaultSparqlEndpoint;
+    const catalogBundle = buildSemanticCatalogBundle(introspection, {
+      semanticEndpoint,
+      baseIri
+    });
+
+    writeFileSync(join(runtimeDir, 'catalog.jsonld'), JSON.stringify(catalogBundle.catalog, null, 2), 'utf-8');
+    writeFileSync(join(runtimeDir, 'data-products.jsonld'), JSON.stringify(catalogBundle.products, null, 2), 'utf-8');
+    writeFileSync(join(runtimeDir, 'introspection.json'), JSON.stringify(introspection, null, 2), 'utf-8');
+
+    semanticLayerIntrospection = introspection;
+    semanticLayerMapping = mapping;
+    semanticLayerCatalog = catalogBundle;
+    semanticLayerLastError = null;
+    semanticLayerLastRefreshAt = new Date().toISOString();
+    semanticLayerMappingPath = mappingPath;
+
+    catalogDoc = catalogBundle.catalog;
+    dataProductsDoc = catalogBundle.products;
+    refreshDataProductIndex();
+
+    return {
+      mappingPath,
+      runtimeDir,
+      tablesMapped: mapping.tablesMapped,
+      warnings: [...introspection.warnings, ...mapping.warnings],
+      refreshedAt: semanticLayerLastRefreshAt
+    };
   };
 
   // Health check endpoint
@@ -1839,6 +1955,79 @@ async function init() {
   });
 
   // ===========================================
+  // Semantic Layer Runtime Controls
+  // ===========================================
+
+  server.route({
+    method: 'GET',
+    path: '/semantic-layer/status',
+    handler: () => {
+      return {
+        mappingPath: semanticLayerMappingPath ?? resolveMappingPath(),
+        runtimeDir: resolveRuntimePath(),
+        lastRefreshAt: semanticLayerLastRefreshAt,
+        lastError: semanticLayerLastError,
+        tablesMapped: semanticLayerMapping?.tablesMapped ?? null,
+        warnings: [
+          ...(semanticLayerIntrospection?.warnings ?? []),
+          ...(semanticLayerMapping?.warnings ?? [])
+        ]
+      };
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/semantic-layer/refresh',
+    handler: async (request, h) => {
+      try {
+        const payload = (request.payload ?? {}) as DatabricksIntrospectionOptions & {
+          mappingPath?: string;
+          baseIri?: string;
+        };
+        if (typeof (payload as any).tables === 'string') {
+          payload.tables = (payload as any).tables
+            .split(',')
+            .map((value: string) => value.trim())
+            .filter(Boolean);
+        }
+
+        const result = await refreshSemanticLayer(payload);
+        return h.response({ ok: true, ...result }).code(200);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        semanticLayerLastError = message;
+        return h.response({ ok: false, error: message }).code(500);
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/semantic-layer/introspection',
+    handler: (_request, h) => {
+      if (!semanticLayerIntrospection) {
+        return h.response({ error: 'No runtime introspection available. Run POST /semantic-layer/refresh.' }).code(404);
+      }
+      return h.response(semanticLayerIntrospection).code(200);
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/semantic-layer/mapping',
+    handler: (_request, h) => {
+      const mappingPath = semanticLayerMappingPath ?? resolveMappingPath();
+      if (!existsSync(mappingPath)) {
+        return h.response({ error: 'Mapping file not found. Run POST /semantic-layer/refresh.' }).code(404);
+      }
+      return h.response(readFileSync(mappingPath, 'utf-8'))
+        .type('text/turtle')
+        .code(200);
+    }
+  });
+
+  // ===========================================
   // Data Query Endpoints (Semantic Layer)
   // ===========================================
 
@@ -2191,6 +2380,12 @@ async function init() {
         'dataProducts': '/data/products',
         'dataContracts': '/data/contracts',
         'dataQuery': '/data/query',
+        'semanticLayer': {
+          'status': '/semantic-layer/status',
+          'refresh': '/semantic-layer/refresh',
+          'introspection': '/semantic-layer/introspection',
+          'mapping': '/semantic-layer/mapping'
+        },
         'knowledgeGraphs': '/knowledge-graphs',
         'tools': '/broker/tools',
         'policyEvaluate': '/policy/evaluate',
@@ -2201,6 +2396,16 @@ async function init() {
   });
 
   await server.start();
+
+  if (process.env.SEMANTIC_LAYER_AUTO_REFRESH === 'true') {
+    refreshSemanticLayer().then(result => {
+      console.log(`Semantic layer refreshed: ${result.tablesMapped} tables mapped.`);
+    }).catch(error => {
+      const message = error instanceof Error ? error.message : String(error);
+      semanticLayerLastError = message;
+      console.warn(`Semantic layer auto-refresh failed: ${message}`);
+    });
+  }
 
   // Attach WebSocket server for real-time sync
   realtimeSyncService.attach(server.listener, '/ws');
@@ -2259,6 +2464,11 @@ async function init() {
   console.log('  GET  /data/contracts   - List data contracts');
   console.log('  GET  /data/contracts/{id} - Get data contract');
   console.log('  GET  /data/contracts/{id}/shape - Get contract SHACL shape');
+  console.log('\nSemantic Layer Runtime:');
+  console.log('  GET  /semantic-layer/status - Runtime semantic layer status');
+  console.log('  POST /semantic-layer/refresh - Introspect + regenerate mapping');
+  console.log('  GET  /semantic-layer/introspection - Latest introspection snapshot');
+  console.log('  GET  /semantic-layer/mapping - Current R2RML mapping');
   console.log('\nData Query Endpoints:');
   console.log('  POST /data/query   - Execute a semantic query (SPARQL canonical; SQL adapter supported)');
   console.log('  GET  /data/query/{queryId} - Fetch status for SQL adapters');

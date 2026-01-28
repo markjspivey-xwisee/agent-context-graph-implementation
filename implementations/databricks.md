@@ -21,6 +21,51 @@ Then use `QueryData` with `queryLanguage: "sparql"`.
 For Virtuoso setup, see `guides/SEMANTIC_LAYER_VIRTUOSO.md`.
 For Ontop setup, see `guides/SEMANTIC_LAYER_ONTOP.md`.
 
+### Runtime introspection + dynamic mappings (recommended)
+
+To avoid hardcoding tables or mappings, the implementation can **introspect Databricks at runtime** and
+generate an R2RML mapping on demand.
+
+API endpoint:
+
+```
+POST /semantic-layer/refresh
+```
+
+Example payload:
+
+```json
+{
+  "catalog": "samples",
+  "schema": "tpch",
+  "maxTables": 20
+}
+```
+
+This will:
+1) Inspect `system.information_schema` for tables/columns.
+2) Generate a runtime `mapping.ttl`.
+3) Emit a Hydra/HyprCat catalog (`/data/catalog`, `/data/products`).
+
+Set env vars for defaults:
+
+```
+SEMANTIC_LAYER_RUNTIME_DIR=./data/semantic-layer
+SEMANTIC_LAYER_MAPPING_PATH=./data/semantic-layer/mapping.ttl
+SEMANTIC_LAYER_MAPPING_CATALOG=samples
+SEMANTIC_LAYER_MAPPING_SCHEMA=tpch
+SEMANTIC_LAYER_MAPPING_MAX_TABLES=50
+```
+
+Then trigger:
+
+```
+curl -X POST http://localhost:3000/semantic-layer/refresh
+```
+
+Ontop still needs to read the mapping file you generated, but **the mapping content is now runtime-derived**
+instead of hardcoded.
+
 ### Zero-copy guarantee
 
 The semantic layer is a **virtual RDF overlay**. Databricks remains the source of truth, and
