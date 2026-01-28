@@ -36,6 +36,18 @@ docker compose --profile semantic-layer up -d virtuoso
 http://localhost:8890/sparql
 ```
 
+4) Load the R2RML mappings (one command):
+
+```bash
+./scripts/virtuoso-load-r2rml.sh
+```
+
+PowerShell:
+
+```powershell
+.\scripts\virtuoso-load-r2rml.ps1
+```
+
 ## R2RML mappings (Virtuoso)
 
 Virtuoso supports **R2RML** via the VAD package and can materialize virtual mappings to queryable RDF.
@@ -68,6 +80,12 @@ DB.DBA.TTLP('
 ',
 'urn:acg:r2rml:databricks',
 'urn:acg:r2rml:databricks');
+```
+
+If you mounted the mappings (default compose setup), the file is at:
+
+```
+/database/mappings/mapping.ttl
 ```
 
 3) Generate a quad map from the R2RML graph:
