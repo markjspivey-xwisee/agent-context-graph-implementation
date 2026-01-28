@@ -591,7 +591,7 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
         '}',
         'ORDER BY DESC(?revenue)',
         'LIMIT 5'
-      ].join('\\n');
+      ].join('\n');
     }
 
     return 'SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5';
