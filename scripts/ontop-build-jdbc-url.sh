@@ -23,4 +23,4 @@ host_clean="${host_clean%/}"
 
 jdbc_url="jdbc:databricks://${host_clean}:443/default;transportMode=http;ssl=1;httpPath=${HTTP_PATH};AuthMech=3;UID=token;PWD=${TOKEN}"
 
-echo "DATABRICKS_JDBC_URL=${jdbc_url}"
+echo "DATABRICKS_JDBC_URL='${jdbc_url}'"

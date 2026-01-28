@@ -30,4 +30,4 @@ $hostClean = $hostClean.TrimEnd('/')
 
 $jdbcUrl = "jdbc:databricks://$hostClean:443/default;transportMode=http;ssl=1;httpPath=$HttpPath;AuthMech=3;UID=token;PWD=$Token"
 
-Write-Output "DATABRICKS_JDBC_URL=$jdbcUrl"
+Write-Output "DATABRICKS_JDBC_URL='$jdbcUrl'"

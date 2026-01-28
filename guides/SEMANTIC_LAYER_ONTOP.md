@@ -46,7 +46,10 @@ PowerShell:
 .\scripts\ontop-build-jdbc-url.ps1
 ```
 
-Copy the printed `DATABRICKS_JDBC_URL=...` into your `.env`.
+Copy the printed `DATABRICKS_JDBC_URL='...'` into your `.env` (quotes are important if you `source .env`).
+
+If you see `bash: UID: readonly variable` when sourcing `.env`, remove any `UID=...` line and use
+`DATABRICKS_JDBC_USER=token` instead.
 
 ## Start Ontop
 
