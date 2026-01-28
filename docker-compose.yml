@@ -48,9 +48,14 @@ services:
       - "1111:1111"
     environment:
       - DBA_PASSWORD=${VIRTUOSO_DBA_PASSWORD:-dba}
+      - DATABRICKS_HOST=${DATABRICKS_HOST:-}
+      - DATABRICKS_HTTP_PATH=${DATABRICKS_HTTP_PATH:-}
+      - DATABRICKS_TOKEN=${DATABRICKS_TOKEN:-}
+      - DATABRICKS_ODBC_DSN=${DATABRICKS_ODBC_DSN:-Databricks}
     volumes:
       - virtuoso-data:/database
       - ./examples/semantic-layer:/database/mappings:ro
+      - ./drivers/databricks:/drivers/databricks:ro
     profiles:
       - semantic-layer
 

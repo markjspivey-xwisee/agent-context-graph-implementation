@@ -36,7 +36,31 @@ docker compose --profile semantic-layer up -d virtuoso
 http://localhost:8890/sparql
 ```
 
-4) Load the R2RML mappings (one command):
+4) Install the Databricks ODBC driver (one command):
+
+```bash
+./scripts/virtuoso-install-databricks-driver.sh
+```
+
+PowerShell:
+
+```powershell
+.\scripts\virtuoso-install-databricks-driver.ps1
+```
+
+5) Configure the Databricks ODBC DSN (one command):
+
+```bash
+./scripts/virtuoso-config-databricks-dsn.sh
+```
+
+PowerShell:
+
+```powershell
+.\scripts\virtuoso-config-databricks-dsn.ps1
+```
+
+6) Load the R2RML mappings (one command):
 
 ```bash
 ./scripts/virtuoso-load-r2rml.sh
@@ -50,6 +74,34 @@ PowerShell:
 
 If you see errors like `Undefined procedure DB.DBA.R2RML_MAKE_QM_FROM_G`, install the
 **R2RML VAD package** in Virtuoso Conductor, then re-run the loader.
+
+## Databricks ODBC setup (Virtuoso)
+
+1) Download the Databricks Simba ODBC driver for Linux and place it in
+   `drivers/databricks/` (see `drivers/databricks/README.md`).
+2) Run `./scripts/virtuoso-install-databricks-driver.sh` to install the driver
+   inside the Virtuoso container.
+3) Set the following in your `.env`:
+   - `DATABRICKS_HOST` (workspace host)
+   - `DATABRICKS_HTTP_PATH` (SQL warehouse HTTP path)
+   - `DATABRICKS_TOKEN` (personal access token)
+   - `DATABRICKS_ODBC_DSN` (optional DSN name; default `Databricks`)
+   - `DATABRICKS_ODBC_DRIVER_PATH` (optional; default `/opt/simba/spark/lib/64/libSparkODBC_sb64.so`)
+4) Run `./scripts/virtuoso-config-databricks-dsn.sh` to write `/etc/odbc.ini`
+   and `/etc/odbcinst.ini` inside the container.
+
+## Attach Databricks tables in Virtuoso
+
+The R2RML mapping references `sales_orders`. Attach the Databricks table into Virtuoso
+using the Conductor so that a table named `sales_orders` exists in Virtuoso's SQL schema.
+
+Suggested flow:
+
+1) Open Virtuoso Conductor (`/conductor`) and log in as `dba`.
+2) Navigate to **Database → External Data Sources**.
+3) Create a new data source using the DSN name from `DATABRICKS_ODBC_DSN`.
+4) Test the connection, then **attach** the target table(s) into `DB.DBA`.
+5) Confirm that `sales_orders` is visible in Virtuoso SQL, then reload the R2RML mapping.
 
 ## R2RML mappings (Virtuoso)
 

@@ -31,6 +31,10 @@ coverage/
 *.temp
 agent_content.txt
 
+# External drivers (local only)
+drivers/databricks/*
+!drivers/databricks/README.md
+
 # Original documents (not needed in repo)
 *.docx
 *.rtf
