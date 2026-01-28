@@ -1271,7 +1271,8 @@ export class ContextBroker {
       }
 
       case 'QueryData': {
-        const query = (parameters.query ?? parameters.sparql ?? parameters.statement) as string | undefined;
+        const rawQuery = (parameters.query ?? parameters.sparql ?? parameters.statement) as string | undefined;
+        const query = rawQuery?.replace(/\\n/g, '\n').replace(/\\t/g, ' ');
         const queryLanguageRaw = (parameters.queryLanguage ??
           (parameters.sparql ? 'sparql' : parameters.statement ? 'sql' : 'sparql')) as string | undefined;
         const queryLanguage = queryLanguageRaw?.toLowerCase() ?? 'sparql';
