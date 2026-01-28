@@ -307,13 +307,14 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
           }
         }
 
-        // 3. Use reasoning client to decide what to do
+        // 3. Use reasoning client to decide what to do (or auto-select for archivist)
         const systemPrompt = AgentRuntime.SYSTEM_PROMPTS[this.config.agentType];
         const previousActions = this.state.actionHistory.map(
           a => `${a.actionType}: ${a.result}`
         );
 
-        const decision = await this.reasoningClient.reasonAboutContext(
+        const archivistDecision = this.buildArchivistDecision(context);
+        const decision = archivistDecision ?? await this.reasoningClient.reasonAboutContext(
           systemPrompt,
           context,
           task,
@@ -595,6 +596,24 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
     }
 
     return 'SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5';
+  }
+
+  private buildArchivistDecision(context: ContextGraph): LLMResponse | null {
+    if (this.config.agentType !== 'archivist') return null;
+    const storeAffordance = context.affordances.find(a => a.enabled && a.actionType === 'Store');
+    if (!storeAffordance || !this.taskContext?.content || !this.taskContext?.contentType) {
+      return null;
+    }
+    return {
+      reasoning: 'Auto-select Store for archivist task.',
+      selectedAffordance: storeAffordance.id,
+      parameters: {
+        content: this.taskContext.content,
+        contentType: this.taskContext.contentType
+      },
+      shouldContinue: true,
+      message: 'Archiving task content.'
+    };
   }
 
   /**
