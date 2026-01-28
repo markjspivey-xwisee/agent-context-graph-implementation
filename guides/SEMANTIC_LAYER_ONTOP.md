@@ -51,6 +51,9 @@ Copy the printed `DATABRICKS_JDBC_URL='...'` into your `.env` (quotes are import
 If you see `bash: UID: readonly variable` when sourcing `.env`, remove any `UID=...` line and use
 `DATABRICKS_JDBC_USER=token` instead.
 
+If `DATABRICKS_JDBC_URL` was added without quotes, delete that line and re-add the quoted output
+from the helper script.
+
 ## Start Ontop
 
 ```

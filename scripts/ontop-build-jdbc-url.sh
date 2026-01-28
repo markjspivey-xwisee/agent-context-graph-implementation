@@ -2,10 +2,23 @@
 set -euo pipefail
 
 if [[ -f ".env" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source .env
-  set +a
+  while IFS= read -r raw_line; do
+    line="${raw_line%%#*}"
+    line="$(echo "$line" | xargs)"
+    [[ -z "$line" ]] && continue
+    [[ "$line" == export* ]] && line="${line#export }"
+    key="${line%%=*}"
+    value="${line#*=}"
+    value="${value%\"}"
+    value="${value#\"}"
+    value="${value%\'}"
+    value="${value#\'}"
+    case "$key" in
+      DATABRICKS_HOST) DATABRICKS_HOST="$value" ;;
+      DATABRICKS_HTTP_PATH) DATABRICKS_HTTP_PATH="$value" ;;
+      DATABRICKS_TOKEN) DATABRICKS_TOKEN="$value" ;;
+    esac
+  done < .env
 fi
 
 HOST="${DATABRICKS_HOST:-}"
