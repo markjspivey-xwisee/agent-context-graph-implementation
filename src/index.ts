@@ -3001,6 +3001,7 @@ async function init() {
   console.log('\nData Source Registry:');
   console.log('  GET  /data-sources      - List registered sources');
   console.log('  POST /data-sources      - Register a new source');
+  console.log('  PUT  /data-sources/{id} - Update a source');
   console.log('  GET  /data-sources/{id} - Get a source');
   console.log('  POST /data-sources/{id}/refresh - Refresh source introspection');
   console.log('  GET  /data-sources/{id}/mapping - Get generated mapping');
