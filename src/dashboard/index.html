@@ -1772,6 +1772,43 @@
       overflow-y: auto;
     }
 
+    .data-source-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.25rem;
+    }
+
+    .data-source-actions .secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .data-source-actions .secondary:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+    }
+
+    .data-source-hint {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .data-source-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .data-source-checkbox input {
+      accent-color: var(--accent-blue);
+    }
+
     .data-source-form label {
       font-size: 0.65rem;
       color: var(--text-muted);
@@ -1924,6 +1961,7 @@
             <button class="template-btn" data-template="Analyze the codebase structure and summarize key components">Analyze Code</button>
             <button class="template-btn" data-template="Write unit tests for the main module">Write Tests</button>
             <button class="template-btn" data-template="Refactor the code to improve readability">Refactor</button>
+            <button class="template-btn" data-template="Register a new data source using the RegisterDataSource affordance. Name: databricks-secondary. Type: databricks. Host: <host>. Token: <token>. WarehouseId: <warehouse>. Catalog: samples. Schema: tpch. Refresh: true.">Register Data Source</button>
           </div>
           <div class="goal-input">
             <textarea id="goalInput" placeholder="Describe what you want the agents to accomplish..."></textarea>
@@ -2056,7 +2094,10 @@
             </div>
             <div class="data-source-form">
               <div class="detail-section" style="margin-bottom: 0;">
-                <h4>Register Source</h4>
+                <h4 id="dataSourceFormTitle">Register Source</h4>
+              </div>
+              <div class="data-source-hint" id="dataSourceFormHint">
+                Register a new source to add it to the semantic catalog.
               </div>
               <label for="dataSourceName">Name</label>
               <input id="dataSourceName" placeholder="databricks-secondary" />
@@ -2073,7 +2114,7 @@
               <label for="dataSourceHost">Host / Base URL</label>
               <input id="dataSourceHost" placeholder="dbc-xxx.cloud.databricks.com" />
               <label for="dataSourceToken">Token</label>
-              <input id="dataSourceToken" type="password" placeholder="dapi..." />
+              <input id="dataSourceToken" type="password" placeholder="Set new token (optional)" />
               <label for="dataSourceWarehouse">Warehouse ID</label>
               <input id="dataSourceWarehouse" placeholder="warehouse-id" />
               <label for="dataSourceCatalog">Catalog</label>
@@ -2087,7 +2128,14 @@
               <input id="dataSourcePlan" placeholder="http://localhost:8080/sparql?query=EXPLAIN..." />
               <label for="dataSourceBaseIri">Base IRI (optional)</label>
               <input id="dataSourceBaseIri" placeholder="urn:acg:source:" />
-              <button class="template-btn" id="dataSourceRegister">Register Source</button>
+              <label class="data-source-checkbox">
+                <input type="checkbox" id="dataSourceRefresh" />
+                Refresh after update
+              </label>
+              <div class="data-source-actions">
+                <button class="template-btn" id="dataSourceRegister">Register Source</button>
+                <button class="template-btn secondary" id="dataSourceCancel" style="display:none;">Cancel Edit</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2460,6 +2508,7 @@
     let chatConversationId = null;
     let chatMessages = [];
     let selectedChatSourceId = '';
+    let editingDataSourceId = null;
     let dataSources = [];
 
     // AAT Descriptions - from spec/aat/*.json
@@ -2587,6 +2636,7 @@
     const chatDataSourceSelect = document.getElementById('chatDataSourceSelect');
     const dataSourceList = document.getElementById('dataSourceList');
     const dataSourceRegisterBtn = document.getElementById('dataSourceRegister');
+    const dataSourceCancelBtn = document.getElementById('dataSourceCancel');
     const dataSourceName = document.getElementById('dataSourceName');
     const dataSourceType = document.getElementById('dataSourceType');
     const dataSourceDescription = document.getElementById('dataSourceDescription');
@@ -2598,6 +2648,9 @@
     const dataSourceSparql = document.getElementById('dataSourceSparql');
     const dataSourcePlan = document.getElementById('dataSourcePlan');
     const dataSourceBaseIri = document.getElementById('dataSourceBaseIri');
+    const dataSourceRefresh = document.getElementById('dataSourceRefresh');
+    const dataSourceFormTitle = document.getElementById('dataSourceFormTitle');
+    const dataSourceFormHint = document.getElementById('dataSourceFormHint');
     const agentList = document.getElementById('agentList');
     const activityLog = document.getElementById('activityLog');
     const modalOverlay = document.getElementById('modalOverlay');
@@ -3416,12 +3469,65 @@
               <span>${escapeHtml(lastError)}</span>
             </div>
             <div class="actions">
+              <button class="chat-result-btn" onclick="editDataSource('${source.id}')">Edit</button>
               <button class="chat-result-btn" onclick="refreshDataSource('${source.id}')">Refresh</button>
               <button class="chat-result-btn" onclick="viewDataSourceMapping('${source.id}')">View Mapping</button>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    function clearDataSourceForm() {
+      dataSourceName.value = '';
+      dataSourceDescription.value = '';
+      dataSourceHost.value = '';
+      dataSourceToken.value = '';
+      dataSourceWarehouse.value = '';
+      dataSourceCatalog.value = '';
+      dataSourceSchema.value = '';
+      dataSourceSparql.value = '';
+      dataSourcePlan.value = '';
+      dataSourceBaseIri.value = '';
+      if (dataSourceRefresh) dataSourceRefresh.checked = false;
+    }
+
+    function setEditMode(source) {
+      editingDataSourceId = source.id;
+      dataSourceFormTitle.textContent = `Update Source: ${source.name}`;
+      dataSourceFormHint.textContent = 'Update fields below. Leave token blank to keep the current value.';
+      dataSourceRegisterBtn.textContent = 'Update Source';
+      dataSourceCancelBtn.style.display = 'inline-flex';
+      dataSourceName.value = source.name || '';
+      dataSourceType.value = source.type || 'custom';
+      dataSourceDescription.value = source.description || '';
+      dataSourceHost.value = source.databricks?.host || '';
+      dataSourceToken.value = '';
+      dataSourceWarehouse.value = source.databricks?.warehouseId || '';
+      dataSourceCatalog.value = source.databricks?.catalog || '';
+      dataSourceSchema.value = source.databricks?.schema || '';
+      dataSourceSparql.value = source.semanticLayer?.sparqlEndpoint || '';
+      dataSourcePlan.value = source.semanticLayer?.planEndpoint || '';
+      dataSourceBaseIri.value = source.semanticLayer?.baseIri || '';
+      if (dataSourceRefresh) dataSourceRefresh.checked = false;
+    }
+
+    function exitEditMode() {
+      editingDataSourceId = null;
+      dataSourceFormTitle.textContent = 'Register Source';
+      dataSourceFormHint.textContent = 'Register a new source to add it to the semantic catalog.';
+      dataSourceRegisterBtn.textContent = 'Register Source';
+      dataSourceCancelBtn.style.display = 'none';
+      clearDataSourceForm();
+    }
+
+    function editDataSource(id) {
+      const source = dataSources.find(s => s.id === id);
+      if (!source) {
+        showNotification('Source not found.', 'error');
+        return;
+      }
+      setEditMode(source);
     }
 
     async function registerDataSource() {
@@ -3432,21 +3538,71 @@
       }
 
       const type = dataSourceType?.value ?? 'custom';
+      const description = dataSourceDescription?.value?.trim() || undefined;
+      const host = dataSourceHost?.value?.trim();
+      const token = dataSourceToken?.value?.trim();
+      const warehouseId = dataSourceWarehouse?.value?.trim();
+      const catalog = dataSourceCatalog?.value?.trim();
+      const schema = dataSourceSchema?.value?.trim();
+      const sparqlEndpoint = dataSourceSparql?.value?.trim();
+      const planEndpoint = dataSourcePlan?.value?.trim();
+      const baseIri = dataSourceBaseIri?.value?.trim();
+      const refresh = dataSourceRefresh?.checked ?? false;
+
+      const databricksPatch = {};
+      if (host) databricksPatch.host = host;
+      if (token) databricksPatch.token = token;
+      if (warehouseId) databricksPatch.warehouseId = warehouseId;
+      if (catalog) databricksPatch.catalog = catalog;
+      if (schema) databricksPatch.schema = schema;
+
+      const semanticPatch = {};
+      if (sparqlEndpoint) semanticPatch.sparqlEndpoint = sparqlEndpoint;
+      if (planEndpoint) semanticPatch.planEndpoint = planEndpoint;
+      if (baseIri) semanticPatch.baseIri = baseIri;
+
+      if (editingDataSourceId) {
+        try {
+          const res = await fetch(`${API_BASE}/data-sources/${editingDataSourceId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name,
+              type,
+              description,
+              databricks: Object.keys(databricksPatch).length ? databricksPatch : undefined,
+              semanticLayer: Object.keys(semanticPatch).length ? semanticPatch : undefined,
+              refresh
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to update data source');
+          }
+          showNotification('Data source updated.', 'success');
+          exitEditMode();
+          await fetchDataSources();
+        } catch (err) {
+          showNotification(`Update failed: ${err.message}`, 'error');
+        }
+        return;
+      }
+
       const payload = {
         name,
         type,
-        description: dataSourceDescription?.value?.trim() || undefined,
+        description,
         databricks: {
-          host: dataSourceHost?.value?.trim() || undefined,
-          token: dataSourceToken?.value?.trim() || undefined,
-          warehouseId: dataSourceWarehouse?.value?.trim() || undefined,
-          catalog: dataSourceCatalog?.value?.trim() || undefined,
-          schema: dataSourceSchema?.value?.trim() || undefined
+          host,
+          token,
+          warehouseId,
+          catalog,
+          schema
         },
         semanticLayer: {
-          sparqlEndpoint: dataSourceSparql?.value?.trim() || undefined,
-          planEndpoint: dataSourcePlan?.value?.trim() || undefined,
-          baseIri: dataSourceBaseIri?.value?.trim() || undefined
+          sparqlEndpoint,
+          planEndpoint,
+          baseIri
         }
       };
 
@@ -3468,16 +3624,7 @@
           throw new Error(data.error || 'Failed to register data source');
         }
         showNotification('Data source registered.', 'success');
-        dataSourceName.value = '';
-        dataSourceDescription.value = '';
-        dataSourceHost.value = '';
-        dataSourceToken.value = '';
-        dataSourceWarehouse.value = '';
-        dataSourceCatalog.value = '';
-        dataSourceSchema.value = '';
-        dataSourceSparql.value = '';
-        dataSourcePlan.value = '';
-        dataSourceBaseIri.value = '';
+        clearDataSourceForm();
         await fetchDataSources();
       } catch (err) {
         showNotification(`Register failed: ${err.message}`, 'error');
@@ -3561,6 +3708,7 @@
 
     chatSendBtn?.addEventListener('click', sendChatMessage);
     dataSourceRegisterBtn?.addEventListener('click', registerDataSource);
+    dataSourceCancelBtn?.addEventListener('click', exitEditMode);
     chatInput?.addEventListener('input', () => {
       chatSendBtn.disabled = !connected || !chatInput.value.trim();
     });
