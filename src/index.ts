@@ -904,6 +904,7 @@ async function init() {
     let refreshResult: { source: DataSourceRegistration; warnings?: string[] } | undefined;
     if (payload.refresh && updated.type === 'databricks') {
       const result = await refreshDataSource(updated);
+      updateSourceDocs(result.source);
       refreshResult = { source: result.source, warnings: result.warnings };
     }
 
@@ -1059,6 +1060,8 @@ async function init() {
 
         if (payload.refresh && updated.type === 'databricks') {
           const refreshed = await refreshDataSource(updated);
+          updateSourceDocs(refreshed.source);
+          rebuildRuntimeCatalog();
           return h.response({
             ok: true,
             source: sanitizeDataSource(refreshed.source),

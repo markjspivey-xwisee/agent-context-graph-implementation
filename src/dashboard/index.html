@@ -3470,6 +3470,7 @@
             </div>
             <div class="actions">
               <button class="chat-result-btn" onclick="editDataSource('${source.id}')">Edit</button>
+              ${source.type === 'databricks' ? `<button class="chat-result-btn" onclick="updateAndRefreshDataSource('${source.id}')">Update + Refresh</button>` : ''}
               <button class="chat-result-btn" onclick="refreshDataSource('${source.id}')">Refresh</button>
               <button class="chat-result-btn" onclick="viewDataSourceMapping('${source.id}')">View Mapping</button>
             </div>
@@ -3646,6 +3647,24 @@
         await fetchDataSources();
       } catch (err) {
         showNotification(`Refresh failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function updateAndRefreshDataSource(id) {
+      try {
+        const res = await fetch(`${API_BASE}/data-sources/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: true })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Update + refresh failed');
+        }
+        showNotification('Update + refresh completed.', 'success');
+        await fetchDataSources();
+      } catch (err) {
+        showNotification(`Update + refresh failed: ${err.message}`, 'error');
       }
     }
 
