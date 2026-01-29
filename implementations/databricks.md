@@ -26,7 +26,13 @@ For Ontop setup, see `guides/SEMANTIC_LAYER_ONTOP.md`.
 To avoid hardcoding tables or mappings, the implementation can **introspect Databricks at runtime** and
 generate an R2RML mapping on demand.
 
-API endpoint:
+API endpoint (data-source aware):
+
+```
+POST /data-sources/{id}/refresh
+```
+
+The legacy endpoint below uses environment defaults (not recommended for runtime sources):
 
 ```
 POST /semantic-layer/refresh
@@ -47,7 +53,7 @@ This will:
 2) Generate a runtime `mapping.ttl`.
 3) Emit a Hydra/HyprCat catalog (`/data/catalog`, `/data/products`).
 
-Set env vars for defaults:
+Set env vars for **non-secret defaults**:
 
 ```
 SEMANTIC_LAYER_RUNTIME_DIR=./data/semantic-layer
@@ -57,7 +63,7 @@ SEMANTIC_LAYER_MAPPING_SCHEMA=tpch
 SEMANTIC_LAYER_MAPPING_MAX_TABLES=50
 ```
 
-Then trigger:
+Then trigger (legacy path):
 
 ```
 curl -X POST http://localhost:3000/semantic-layer/refresh
@@ -157,7 +163,8 @@ of record.
 
 ## SQL Adapter (Fallback / Dev)
 
-If you want direct SQL execution (adapter extension), configure:
+If you want direct SQL execution (adapter extension), provide Databricks credentials at **runtime**
+(data source registry, secrets, or process env). Avoid storing these in repo `.env`:
 
 - `DATABRICKS_HOST`
 - `DATABRICKS_TOKEN`

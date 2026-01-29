@@ -9,14 +9,10 @@ No data is copied into the ACG runtime.
 
 ## Prereqs
 
-Set the following environment variables (or a local `.env` file):
+Set the semantic layer endpoint and register Databricks at runtime (recommended):
 
-- `SEMANTIC_LAYER_SPARQL_ENDPOINT` (preferred; points to the virtual RDF layer federating Databricks via R2RML/OBDA)
-- `DATABRICKS_HOST` (adapter example)
-- `DATABRICKS_TOKEN` (adapter example)
-- `DATABRICKS_WAREHOUSE_ID` (optional)
-- `DATABRICKS_CATALOG` (optional)
-- `DATABRICKS_SCHEMA` (optional)
+- `SEMANTIC_LAYER_SPARQL_ENDPOINT` (points to the virtual RDF layer federating Databricks via R2RML/OBDA)
+- Register a Databricks data source via `POST /data-sources` (do not store tokens in repo `.env`)
 
 ## Direct REST call (generalized)
 

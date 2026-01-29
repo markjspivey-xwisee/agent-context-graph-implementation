@@ -88,7 +88,7 @@ If you see errors like `Undefined procedure DB.DBA.R2RML_MAKE_QM_FROM_G`, instal
    `drivers/databricks/` (see `drivers/databricks/README.md`).
 2) Run `./scripts/virtuoso-install-databricks-driver.sh` to install the driver
    inside the Virtuoso container.
-3) Set the following in your `.env`:
+3) Provide Databricks connection settings at **runtime** (prefer secrets/env vars, not repo `.env`):
    - `DATABRICKS_HOST` (workspace host)
    - `DATABRICKS_HTTP_PATH` (SQL warehouse HTTP path)
    - `DATABRICKS_TOKEN` (personal access token)

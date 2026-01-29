@@ -23,14 +23,21 @@ flowchart LR
 drivers/databricks-jdbc/
 ```
 
-2) Set these in `.env`:
+2) Provide Databricks connection details **at runtime** (prefer secrets/env vars, not repo `.env`).
+
+Example (shell env):
 
 ```
-DATABRICKS_HOST=...
-DATABRICKS_HTTP_PATH=...
-DATABRICKS_TOKEN=...
-DATABRICKS_JDBC_DRIVER_CLASS=com.databricks.client.jdbc.Driver
-DATABRICKS_JDBC_USER=token
+export DATABRICKS_HOST=...
+export DATABRICKS_HTTP_PATH=...
+export DATABRICKS_TOKEN=...
+export DATABRICKS_JDBC_DRIVER_CLASS=com.databricks.client.jdbc.Driver
+export DATABRICKS_JDBC_USER=token
+```
+
+Non-sensitive defaults can still live in `.env`:
+
+```
 SEMANTIC_LAYER_SPARQL_ENDPOINT=http://localhost:8080/sparql
 ```
 
@@ -46,13 +53,18 @@ PowerShell:
 .\scripts\ontop-build-jdbc-url.ps1
 ```
 
-Copy the printed `DATABRICKS_JDBC_URL='...'` into your `.env`. If you **do not** `source .env`,
-remove the outer quotes so the value is plain text.
+Copy the printed `DATABRICKS_JDBC_URL='...'` into your runtime env. If you prefer not to export
+shell vars directly, store it in a local secrets file outside the repo and reference it when
+starting Docker Compose.
 
 If you see `bash: UID: readonly variable` when sourcing `.env`, remove any `UID=...` line and use
 `DATABRICKS_JDBC_USER=token` instead.
 
-If you are only using Docker Compose, you do **not** need to `source .env` — Compose reads it automatically.
+If you are only using Docker Compose, you can pass env variables inline:
+
+```
+DATABRICKS_JDBC_URL=... DATABRICKS_TOKEN=... docker compose --profile semantic-layer up -d ontop
+```
 
 ## Start Ontop
 

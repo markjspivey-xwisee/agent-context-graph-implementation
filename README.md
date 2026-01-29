@@ -85,6 +85,13 @@ curl -X POST http://localhost:3000/chat \
 
 You can register additional data sources (Databricks, SPARQL services, LRS) without code changes.
 
+Data sources are runtime resources. Avoid storing source credentials in `.env` or committing them.
+Prefer runtime registration + a registry path outside the repo, for example:
+
+```
+DATA_SOURCE_REGISTRY_PATH=/home/codespace/.acg/data-sources.json
+```
+
 Register:
 
 ```bash
