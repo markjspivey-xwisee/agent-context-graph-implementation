@@ -1,6 +1,6 @@
 import Hapi from '@hapi/hapi';
 import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'fs';
-import { ContextBroker, type ContextRequest, type TraverseRequest } from './broker/context-broker.js';
+import { ContextBroker, type ContextRequest, type TraverseRequest, type RegisterDataSourcePayload, type RegisterDataSourceResult } from './broker/context-broker.js';
 import { AATRegistry } from './services/aat-registry.js';
 import { StubVerifier, RealVerifier } from './services/verifier.js';
 import { PolicyEngine } from './services/policy-engine.js';
@@ -27,7 +27,7 @@ import { resolveSpecPath } from './utils/spec-path.js';
 import { DatabricksIntrospector, type DatabricksIntrospectionOptions, type DatabricksIntrospectionResult } from './services/databricks-introspector.js';
 import { generateR2RmlMapping, type MappingGenerationResult } from './services/r2rml-mapping-generator.js';
 import { buildSemanticCatalogBundle, type SemanticCatalogBundle } from './services/semantic-layer-runtime.js';
-import { DataSourceRegistry, type DataSourceRegistration, type DataSourceType } from './services/data-source-registry.js';
+import { DataSourceRegistry, type DataSourceRegistration, type DataSourceType, type DatabricksSourceConfig, type SemanticLayerConfig } from './services/data-source-registry.js';
 
 /**
  * Load all Turtle files from a directory and concatenate them
@@ -426,6 +426,9 @@ async function init() {
   const registryPath = resolveRepoPath(process.env.DATA_SOURCE_REGISTRY_PATH ?? 'data/data-sources.json');
   ensureDir(dirname(registryPath));
   const dataSourceRegistry = new DataSourceRegistry(registryPath);
+
+  const normalizeSourceId = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
   const sanitizeDataSource = (source: DataSourceRegistration): DataSourceRegistration => {
     if (!source.databricks) return source;
@@ -830,6 +833,91 @@ async function init() {
     };
   };
 
+  const updateSourceDocs = (source: DataSourceRegistration) => {
+    const catalogPath = source.paths?.catalogPath;
+    const productsPath = source.paths?.productsPath;
+    if (!catalogPath || !existsSync(catalogPath)) return;
+    if (!productsPath || !existsSync(productsPath)) return;
+
+    try {
+      const catalog = JSON.parse(readFileSync(catalogPath, 'utf-8')) as JsonObject;
+      if (source.name) {
+        catalog['dcterms:title'] = `${source.name} Catalog`;
+      }
+      if (source.description) {
+        catalog['dcterms:description'] = source.description;
+      }
+      const endpoint = source.semanticLayer?.sparqlEndpoint;
+      if (endpoint && Array.isArray(catalog['dcat:service'])) {
+        for (const service of catalog['dcat:service'] as JsonObject[]) {
+          service['dcat:endpointURL'] = endpoint;
+        }
+      }
+      writeFileSync(catalogPath, JSON.stringify(catalog, null, 2), 'utf-8');
+
+      const products = JSON.parse(readFileSync(productsPath, 'utf-8')) as JsonObject;
+      const members = Array.isArray(products['hydra:member'])
+        ? (products['hydra:member'] as JsonObject[])
+        : [];
+      for (const member of members) {
+        if (source.name) {
+          member['dcterms:title'] = source.name;
+        }
+        if (source.description) {
+          member['dcterms:description'] = source.description;
+        }
+      }
+      writeFileSync(productsPath, JSON.stringify(products, null, 2), 'utf-8');
+    } catch (error) {
+      console.warn('Failed to update source docs:', error);
+    }
+  };
+
+  const registerDataSourceFromAffordance = async (
+    payload: RegisterDataSourcePayload
+  ): Promise<RegisterDataSourceResult> => {
+    const name = payload.name?.trim();
+    if (!name) {
+      throw new Error('name is required');
+    }
+
+    const type = (payload.type ?? 'custom') as DataSourceType;
+    const id = payload.id ?? normalizeSourceId(name);
+
+    const source = dataSourceRegistry.register({
+      id,
+      name,
+      type,
+      description: payload.description,
+      databricks: payload.databricks as DatabricksSourceConfig | undefined,
+      semanticLayer: payload.semanticLayer as SemanticLayerConfig | undefined
+    });
+
+    const stubPaths = writeSourceStubDocs(source);
+    const updated = dataSourceRegistry.update(source.id, {
+      paths: {
+        ...source.paths,
+        ...stubPaths
+      }
+    });
+
+    let refreshResult: { source: DataSourceRegistration; warnings?: string[] } | undefined;
+    if (payload.refresh && updated.type === 'databricks') {
+      const result = await refreshDataSource(updated);
+      refreshResult = { source: result.source, warnings: result.warnings };
+    }
+
+    rebuildRuntimeCatalog();
+
+    return {
+      source: sanitizeDataSource(refreshResult?.source ?? updated),
+      warnings: refreshResult?.warnings,
+      refreshResult
+    };
+  };
+
+  broker.setRegisterDataSourceHandler(registerDataSourceFromAffordance);
+
   // Health check endpoint
   server.route({
     method: 'GET',
@@ -914,7 +1002,7 @@ async function init() {
         if (!payload?.name) {
           return h.response({ error: 'name is required' }).code(400);
         }
-        const id = payload.id ?? payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const id = payload.id ?? normalizeSourceId(payload.name);
         const type = (payload.type ?? 'custom') as DataSourceType;
 
         const source = dataSourceRegistry.register({
@@ -939,6 +1027,48 @@ async function init() {
         rebuildRuntimeCatalog();
         const saved = dataSourceRegistry.get(source.id);
         return h.response(saved ? sanitizeDataSource(saved) : saved).code(201);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return h.response({ error: message }).code(400);
+      }
+    }
+  });
+
+  server.route({
+    method: 'PUT',
+    path: '/data-sources/{id}',
+    handler: async (request, h) => {
+      try {
+        const source = dataSourceRegistry.get(request.params.id);
+        if (!source) {
+          return h.response({ error: 'Data source not found' }).code(404);
+        }
+
+        const payload = request.payload as Partial<DataSourceRegistration> & { refresh?: boolean };
+        const updated = dataSourceRegistry.update(source.id, {
+          name: payload.name ?? source.name,
+          type: (payload.type as DataSourceType) ?? source.type,
+          description: payload.description ?? source.description,
+          databricks: payload.databricks
+            ? { ...source.databricks, ...payload.databricks }
+            : source.databricks,
+          semanticLayer: payload.semanticLayer
+            ? { ...source.semanticLayer, ...payload.semanticLayer }
+            : source.semanticLayer
+        });
+
+        if (payload.refresh && updated.type === 'databricks') {
+          const refreshed = await refreshDataSource(updated);
+          return h.response({
+            ok: true,
+            source: sanitizeDataSource(refreshed.source),
+            warnings: refreshed.warnings
+          }).code(200);
+        }
+
+        updateSourceDocs(updated);
+        rebuildRuntimeCatalog();
+        return h.response({ ok: true, source: sanitizeDataSource(updated) }).code(200);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return h.response({ error: message }).code(400);
@@ -1038,11 +1168,25 @@ async function init() {
           message?: string;
           conversationId?: string;
           priority?: 'low' | 'normal' | 'high' | 'critical';
+          dataSourceId?: string;
+          semanticLayerRef?: string;
         };
 
         const message = payload?.message?.trim();
         if (!message) {
           return h.response({ error: 'message is required' }).code(400);
+        }
+
+        const dataSourceId = payload.dataSourceId?.trim();
+        let semanticLayerRef = payload.semanticLayerRef?.trim();
+        if (dataSourceId) {
+          const source = dataSourceRegistry.get(dataSourceId);
+          if (!source) {
+            return h.response({ error: 'Data source not found' }).code(404);
+          }
+          if (!semanticLayerRef && source.semanticLayer?.sparqlEndpoint) {
+            semanticLayerRef = source.semanticLayer.sparqlEndpoint;
+          }
         }
 
         const conversation = getOrCreateConversation(payload.conversationId);
@@ -1059,7 +1203,9 @@ async function init() {
         conversation.updatedAt = now;
 
         const workflowId = await orchestrator.submitChat(message, {
-          priority: payload.priority ?? 'normal'
+          priority: payload.priority ?? 'normal',
+          dataSourceId,
+          semanticLayerRef
         });
 
         chatWorkflowIndex.set(workflowId, {

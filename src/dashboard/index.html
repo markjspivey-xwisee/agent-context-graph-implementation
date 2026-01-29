@@ -1664,6 +1664,30 @@
 
     .chat-input {
       display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .chat-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .chat-toolbar select {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      min-width: 200px;
+    }
+
+    .chat-compose {
+      display: flex;
       gap: 0.5rem;
       align-items: flex-end;
     }
@@ -2003,8 +2027,16 @@
             </div>
           </div>
           <div class="chat-input">
-            <textarea id="chatInput" placeholder="Ask about your Databricks data..."></textarea>
-            <button id="chatSend" disabled>Send</button>
+            <div class="chat-toolbar">
+              <label for="chatDataSourceSelect">Data source</label>
+              <select id="chatDataSourceSelect">
+                <option value="">Default semantic layer</option>
+              </select>
+            </div>
+            <div class="chat-compose">
+              <textarea id="chatInput" placeholder="Ask about your Databricks data..."></textarea>
+              <button id="chatSend" disabled>Send</button>
+            </div>
           </div>
         </div>
       </div>
@@ -2427,6 +2459,7 @@
     let currentWorkflowDetail = null;
     let chatConversationId = null;
     let chatMessages = [];
+    let selectedChatSourceId = '';
     let dataSources = [];
 
     // AAT Descriptions - from spec/aat/*.json
@@ -2551,6 +2584,7 @@
     const chatMessagesEl = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const chatSendBtn = document.getElementById('chatSend');
+    const chatDataSourceSelect = document.getElementById('chatDataSourceSelect');
     const dataSourceList = document.getElementById('dataSourceList');
     const dataSourceRegisterBtn = document.getElementById('dataSourceRegister');
     const dataSourceName = document.getElementById('dataSourceName');
@@ -3330,8 +3364,26 @@
         const data = await res.json();
         dataSources = data.sources || [];
         renderDataSources();
+        renderChatDataSourceOptions();
       } catch (err) {
         console.error('Error fetching data sources:', err);
+      }
+    }
+
+    function renderChatDataSourceOptions() {
+      if (!chatDataSourceSelect) return;
+      const currentValue = chatDataSourceSelect.value || selectedChatSourceId;
+      chatDataSourceSelect.innerHTML = '<option value="">Default semantic layer</option>';
+      dataSources.forEach(source => {
+        const opt = document.createElement('option');
+        opt.value = source.id;
+        opt.textContent = `${source.name} (${source.type})`;
+        chatDataSourceSelect.appendChild(opt);
+      });
+      if (currentValue && dataSources.some(s => s.id === currentValue)) {
+        chatDataSourceSelect.value = currentValue;
+      } else {
+        chatDataSourceSelect.value = '';
       }
     }
 
@@ -3479,7 +3531,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message,
-            conversationId: chatConversationId
+            conversationId: chatConversationId,
+            dataSourceId: chatDataSourceSelect?.value || undefined
           })
         });
 
@@ -3510,6 +3563,9 @@
     dataSourceRegisterBtn?.addEventListener('click', registerDataSource);
     chatInput?.addEventListener('input', () => {
       chatSendBtn.disabled = !connected || !chatInput.value.trim();
+    });
+    chatDataSourceSelect?.addEventListener('change', () => {
+      selectedChatSourceId = chatDataSourceSelect.value;
     });
     chatInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendChatMessage();

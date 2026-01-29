@@ -67,6 +67,10 @@ export interface TaskContext {
   actionRef?: string;
   /** The target of the action (for Act affordance) */
   target?: string;
+  /** Optional semantic layer override for QueryData */
+  semanticLayerRef?: string;
+  /** Optional data source reference for QueryData */
+  sourceRef?: string;
   /** Content to store (for Store affordance) */
   content?: string;
   /** Type of content being stored (for Store affordance) */
@@ -438,6 +442,12 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
           }
           if (!finalParameters.queryLanguage) {
             finalParameters.queryLanguage = 'sparql';
+          }
+          if (this.taskContext?.semanticLayerRef && !finalParameters.semanticLayerRef) {
+            finalParameters.semanticLayerRef = this.taskContext.semanticLayerRef;
+          }
+          if (this.taskContext?.sourceRef && !finalParameters.sourceRef) {
+            finalParameters.sourceRef = this.taskContext.sourceRef;
           }
         }
 

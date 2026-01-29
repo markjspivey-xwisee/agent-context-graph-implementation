@@ -22,6 +22,24 @@ import { KnowledgeGraphService } from '../services/knowledge-graph-service.js';
 import { SemanticQueryClient } from '../services/semantic-query-client.js';
 import { DatabricksSqlClient, type DatabricksSqlQueryRequest } from '../services/databricks-sql-client.js';
 
+export interface RegisterDataSourcePayload {
+  id?: string;
+  name?: string;
+  type?: string;
+  description?: string;
+  databricks?: Record<string, unknown>;
+  semanticLayer?: Record<string, unknown>;
+  refresh?: boolean;
+}
+
+export interface RegisterDataSourceResult {
+  source?: unknown;
+  warnings?: string[];
+  refreshResult?: unknown;
+}
+
+export type RegisterDataSourceHandler = (payload: RegisterDataSourcePayload) => Promise<RegisterDataSourceResult>;
+
 export interface ContextRequest {
   agentDID: string;
   proof?: unknown;
@@ -73,6 +91,7 @@ export class ContextBroker {
   // Infrastructure services (Gas Town inspired)
   private enclaveService: EnclaveService;
   private checkpointStore: CheckpointStore;
+  private registerDataSourceHandler?: RegisterDataSourceHandler;
 
   // Default context expiration (5 minutes)
   private readonly CONTEXT_TTL_MS = 5 * 60 * 1000;
@@ -86,7 +105,8 @@ export class ContextBroker {
     enclaveService?: EnclaveService,
     checkpointStore?: CheckpointStore,
     usageSemanticsService?: UsageSemanticsService,
-    knowledgeGraphService?: KnowledgeGraphService
+    knowledgeGraphService?: KnowledgeGraphService,
+    registerDataSourceHandler?: RegisterDataSourceHandler
   ) {
     this.verifier = verifier;
     this.policyEngine = policyEngine;
@@ -96,6 +116,7 @@ export class ContextBroker {
     this.shaclValidator = getSHACLValidator();
     this.usageSemanticsService = usageSemanticsService ?? new UsageSemanticsService(this.traceStore);
     this.knowledgeGraphService = knowledgeGraphService;
+    this.registerDataSourceHandler = registerDataSourceHandler;
 
     // Initialize infrastructure services (use defaults if not provided)
     this.enclaveService = enclaveService ?? new EnclaveService();
@@ -108,6 +129,10 @@ export class ContextBroker {
     this.checkpointStore.setTraceEmitter(async (trace) => {
       await this.traceStore.store(trace as unknown as ProvTrace);
     });
+  }
+
+  setRegisterDataSourceHandler(handler?: RegisterDataSourceHandler): void {
+    this.registerDataSourceHandler = handler;
   }
 
   /**
@@ -862,6 +887,22 @@ export class ContextBroker {
           ]
         } as Affordance;
 
+      case 'RegisterDataSource':
+        return {
+          ...baseAffordance,
+          target: {
+            type: 'broker',
+            href: 'broker://data-sources/register'
+          },
+          params: {
+            shaclRef: `${shaclBase}RegisterDataSourceParamsShape`
+          },
+          requiresCredential: requiredCapability ? [{ schema: requiredCapability }] : undefined,
+          effects: [
+            { type: 'resource-create', description: 'Registers a new data source', reversible: true }
+          ]
+        } as Affordance;
+
       // =========================================================================
       // Infrastructure Actions (Gas Town inspired)
       // =========================================================================
@@ -1154,6 +1195,38 @@ export class ContextBroker {
     const now = new Date().toISOString();
 
     switch (affordance.actionType) {
+      case 'RegisterDataSource': {
+        if (!this.registerDataSourceHandler) {
+          return {
+            success: false,
+            resultType: 'RegisterDataSource',
+            data: { error: 'Data source registry not configured' }
+          };
+        }
+
+        const payload: RegisterDataSourcePayload = {
+          id: parameters.id as string | undefined,
+          name: parameters.name as string | undefined,
+          type: parameters.type as string | undefined,
+          description: parameters.description as string | undefined,
+          databricks: parameters.databricks as Record<string, unknown> | undefined,
+          semanticLayer: parameters.semanticLayer as Record<string, unknown> | undefined,
+          refresh: parameters.refresh as boolean | undefined
+        };
+
+        const result = await this.registerDataSourceHandler(payload);
+
+        return {
+          success: true,
+          resultType: 'RegisterDataSource',
+          resultRef: (result.source as { id?: string } | undefined)?.id ?? `urn:uuid:${uuidv4()}`,
+          data: result,
+          eventsEmitted: [
+            { eventType: 'DataSourceRegistered', eventId: `urn:uuid:${uuidv4()}`, timestamp: now }
+          ],
+          contextChanged: true
+        };
+      }
       // =========================================================================
       // Enclave Actions
       // =========================================================================

@@ -134,6 +134,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     constraints?: string[];
     requiresApproval?: boolean;
     mode?: 'default' | 'chat';
+    semanticLayerRef?: string;
+    dataSourceId?: string;
   }): Promise<string> {
     const workflowId = uuidv4();
     const mode = options?.mode ?? 'default';
@@ -177,6 +179,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   async submitChat(message: string, options?: {
     priority?: 'low' | 'normal' | 'high' | 'critical';
     constraints?: string[];
+    semanticLayerRef?: string;
+    dataSourceId?: string;
   }): Promise<string> {
     return this.submitGoal(message, {
       ...options,
@@ -371,6 +375,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
         if (task.input.plan) {
           taskDescription += `\n\nPlan to follow:\n${JSON.stringify(task.input.plan, null, 2)}`;
         }
+        taskContext = {
+          semanticLayerRef: task.input.semanticLayerRef as string | undefined,
+          sourceRef: task.input.dataSourceId as string | undefined
+        };
       } else if (task.type === 'archive') {
         // Create task context with content and contentType for Store affordance
         taskContext = {
@@ -568,6 +576,15 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       { action: `Answer user message: ${workflow.goal}`, rationale: 'Respond conversationally using data' }
     ];
 
+    const sourceHintLines: string[] = [];
+    if (workflow.options.dataSourceId) {
+      sourceHintLines.push(`- Data source id: ${workflow.options.dataSourceId}`);
+    }
+    if (workflow.options.semanticLayerRef) {
+      sourceHintLines.push(`- Semantic layer endpoint: ${workflow.options.semanticLayerRef}`);
+    }
+    const sourceHints = sourceHintLines.length ? `\n${sourceHintLines.join('\n')}` : '';
+
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
       const stepNum = i + 1;
@@ -584,7 +601,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
       const analyzeTask = this.taskManager.createTask({
         type: 'analyze',
-        description: `[Step ${stepNum}/${steps.length}] Analyze: ${step.action}\n\nUser message:\n${workflow.goal}\n\nGuidance:\n- Use QueryData (SPARQL) against the semantic layer.\n- Prefer dcterms:identifier and dcterms:title for order data.\n- After querying, emit EmitInsight with a concise conversational summary.`,
+        description: `[Step ${stepNum}/${steps.length}] Analyze: ${step.action}\n\nUser message:\n${workflow.goal}\n\nGuidance:\n- Use QueryData (SPARQL) against the semantic layer.\n- Prefer dcterms:identifier and dcterms:title for order data.\n- After querying, emit EmitInsight with a concise conversational summary.${sourceHints}`,
         priority: 'normal',
         dependencies: [approveTask.id],
         input: {
@@ -592,6 +609,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
           stepNumber: stepNum,
           plan,
           userMessage: workflow.goal,
+          semanticLayerRef: workflow.options.semanticLayerRef,
+          dataSourceId: workflow.options.dataSourceId,
           queryHints: {
             sparqlExample: 'SELECT ?order ?id ?title WHERE { ?order <http://purl.org/dc/terms/identifier> ?id ; <http://purl.org/dc/terms/title> ?title } LIMIT 5'
           }
@@ -791,6 +810,8 @@ interface Workflow {
     constraints?: string[];
     requiresApproval?: boolean;
     mode?: 'default' | 'chat';
+    semanticLayerRef?: string;
+    dataSourceId?: string;
   };
 }
 

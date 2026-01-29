@@ -73,6 +73,14 @@ curl -X POST http://localhost:3000/chat \
   -d '{"message":"Summarize top 5 orders by revenue"}'
 ```
 
+Target a specific registered source:
+
+```bash
+curl -X POST http://localhost:3000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Summarize top 5 orders by revenue","dataSourceId":"databricks-secondary"}'
+```
+
 ## Register data sources at runtime
 
 You can register additional data sources (Databricks, SPARQL services, LRS) without code changes.
@@ -102,6 +110,18 @@ Refresh (introspect + mapping):
 
 ```bash
 curl -X POST http://localhost:3000/data-sources/databricks-secondary/refresh
+```
+
+Update (rotate tokens / metadata):
+
+```bash
+curl -X PUT http://localhost:3000/data-sources/databricks-secondary \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Updated description",
+    "databricks": { "token": "dapi-rotated" },
+    "refresh": true
+  }'
 ```
 
 The refresh will:
