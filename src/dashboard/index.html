@@ -3531,13 +3531,8 @@
       setEditMode(source);
     }
 
-    async function registerDataSource() {
+    function buildFormPatch() {
       const name = dataSourceName?.value?.trim();
-      if (!name) {
-        showNotification('Name is required.', 'warning');
-        return;
-      }
-
       const type = dataSourceType?.value ?? 'custom';
       const description = dataSourceDescription?.value?.trim() || undefined;
       const host = dataSourceHost?.value?.trim();
@@ -3548,7 +3543,6 @@
       const sparqlEndpoint = dataSourceSparql?.value?.trim();
       const planEndpoint = dataSourcePlan?.value?.trim();
       const baseIri = dataSourceBaseIri?.value?.trim();
-      const refresh = dataSourceRefresh?.checked ?? false;
 
       const databricksPatch = {};
       if (host) databricksPatch.host = host;
@@ -3562,24 +3556,45 @@
       if (planEndpoint) semanticPatch.planEndpoint = planEndpoint;
       if (baseIri) semanticPatch.baseIri = baseIri;
 
+      return {
+        name,
+        type,
+        description,
+        databricksPatch,
+        semanticPatch
+      };
+    }
+
+    async function updateDataSourceFromForm(id, refreshOverride) {
+      const patch = buildFormPatch();
+      if (!patch.name) {
+        showNotification('Name is required.', 'warning');
+        return;
+      }
+      const refresh = refreshOverride ?? (dataSourceRefresh?.checked ?? false);
+
+      const res = await fetch(`${API_BASE}/data-sources/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: patch.name,
+          type: patch.type,
+          description: patch.description,
+          databricks: Object.keys(patch.databricksPatch).length ? patch.databricksPatch : undefined,
+          semanticLayer: Object.keys(patch.semanticPatch).length ? patch.semanticPatch : undefined,
+          refresh
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update data source');
+      }
+    }
+
+    async function registerDataSource() {
       if (editingDataSourceId) {
         try {
-          const res = await fetch(`${API_BASE}/data-sources/${editingDataSourceId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name,
-              type,
-              description,
-              databricks: Object.keys(databricksPatch).length ? databricksPatch : undefined,
-              semanticLayer: Object.keys(semanticPatch).length ? semanticPatch : undefined,
-              refresh
-            })
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.error || 'Failed to update data source');
-          }
+          await updateDataSourceFromForm(editingDataSourceId);
           showNotification('Data source updated.', 'success');
           exitEditMode();
           await fetchDataSources();
@@ -3589,25 +3604,21 @@
         return;
       }
 
+      const patch = buildFormPatch();
+      if (!patch.name) {
+        showNotification('Name is required.', 'warning');
+        return;
+      }
+
       const payload = {
-        name,
-        type,
-        description,
-        databricks: {
-          host,
-          token,
-          warehouseId,
-          catalog,
-          schema
-        },
-        semanticLayer: {
-          sparqlEndpoint,
-          planEndpoint,
-          baseIri
-        }
+        name: patch.name,
+        type: patch.type,
+        description: patch.description,
+        databricks: patch.databricksPatch,
+        semanticLayer: patch.semanticPatch
       };
 
-      if (type === 'databricks') {
+      if (patch.type === 'databricks') {
         if (!payload.databricks.host || !payload.databricks.token || !payload.databricks.warehouseId) {
           showNotification('Databricks host, token, and warehouse ID are required.', 'warning');
           return;
@@ -3652,16 +3663,21 @@
 
     async function updateAndRefreshDataSource(id) {
       try {
-        const res = await fetch(`${API_BASE}/data-sources/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh: true })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Update + refresh failed');
+        if (editingDataSourceId === id) {
+          await updateDataSourceFromForm(id, true);
+          showNotification('Update + refresh completed.', 'success');
+        } else {
+          const res = await fetch(`${API_BASE}/data-sources/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh: true })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Update + refresh failed');
+          }
+          showNotification('Refresh completed (no form updates). Use Edit to change fields.', 'info');
         }
-        showNotification('Update + refresh completed.', 'success');
         await fetchDataSources();
       } catch (err) {
         showNotification(`Update + refresh failed: ${err.message}`, 'error');
