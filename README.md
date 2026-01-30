@@ -34,6 +34,8 @@ If your foundations repo lives elsewhere, set ACG_SPEC_DIR to its spec directory
 - examples/databricks/
 - examples/tool-authoring/
 - tests/integration/golden-path.test.ts
+- guides/SEMANTIC_LAYER_EVALS.md
+- guides/OPENAI_DATA_AGENT_COMPARISON.md
 
 ## Repo map
 
@@ -47,6 +49,16 @@ If your foundations repo lives elsewhere, set ACG_SPEC_DIR to its spec directory
 npm install
 npm run build
 npm run dashboard
+
+## Semantic layer evals
+
+Run SPARQL regression checks against the virtual semantic layer:
+
+```bash
+npm run semantic-layer:eval
+```
+
+See `guides/SEMANTIC_LAYER_EVALS.md` for eval format and customization.
 
 ## Conversational agent team (chat with Databricks)
 

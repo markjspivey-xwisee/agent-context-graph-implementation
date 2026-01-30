@@ -17,6 +17,7 @@
     "lint": "eslint src --ext .ts",
     "validate:schemas": "tsx scripts/validate-schemas.ts",
     "validate:examples": "tsx scripts/validate-examples.ts",
+    "semantic-layer:eval": "tsx scripts/semantic-layer-eval.ts",
     "orchestrator": "tsx src/orchestrator-server.ts",
     "dashboard": "tsx src/dashboard/server.ts",
     "demo": "tsx src/demo/multi-agent-demo.ts",

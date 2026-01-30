@@ -1662,6 +1662,37 @@
       flex-wrap: wrap;
     }
 
+    .context-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      background: rgba(96, 165, 250, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      text-transform: capitalize;
+    }
+
+    .context-pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .source-ref-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .source-ref-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
     .chat-input {
       display: flex;
       flex-direction: column;
@@ -3407,6 +3438,21 @@
       const resultTable = renderSparqlResultsTable(first.results);
       const rawJson = JSON.stringify(first, null, 2);
       const workflowId = msg.workflowId ?? '';
+      const contextLayers = Array.isArray(msg.data?.contextLayers)
+        ? msg.data.contextLayers
+        : [];
+      const sourceReferences = new Set(
+        Array.isArray(msg.data?.sourceReferences) ? msg.data.sourceReferences : []
+      );
+      if (msg.data?.queryId) sourceReferences.add(msg.data.queryId);
+      if (Array.isArray(results)) {
+        results.forEach(item => {
+          if (item?.queryId) sourceReferences.add(item.queryId);
+          if (Array.isArray(item?.sourceReferences)) {
+            item.sourceReferences.forEach(ref => sourceReferences.add(ref));
+          }
+        });
+      }
 
       modalTitle.textContent = 'Chat Query Results';
       modalContent.innerHTML = `
@@ -3417,6 +3463,28 @@
         <div class="detail-section">
           <h4>Status</h4>
           <div class="inline-code">${escapeHtml(status)}</div>
+        </div>
+        <div class="detail-section">
+          <h4>Context Layers</h4>
+          <div class="context-pill-list">
+            ${(contextLayers.length ? contextLayers : ['Unspecified']).map(layer =>
+              `<span class="context-pill">${escapeHtml(layer)}</span>`
+            ).join('')}
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Source References (PROV)</h4>
+          <div class="source-ref-list">
+            ${Array.from(sourceReferences).length
+              ? Array.from(sourceReferences).map(ref => `
+                <div class="source-ref-item">
+                  <div class="inline-code">${escapeHtml(ref)}</div>
+                  <button class="chat-result-btn" onclick="copyToClipboard('${escapeHtml(ref)}')">Copy</button>
+                </div>
+              `).join('')
+              : `<div class="inline-code">No source references attached.</div>`
+            }
+          </div>
         </div>
         <div class="detail-section">
           <h4>Actions</h4>

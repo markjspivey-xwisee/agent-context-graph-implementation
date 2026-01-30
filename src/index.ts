@@ -185,6 +185,8 @@ async function init() {
         endpoint?: string;
         error?: string;
       };
+      sourceReferences?: string[];
+      contextLayers?: string[];
     };
   }
 
@@ -253,13 +255,54 @@ async function init() {
         };
       }
 
+      const sourceReferences = new Set<string>();
+      const addRefs = (refs?: unknown) => {
+        if (!Array.isArray(refs)) return;
+        refs.forEach(ref => {
+          if (typeof ref === 'string' && ref.trim().length > 0) {
+            sourceReferences.add(ref);
+          }
+        });
+      };
+      addRefs(insight?.sourceReferences);
+      addRefs(report?.sourceReferences);
+      addRefs((obj as { sourceReferences?: unknown }).sourceReferences);
+
+      if (Array.isArray(queryResults)) {
+        queryResults.forEach(result => {
+          const queryId = result?.queryId;
+          if (typeof queryId === 'string' && queryId.trim().length > 0) {
+            sourceReferences.add(queryId);
+          }
+          addRefs(result?.sourceReferences);
+        });
+      }
+
+      const contextLayers = new Set<string>();
+      if (queryResults?.length) contextLayers.add('Semantic layer query');
+      if (queryPlan) contextLayers.add('Query plan');
+      if (insight) contextLayers.add('Agent insight');
+      if (report) contextLayers.add('Agent report');
+      if (reasoning) contextLayers.add('Agent reasoning');
+      const addLayers = (layers?: unknown) => {
+        if (!Array.isArray(layers)) return;
+        layers.forEach(layer => {
+          if (typeof layer === 'string' && layer.trim().length > 0) {
+            contextLayers.add(layer);
+          }
+        });
+      };
+      addLayers((obj as { contextLayers?: unknown }).contextLayers);
+
       const data = firstQuery
         ? {
           queryResults,
           queryId: firstQuery.queryId as string | undefined,
           query: firstQuery.query as string | undefined,
           endpoint: firstQuery.endpoint as string | undefined,
-          queryPlan
+          queryPlan,
+          sourceReferences: Array.from(sourceReferences),
+          contextLayers: Array.from(contextLayers)
         }
         : undefined;
 

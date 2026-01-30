@@ -1,0 +1,19 @@
+{
+  "name": "Semantic layer smoke tests",
+  "cases": [
+    {
+      "id": "list-orders",
+      "description": "Ensure orders are mapped and queryable",
+      "query": "PREFIX dcat: <http://www.w3.org/ns/dcat#>\nPREFIX dcterms: <http://purl.org/dc/terms/>\nSELECT ?order ?id ?title WHERE {\n  ?order a dcat:Dataset ;\n         dcterms:identifier ?id ;\n         dcterms:title ?title .\n}\nLIMIT 5",
+      "expect": {
+        "minRows": 1,
+        "maxRows": 5,
+        "requiredVars": [
+          "order",
+          "id",
+          "title"
+        ]
+      }
+    }
+  ]
+}

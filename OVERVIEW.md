@@ -24,6 +24,17 @@ Planner → Arbiter → Analyst → Observer → Archivist
 The **Analyst** agent issues `QueryData` with SPARQL and emits insights (no side effects). This mode is
 optimized for “chat with your data” workflows and is implemented in the dashboard chat flow.
 
+## Meaning lives in code (context layer)
+
+Beyond schemas and catalogs, business meaning is encoded in transformation logic (dbt, SQL, notebooks, pipelines).
+ACG treats those artifacts as first‑class context:
+
+- Register code artifacts as knowledge resources (pipeline manifests, transformation DAGs, lineage)
+- Map them into HYPRCAT so agents can cite and reason over “why” a metric exists
+- Preserve provenance links from query results back to transformation logic
+
+This mirrors industry best practice that definitions live in code, not just in metadata.
+
 ## Runtime shape (mermaid)
 
 ```mermaid
