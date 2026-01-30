@@ -95,53 +95,64 @@ async function pollBackendForUpdates(backendUrl: string) {
     ]);
 
     if (workflowsRes.ok) {
-      const workflowsJson = await workflowsRes.json();
+      const workflowsJson = await workflowsRes.json() as { workflows?: Array<Record<string, unknown>> };
       const workflows = workflowsJson.workflows ?? [];
       for (const workflow of workflows) {
-        const previous = backendSyncState.workflows.get(workflow.id);
+        const id = String((workflow as Record<string, unknown>).id ?? '');
+        if (!id) continue;
+        const status = String((workflow as Record<string, unknown>).status ?? 'unknown');
+        const goal = String((workflow as Record<string, unknown>).goal ?? '');
+        const error = String((workflow as Record<string, unknown>).error ?? '');
+        const previous = backendSyncState.workflows.get(id);
         if (!previous) {
-          backendSyncState.workflows.set(workflow.id, workflow.status);
+          backendSyncState.workflows.set(id, status);
           broadcast({
             type: 'workflow-started',
-            payload: { id: workflow.id, goal: workflow.goal, timestamp: new Date().toISOString() }
+            payload: { id, goal, timestamp: new Date().toISOString() }
           });
-        } else if (previous !== workflow.status) {
-          backendSyncState.workflows.set(workflow.id, workflow.status);
-          if (workflow.status === 'completed') {
-            broadcast({ type: 'workflow-completed', payload: { id: workflow.id, timestamp: new Date().toISOString() } });
-          } else if (workflow.status === 'failed') {
-            broadcast({ type: 'workflow-failed', payload: { id: workflow.id, error: workflow.error, timestamp: new Date().toISOString() } });
+        } else if (previous !== status) {
+          backendSyncState.workflows.set(id, status);
+          if (status === 'completed') {
+            broadcast({ type: 'workflow-completed', payload: { id, timestamp: new Date().toISOString() } });
+          } else if (status === 'failed') {
+            broadcast({ type: 'workflow-failed', payload: { id, error, timestamp: new Date().toISOString() } });
           }
         }
       }
     }
 
     if (agentsRes.ok) {
-      const agentsJson = await agentsRes.json();
+      const agentsJson = await agentsRes.json() as { agents?: Array<Record<string, unknown>> };
       const agents = agentsJson.agents ?? [];
       for (const agent of agents) {
-        if (!backendSyncState.agents.has(agent.id)) {
-          backendSyncState.agents.set(agent.id, agent.type);
+        const id = String((agent as Record<string, unknown>).id ?? '');
+        if (!id) continue;
+        const type = String((agent as Record<string, unknown>).type ?? '');
+        if (!backendSyncState.agents.has(id)) {
+          backendSyncState.agents.set(id, type);
           broadcast({
             type: 'agent-spawned',
-            payload: { agentId: agent.id, agentType: agent.type, timestamp: new Date().toISOString() }
+            payload: { agentId: id, agentType: type, timestamp: new Date().toISOString() }
           });
         }
       }
     }
 
     if (logsRes.ok) {
-      const logsJson = await logsRes.json();
+      const logsJson = await logsRes.json() as { logs?: Array<Record<string, unknown>> };
       const logs = logsJson.logs ?? [];
       for (const entry of logs) {
-        const key = `${entry.taskId ?? ''}:${entry.timestamp ?? ''}:${entry.message ?? ''}`;
+        const taskId = String((entry as Record<string, unknown>).taskId ?? '');
+        const timestamp = String((entry as Record<string, unknown>).timestamp ?? '');
+        const message = String((entry as Record<string, unknown>).message ?? '');
+        const key = `${taskId}:${timestamp}:${message}`;
         if (backendSyncState.logs.has(key)) continue;
         backendSyncState.logs.add(key);
         const logEntry: LogEntry = {
-          timestamp: entry.timestamp ?? new Date().toISOString(),
-          level: entry.level ?? 'info',
-          component: entry.component ?? 'backend',
-          message: entry.message ?? 'Log entry'
+          timestamp: timestamp || new Date().toISOString(),
+          level: (String((entry as Record<string, unknown>).level ?? 'info') as LogLevel),
+          component: String((entry as Record<string, unknown>).component ?? 'backend'),
+          message: message || 'Log entry'
         };
         logHistory.push(logEntry);
         if (logHistory.length > MAX_LOG_HISTORY) {
@@ -1005,10 +1016,18 @@ async function init() {
           fetch(`${backendUrl}/logs?limit=50`)
         ]);
 
-        const workflowsJson = workflowsRes.ok ? await workflowsRes.json() : { workflows: orchestrator.getAllWorkflows() };
-        const agentsJson = agentsRes.ok ? await agentsRes.json() : { agents: orchestrator.getAgents() };
-        const statsJson = statsRes.ok ? await statsRes.json() : orchestrator.getStats();
-        const logsJson = logsRes.ok ? await logsRes.json() : { logs: logHistory.slice(-50) };
+        const workflowsJson = workflowsRes.ok
+          ? await workflowsRes.json() as { workflows?: Array<Record<string, unknown>> }
+          : { workflows: orchestrator.getAllWorkflows() };
+        const agentsJson = agentsRes.ok
+          ? await agentsRes.json() as { agents?: Array<Record<string, unknown>> }
+          : { agents: orchestrator.getAgents() };
+        const statsJson = statsRes.ok
+          ? await statsRes.json() as Record<string, unknown>
+          : orchestrator.getStats();
+        const logsJson = logsRes.ok
+          ? await logsRes.json() as { logs?: Array<Record<string, unknown>> }
+          : { logs: logHistory.slice(-50) };
 
         ws.send(JSON.stringify({
           type: 'init',

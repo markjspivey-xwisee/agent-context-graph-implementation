@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'eventemitter3';
 import { LLMClient } from './llm-client.js';
-import type { IReasoningClient, AgentSystemPrompt, ReasoningClientConfig } from './reasoning-client.js';
+import type { IReasoningClient, AgentSystemPrompt, ReasoningClientConfig, LLMResponse } from './reasoning-client.js';
 import type {
   ContextGraph,
   ProvTrace,
@@ -707,15 +707,15 @@ export class AgentRuntime extends EventEmitter<AgentEvents> {
     }
 
     const lastQuery = queryActions[queryActions.length - 1];
-    const output = lastQuery.output as Record<string, unknown> | undefined;
-    const results = (output?.results as any) ?? output?.data?.results;
+    const output = (lastQuery.output ?? {}) as Record<string, any>;
+    const results = output.results ?? output.data?.results;
     const bindings =
       results?.bindings ??
       results?.results?.bindings ??
       results?.results ??
       results;
     const count = Array.isArray(bindings) ? bindings.length : 0;
-    const queryId = (output?.queryId as string) ?? (output?.data?.queryId as string) ?? 'query:unknown';
+    const queryId = (output.queryId as string | undefined) ?? (output.data?.queryId as string | undefined) ?? 'query:unknown';
     const vars = (results?.head?.vars as string[] | undefined) ?? [];
     const rows = Array.isArray(bindings) ? bindings : [];
     const rowPreview = this.formatSparqlBindings(rows, vars, 5);

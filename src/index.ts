@@ -239,7 +239,8 @@ async function init() {
 
       const queryResults = obj.queryResults as Array<Record<string, unknown>> | undefined;
       const firstQuery = queryResults?.[0];
-      let queryPlan: ChatMessage['data']['queryPlan'] | undefined;
+      type ChatData = NonNullable<ChatMessage['data']>;
+      let queryPlan: ChatData['queryPlan'] | undefined;
       const planRaw = firstQuery?.plan as
         | { text?: string; contentType?: string; endpoint?: string; error?: string }
         | string
