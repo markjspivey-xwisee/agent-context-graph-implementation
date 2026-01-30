@@ -2135,6 +2135,7 @@
               <div class="data-source-actions">
                 <button class="template-btn" id="dataSourceRegister">Register Source</button>
                 <button class="template-btn secondary" id="dataSourceCancel" style="display:none;">Cancel Edit</button>
+                <button class="template-btn secondary" id="dataSourceQuickStart">Register + Refresh + Use in Chat</button>
               </div>
             </div>
           </div>
@@ -2636,6 +2637,7 @@
     const chatDataSourceSelect = document.getElementById('chatDataSourceSelect');
     const dataSourceList = document.getElementById('dataSourceList');
     const dataSourceRegisterBtn = document.getElementById('dataSourceRegister');
+    const dataSourceQuickStartBtn = document.getElementById('dataSourceQuickStart');
     const dataSourceCancelBtn = document.getElementById('dataSourceCancel');
     const dataSourceName = document.getElementById('dataSourceName');
     const dataSourceType = document.getElementById('dataSourceType');
@@ -3718,6 +3720,63 @@
       }
     }
 
+    async function quickStartDataSource() {
+      try {
+        const patch = buildFormPatch();
+        if (!patch.name) {
+          showNotification('Name is required.', 'warning');
+          return;
+        }
+
+        const payload = {
+          name: patch.name,
+          type: patch.type,
+          description: patch.description,
+          databricks: patch.databricksPatch,
+          semanticLayer: patch.semanticPatch
+        };
+
+        if (patch.type === 'databricks') {
+          if (!payload.databricks.host || !payload.databricks.token || !payload.databricks.warehouseId) {
+            showNotification('Databricks host, token, and warehouse ID are required.', 'warning');
+            return;
+          }
+        }
+
+        const registerRes = await fetch(`${API_BASE}/data-sources`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const registerData = await registerRes.json();
+        if (!registerRes.ok) {
+          throw new Error(registerData.error || 'Failed to register data source');
+        }
+
+        const newSourceId = registerData.id ?? registerData.source?.id ?? registerData.name ?? patch.name;
+        if (!newSourceId) {
+          throw new Error('Unable to determine new data source id.');
+        }
+
+        const refreshRes = await fetch(`${API_BASE}/data-sources/${newSourceId}/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const refreshData = await refreshRes.json();
+        if (!refreshRes.ok) {
+          throw new Error(refreshData.error || 'Refresh failed');
+        }
+
+        showNotification('Source registered and refreshed.', 'success');
+        clearDataSourceForm();
+        await fetchDataSources();
+        useDataSourceInChat(newSourceId);
+      } catch (err) {
+        showNotification(`Quick start failed: ${err.message}`, 'error');
+      }
+    }
+
     async function refreshDataSource(id) {
       try {
         const res = await fetch(`${API_BASE}/data-sources/${id}/refresh`, {
@@ -3818,6 +3877,7 @@
 
     chatSendBtn?.addEventListener('click', sendChatMessage);
     dataSourceRegisterBtn?.addEventListener('click', registerDataSource);
+    dataSourceQuickStartBtn?.addEventListener('click', quickStartDataSource);
     dataSourceCancelBtn?.addEventListener('click', exitEditMode);
     chatInput?.addEventListener('input', () => {
       chatSendBtn.disabled = !connected || !chatInput.value.trim();
