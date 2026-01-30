@@ -3622,6 +3622,15 @@
       const lastRefreshLabel = lastRefreshAt ? lastRefreshAt.toLocaleString() : 'never';
       const selectedSource = selectedChatSourceId ? dataSources.find(source => source.id === selectedChatSourceId) : null;
       const chatTargetLabel = selectedSource ? selectedSource.name : 'Default semantic layer';
+      const selectedEndpoint = selectedSource?.semanticLayer?.sparqlEndpoint || (selectedSource ? 'Not available' : 'Default semantic layer');
+      const selectedManaged = selectedSource ? getManagedOntopStatus(selectedSource) : null;
+      const selectedContainer = selectedSource?.semanticLayer?.managed?.containerName;
+      const selectedPort = selectedSource?.semanticLayer?.managed?.hostPort;
+      const managedSourceList = dataSources
+        .filter(source => source.semanticLayer?.managed?.hostPort)
+        .slice(0, 4)
+        .map(source => `${source.name} :${source.semanticLayer.managed.hostPort}`)
+        .join(', ');
 
       dataSourceStatusPanel.innerHTML = `
         <div class="summary-grid">
@@ -3645,6 +3654,11 @@
         <div class="summary-meta">
           <span>Last refresh: ${escapeHtml(lastRefreshLabel)}</span>
           <span>Chat target: ${escapeHtml(chatTargetLabel)}</span>
+          <span>Chat endpoint: ${escapeHtml(selectedEndpoint)}</span>
+          ${selectedManaged ? `<span>Chat managed: ${escapeHtml(selectedManaged.label)}</span>` : ''}
+          ${selectedContainer ? `<span>Container: ${escapeHtml(selectedContainer)}</span>` : ''}
+          ${selectedPort ? `<span>Port: ${escapeHtml(selectedPort)}</span>` : ''}
+          ${managedSourceList ? `<span>Active Ontop: ${escapeHtml(managedSourceList)}</span>` : ''}
         </div>
       `;
     }
