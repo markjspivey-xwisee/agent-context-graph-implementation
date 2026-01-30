@@ -1727,6 +1727,52 @@
       overflow-y: auto;
     }
 
+    .data-source-summary {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-primary);
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .data-source-summary .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .data-source-summary .summary-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .data-source-summary .summary-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .data-source-summary .summary-value {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .data-source-summary .summary-meta {
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
     .data-source-card {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -2083,6 +2129,9 @@
       <div class="tab-content" id="tab-data-sources">
         <div class="panel-content">
           <div class="data-source-layout">
+            <div class="data-source-summary" id="dataSourceStatusPanel">
+              <div class="summary-grid"></div>
+            </div>
             <div class="data-source-list" id="dataSourceList">
               <div class="empty-state">
                 <div class="empty-state-icon">&#128187;</div>
@@ -2636,6 +2685,7 @@
     const chatSendBtn = document.getElementById('chatSend');
     const chatDataSourceSelect = document.getElementById('chatDataSourceSelect');
     const dataSourceList = document.getElementById('dataSourceList');
+    const dataSourceStatusPanel = document.getElementById('dataSourceStatusPanel');
     const dataSourceRegisterBtn = document.getElementById('dataSourceRegister');
     const dataSourceQuickStartBtn = document.getElementById('dataSourceQuickStart');
     const dataSourceCancelBtn = document.getElementById('dataSourceCancel');
@@ -3508,6 +3558,7 @@
 
     function renderDataSources() {
       if (!dataSourceList) return;
+      renderDataSourceStatus();
       if (!dataSources.length) {
         dataSourceList.innerHTML = `
           <div class="empty-state">
@@ -3554,6 +3605,48 @@
           </div>
         `;
       }).join('');
+    }
+
+    function renderDataSourceStatus() {
+      if (!dataSourceStatusPanel) return;
+      const total = dataSources.length;
+      const withEndpoint = dataSources.filter(source => source.semanticLayer?.sparqlEndpoint).length;
+      const managedEnabled = dataSources.filter(source => source.semanticLayer?.managed?.enabled).length;
+      const managedActive = dataSources.filter(source => source.semanticLayer?.managed?.hostPort).length;
+      const errorCount = dataSources.filter(source => source.status?.lastError).length;
+      const lastRefreshAt = dataSources
+        .map(source => source.status?.lastRefreshAt)
+        .filter(Boolean)
+        .map(value => new Date(value))
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+      const lastRefreshLabel = lastRefreshAt ? lastRefreshAt.toLocaleString() : 'never';
+      const selectedSource = selectedChatSourceId ? dataSources.find(source => source.id === selectedChatSourceId) : null;
+      const chatTargetLabel = selectedSource ? selectedSource.name : 'Default semantic layer';
+
+      dataSourceStatusPanel.innerHTML = `
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-label">Sources</div>
+            <div class="summary-value">${total}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">SPARQL Endpoints</div>
+            <div class="summary-value">${withEndpoint}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">Managed Ontop</div>
+            <div class="summary-value">${managedActive}/${managedEnabled}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">Errors</div>
+            <div class="summary-value">${errorCount}</div>
+          </div>
+        </div>
+        <div class="summary-meta">
+          <span>Last refresh: ${escapeHtml(lastRefreshLabel)}</span>
+          <span>Chat target: ${escapeHtml(chatTargetLabel)}</span>
+        </div>
+      `;
     }
 
     function clearDataSourceForm() {
