@@ -78,6 +78,24 @@ Default SPARQL endpoint:
 http://localhost:8080/sparql
 ```
 
+## Managed Ontop per data source (recommended for runtime registration)
+
+If you want **runtime-only** data sources (no hardcoded Databricks in `.env`) and **no global restarts**,
+enable managed Ontop:
+
+```
+SEMANTIC_LAYER_MANAGED_ONTOP=true
+SEMANTIC_LAYER_ONTOP_IMAGE=ontop/ontop:latest
+SEMANTIC_LAYER_ONTOP_JDBC_DIR=./drivers/databricks-jdbc
+SEMANTIC_LAYER_ONTOP_HOST=localhost
+```
+
+Then:
+1) Register a Databricks data source via `POST /data-sources`
+2) Call `POST /data-sources/{id}/refresh`
+
+The API will spin up a **dedicated Ontop container** per source and store the SPARQL endpoint in the registry.
+
 ## Load mappings
 
 Ontop reads the mapping from:

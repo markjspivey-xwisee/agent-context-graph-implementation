@@ -137,6 +137,26 @@ The refresh will:
 - Emit Hydra/HyprCat catalog + data products
 - Merge into `/data/catalog` and `/data/products`
 
+### Managed Ontop per data source (zero restarts)
+
+Ontop requires a JDBC URL at startup, so it cannot be started generically without a data source.
+To keep data sources **runtime-only** and avoid restarting Ontop for every change, enable **managed
+Ontop per source**:
+
+```
+SEMANTIC_LAYER_MANAGED_ONTOP=true
+SEMANTIC_LAYER_ONTOP_IMAGE=ontop/ontop:latest
+SEMANTIC_LAYER_ONTOP_JDBC_DIR=./drivers/databricks-jdbc
+SEMANTIC_LAYER_ONTOP_HOST=localhost
+```
+
+When a Databricks source is refreshed, the API will:
+1) Generate the mapping file under `data/semantic-layer/sources/<id>/mapping.ttl`
+2) Start a dedicated Ontop container for that source (no global restart)
+3) Store the per-source SPARQL endpoint in the registry
+
+Each source gets its own SPARQL endpoint and can be queried independently.
+
 ## Codespaces helper
 
 In Codespaces, you can run:

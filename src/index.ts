@@ -28,6 +28,7 @@ import { DatabricksIntrospector, type DatabricksIntrospectionOptions, type Datab
 import { generateR2RmlMapping, type MappingGenerationResult } from './services/r2rml-mapping-generator.js';
 import { buildSemanticCatalogBundle, type SemanticCatalogBundle } from './services/semantic-layer-runtime.js';
 import { DataSourceRegistry, type DataSourceRegistration, type DataSourceType, type DatabricksSourceConfig, type SemanticLayerConfig } from './services/data-source-registry.js';
+import { OntopManager } from './services/ontop-manager.js';
 
 /**
  * Load all Turtle files from a directory and concatenate them
@@ -630,6 +631,19 @@ async function init() {
   });
 
   const defaultSparqlEndpoint = `http://localhost:${port}/sparql`;
+  const managedOntopEnabled = process.env.SEMANTIC_LAYER_MANAGED_ONTOP === 'true';
+  const ontopConfig = {
+    image: process.env.SEMANTIC_LAYER_ONTOP_IMAGE ?? 'ontop/ontop:latest',
+    jdbcDir: resolveRepoPath(process.env.SEMANTIC_LAYER_ONTOP_JDBC_DIR ?? 'drivers/databricks-jdbc'),
+    host: process.env.SEMANTIC_LAYER_ONTOP_HOST ?? 'localhost'
+  };
+  let ontopManager: OntopManager | null = null;
+  const getOntopManager = () => {
+    if (!ontopManager) {
+      ontopManager = new OntopManager(ontopConfig);
+    }
+    return ontopManager;
+  };
   let semanticQueryClient: SemanticQueryClient | null = null;
   const getSemanticQueryClient = (overrideEndpoint?: string) => {
     const endpoint =
@@ -663,6 +677,17 @@ async function init() {
     });
 
     return databricksClient;
+  };
+
+  const buildDatabricksJdbcUrl = (config: DatabricksSourceConfig): string => {
+    const host = config.host?.trim();
+    const token = config.token?.trim();
+    const httpPath = config.httpPath?.trim() || (config.warehouseId ? `/sql/1.0/warehouses/${config.warehouseId}` : '');
+    if (!host || !token || !httpPath) {
+      throw new Error('Databricks JDBC URL requires host, token, and httpPath or warehouseId.');
+    }
+    const hostClean = host.replace(/^https?:\/\//i, '');
+    return `jdbc:databricks://${hostClean}:443/default;transportMode=http;ssl=1;httpPath=${httpPath};AuthMech=3;UID=token;PWD=${token}`;
   };
 
   const resolveMappingPath = (override?: string) => {
@@ -793,10 +818,40 @@ async function init() {
       : join(sourceDir, 'mapping.ttl');
     writeFileSync(mappingPath, mapping.ttl, 'utf-8');
 
+    let semanticEndpoint = source.semanticLayer?.sparqlEndpoint ??
+      process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ??
+      defaultSparqlEndpoint;
+    let managedOntopInfo:
+      | { containerId: string; containerName: string; hostPort: string; endpoint: string; mappingHash: string }
+      | null = null;
+
+    const managedRequested = source.semanticLayer?.managed?.enabled ?? managedOntopEnabled;
+    if (managedRequested) {
+      const jdbcUrl = source.databricks.jdbcUrl ?? buildDatabricksJdbcUrl(source.databricks);
+      const driverClass = source.databricks.driverClass ??
+        process.env.DATABRICKS_JDBC_DRIVER_CLASS ??
+        'com.databricks.client.jdbc.Driver';
+      const jdbcUser = process.env.DATABRICKS_JDBC_USER ?? 'token';
+      const jdbcPassword = source.databricks.token;
+      const jdbcDirOverride = source.semanticLayer?.jdbcDriverPath ?? process.env.SEMANTIC_LAYER_ONTOP_JDBC_DIR;
+
+      const manager = getOntopManager();
+      managedOntopInfo = await manager.ensureRunning({
+        sourceId: source.id,
+        mappingPath,
+        mappingContents: mapping.ttl,
+        jdbcUrl,
+        driverClass,
+        user: jdbcUser,
+        password: jdbcPassword,
+        previousHash: source.semanticLayer?.managed?.mappingHash,
+        jdbcDirOverride
+      });
+      semanticEndpoint = managedOntopInfo.endpoint;
+    }
+
     const catalogBundle = buildSemanticCatalogBundle(introspection, {
-      semanticEndpoint: source.semanticLayer?.sparqlEndpoint ??
-        process.env.SEMANTIC_LAYER_SPARQL_ENDPOINT ??
-        defaultSparqlEndpoint,
+      semanticEndpoint,
       baseIri
     });
 
@@ -809,6 +864,21 @@ async function init() {
     writeFileSync(introspectionPath, JSON.stringify(introspection, null, 2), 'utf-8');
 
     const updated = dataSourceRegistry.update(source.id, {
+      semanticLayer: {
+        ...source.semanticLayer,
+        sparqlEndpoint: semanticEndpoint,
+        mappingPath,
+        managed: managedOntopInfo
+          ? {
+            provider: 'ontop',
+            enabled: true,
+            containerId: managedOntopInfo.containerId,
+            containerName: managedOntopInfo.containerName,
+            hostPort: managedOntopInfo.hostPort,
+            mappingHash: managedOntopInfo.mappingHash
+          }
+          : source.semanticLayer?.managed
+      },
       paths: {
         runtimeDir: sourceDir,
         catalogPath,
@@ -1082,7 +1152,21 @@ async function init() {
   server.route({
     method: 'DELETE',
     path: '/data-sources/{id}',
-    handler: (request, h) => {
+    handler: async (request, h) => {
+      const source = dataSourceRegistry.get(request.params.id);
+      if (!source) {
+        return h.response({ error: 'Data source not found' }).code(404);
+      }
+
+      if (source.semanticLayer?.managed?.provider === 'ontop') {
+        try {
+          const manager = getOntopManager();
+          await manager.remove(source.id);
+        } catch (error) {
+          console.warn(`Failed to remove managed Ontop container for ${source.id}:`, error);
+        }
+      }
+
       const removed = dataSourceRegistry.remove(request.params.id);
       if (!removed) {
         return h.response({ error: 'Data source not found' }).code(404);

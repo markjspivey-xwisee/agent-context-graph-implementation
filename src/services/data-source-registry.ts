@@ -18,6 +18,15 @@ export interface SemanticLayerConfig {
   planEndpoint?: string;
   mappingPath?: string;
   baseIri?: string;
+  jdbcDriverPath?: string;
+  managed?: {
+    provider?: 'ontop';
+    enabled?: boolean;
+    containerId?: string;
+    containerName?: string;
+    hostPort?: string;
+    mappingHash?: string;
+  };
 }
 
 export interface DataSourcePaths {

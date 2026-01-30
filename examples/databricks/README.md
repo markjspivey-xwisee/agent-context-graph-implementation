@@ -14,6 +14,12 @@ Set the semantic layer endpoint and register Databricks at runtime (recommended)
 - `SEMANTIC_LAYER_SPARQL_ENDPOINT` (points to the virtual RDF layer federating Databricks via R2RML/OBDA)
 - Register a Databricks data source via `POST /data-sources` (do not store tokens in repo `.env`)
 
+If you want the system to spin up Ontop per data source automatically, set:
+
+```
+SEMANTIC_LAYER_MANAGED_ONTOP=true
+```
+
 ## Direct REST call (generalized)
 
 ```bash

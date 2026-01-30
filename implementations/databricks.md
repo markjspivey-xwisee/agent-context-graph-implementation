@@ -101,6 +101,20 @@ Then:
 curl -X POST http://localhost:3000/data-sources/databricks-secondary/refresh
 ```
 
+### Managed Ontop per source (runtime-friendly)
+
+Ontop cannot start without a JDBC URL, so to keep Databricks **runtime-only** and avoid global restarts,
+enable managed Ontop:
+
+```
+SEMANTIC_LAYER_MANAGED_ONTOP=true
+SEMANTIC_LAYER_ONTOP_IMAGE=ontop/ontop:latest
+SEMANTIC_LAYER_ONTOP_JDBC_DIR=./drivers/databricks-jdbc
+SEMANTIC_LAYER_ONTOP_HOST=localhost
+```
+
+The refresh call will start a dedicated Ontop container for the source and register its SPARQL endpoint.
+
 ### Zero-copy guarantee
 
 The semantic layer is a **virtual RDF overlay**. Databricks remains the source of truth, and
