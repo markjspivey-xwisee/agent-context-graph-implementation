@@ -3440,6 +3440,70 @@
       }
     }
 
+    function getManagedOntopStatus(source) {
+      const managed = source.semanticLayer?.managed;
+      if (!managed?.enabled) {
+        return {
+          label: 'Managed Ontop: disabled',
+          detail: 'Uses default semantic layer endpoint unless overridden.'
+        };
+      }
+      if (managed.provider !== 'ontop') {
+        return {
+          label: `Managed provider: ${managed.provider || 'unknown'}`,
+          detail: 'Provider does not expose container metadata.'
+        };
+      }
+      const container = managed.containerName || managed.containerId || 'pending';
+      const port = managed.hostPort ? `:${managed.hostPort}` : '';
+      return {
+        label: `Managed Ontop: ${container}`,
+        detail: `Port ${port || 'pending'}`
+      };
+    }
+
+    function showDataSourceEndpoint(id) {
+      const source = dataSources.find(s => s.id === id);
+      if (!source) return;
+      const endpoint = source.semanticLayer?.sparqlEndpoint || 'Not available';
+      modalTitle.textContent = `SPARQL Endpoint: ${source.name}`;
+      modalContent.innerHTML = `
+        <div class="detail-section">
+          <h4>Endpoint</h4>
+          <div class="inline-code">${escapeHtml(endpoint)}</div>
+        </div>
+        <div class="detail-section">
+          <h4>Actions</h4>
+          <div class="modal-actions">
+            <button class="chat-result-btn" onclick="copyToClipboard('${escapeHtml(endpoint)}')">Copy</button>
+            ${endpoint.startsWith('http') ? `<button class="chat-result-btn" onclick="openExternal('${endpoint}')">Open</button>` : ''}
+          </div>
+        </div>
+      `;
+      modalOverlay.classList.add('active');
+    }
+
+    function openExternal(url) {
+      try {
+        window.open(url, '_blank', 'noopener');
+      } catch (err) {
+        showNotification('Unable to open link.', 'error');
+      }
+    }
+
+    function useDataSourceInChat(id) {
+      const source = dataSources.find(s => s.id === id);
+      if (!source) return;
+      selectedChatSourceId = id;
+      if (chatDataSourceSelect) {
+        chatDataSourceSelect.value = id;
+      }
+      const chatTab = document.querySelector('[data-tab="chat"]');
+      if (chatTab) chatTab.click();
+      chatInput?.focus();
+      showNotification(`Chat now targeting ${source.name}.`, 'info');
+    }
+
     function renderDataSources() {
       if (!dataSourceList) return;
       if (!dataSources.length) {
@@ -3457,6 +3521,8 @@
       dataSourceList.innerHTML = dataSources.map(source => {
         const lastRefresh = source.status?.lastRefreshAt ? new Date(source.status.lastRefreshAt).toLocaleString() : 'never';
         const lastError = source.status?.lastError ? `Error: ${source.status.lastError}` : 'OK';
+        const endpoint = source.semanticLayer?.sparqlEndpoint || 'Not available';
+        const managedStatus = getManagedOntopStatus(source);
         return `
           <div class="data-source-card">
             <div class="title">${escapeHtml(source.name)}</div>
@@ -3468,11 +3534,20 @@
             <div class="meta">
               <span>${escapeHtml(lastError)}</span>
             </div>
+            <div class="meta">
+              <span>SPARQL: ${escapeHtml(endpoint)}</span>
+            </div>
+            <div class="meta">
+              <span>${escapeHtml(managedStatus.label)}</span>
+              <span>${escapeHtml(managedStatus.detail)}</span>
+            </div>
             <div class="actions">
               <button class="chat-result-btn" onclick="editDataSource('${source.id}')">Edit</button>
               ${source.type === 'databricks' ? `<button class="chat-result-btn" onclick="updateAndRefreshDataSource('${source.id}')">Update + Refresh</button>` : ''}
               <button class="chat-result-btn" onclick="refreshDataSource('${source.id}')">Refresh</button>
               <button class="chat-result-btn" onclick="viewDataSourceMapping('${source.id}')">View Mapping</button>
+              <button class="chat-result-btn" onclick="showDataSourceEndpoint('${source.id}')">Endpoint</button>
+              <button class="chat-result-btn" onclick="useDataSourceInChat('${source.id}')">Use in Chat</button>
             </div>
           </div>
         `;
@@ -4677,6 +4752,28 @@
         case 'federation': return '&#127760;';
         case 'agent': return '&#129302;';
         default: return '&#8505;';
+      }
+    }
+
+    function copyToClipboard(text) {
+      if (!text) return;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => showNotification('Copied to clipboard.', 'success'))
+          .catch(() => showNotification('Copy failed.', 'error'));
+        return;
+      }
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      try {
+        document.execCommand('copy');
+        showNotification('Copied to clipboard.', 'success');
+      } catch (err) {
+        showNotification('Copy failed.', 'error');
+      } finally {
+        document.body.removeChild(temp);
       }
     }
 
